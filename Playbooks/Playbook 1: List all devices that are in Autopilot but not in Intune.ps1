@@ -33,59 +33,39 @@ function Get-AutopilotNotIntuneDevices {
         Write-Host "Fetching Autopilot devices..." -ForegroundColor Cyan
         $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
         $autopilotDevices = Get-GraphPagedResults -Uri $uri
-
-        if (-not $autopilotDevices) {
-            Write-Host "No Autopilot devices found." -ForegroundColor Yellow
-            return $null
-        }
-
         Write-Host "Found $($autopilotDevices.Count) Autopilot devices" -ForegroundColor Green
 
         # Get all Intune devices
         Write-Host "Fetching Intune devices..." -ForegroundColor Cyan
         $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices"
         $intuneDevices = Get-GraphPagedResults -Uri $uri
-
-        if (-not $intuneDevices) {
-            Write-Host "No Intune devices found." -ForegroundColor Yellow
-            return $autopilotDevices # All Autopilot devices are missing from Intune
-        }
-
         Write-Host "Found $($intuneDevices.Count) Intune devices" -ForegroundColor Green
 
-        # Find devices in Autopilot but not in Intune
-        $missingDevices = @()
-        foreach ($autopilotDevice in $autopilotDevices) {
-            $foundInIntune = $false
-            foreach ($intuneDevice in $intuneDevices) {
-                if ($intuneDevice.serialNumber -eq $autopilotDevice.serialNumber) {
-                    $foundInIntune = $true
-                    break
-                }
-            }
-            
-            if (-not $foundInIntune) {
-                $deviceInfo = [PSCustomObject]@{
-                    DeviceName = $autopilotDevice.displayName
-                    SerialNumber = $autopilotDevice.serialNumber
-                    OperatingSystem = "$($autopilotDevice.model) ($($autopilotDevice.manufacturer))"
-                    PrimaryUser = "Not enrolled"
-                    AutopilotLastContact = if ($autopilotDevice.lastContactDateTime) {
-                        [DateTime]::Parse($autopilotDevice.lastContactDateTime)
-                    } else { $null }
-                }
-                $missingDevices += $deviceInfo
+        # Create a HashSet of Intune serial numbers for efficient lookup
+        $intuneSerialNumbers = [System.Collections.Generic.HashSet[string]]::new()
+        foreach ($device in $intuneDevices) {
+            if ($device.serialNumber) {
+                $intuneSerialNumbers.Add($device.serialNumber) | Out-Null
             }
         }
 
-        # Return results
-        if ($missingDevices.Count -eq 0) {
-            Write-Host "All Autopilot devices are properly enrolled in Intune." -ForegroundColor Green
-            return $null
-        } else {
-            Write-Host "Found $($missingDevices.Count) devices in Autopilot that are not enrolled in Intune:" -ForegroundColor Yellow
-            return $missingDevices
+        # Find devices in Autopilot but not in Intune using efficient HashSet lookup
+        $notEnrolledDevices = $autopilotDevices | Where-Object {
+            -not $intuneSerialNumbers.Contains($_.serialNumber)
+        } | ForEach-Object {
+            [PSCustomObject]@{
+                DeviceName = $_.displayName
+                SerialNumber = $_.serialNumber
+                OperatingSystem = "$($_.model) ($($_.manufacturer))"
+                PrimaryUser = "Not enrolled"
+                AutopilotLastContact = if ($_.lastContactDateTime) {
+                    [DateTime]::Parse($_.lastContactDateTime)
+                } else { $null }
+            }
         }
+
+        Write-Host "Found $($notEnrolledDevices.Count) devices in Autopilot that are not enrolled in Intune" -ForegroundColor Yellow
+        return $notEnrolledDevices
     }
     catch {
         Write-Error "Error executing playbook: $_"
