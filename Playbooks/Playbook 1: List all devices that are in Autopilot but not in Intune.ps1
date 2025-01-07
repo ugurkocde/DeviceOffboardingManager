@@ -66,20 +66,13 @@ function Get-AutopilotNotIntuneDevices {
             
             if (-not $foundInIntune) {
                 $deviceInfo = [PSCustomObject]@{
+                    DeviceName = $autopilotDevice.displayName
                     SerialNumber = $autopilotDevice.serialNumber
-                    Model = $autopilotDevice.model
-                    Manufacturer = $autopilotDevice.manufacturer
-                    LastContactDateTime = if ($autopilotDevice.lastContactDateTime) {
-                        [DateTime]::Parse($autopilotDevice.lastContactDateTime).ToString('yyyy-MM-dd HH:mm:ss')
-                    } else { "Never" }
-                    Status = "Not enrolled in Intune"
-                    GroupTag = if ($autopilotDevice.groupTag) { $autopilotDevice.groupTag } else { "No tag" }
-                    PurchaseOrderId = if ($autopilotDevice.purchaseOrderIdentifier) {
-                        $autopilotDevice.purchaseOrderIdentifier
-                    } else { "Not available" }
-                    ProductKey = if ($autopilotDevice.productKey) {
-                        $autopilotDevice.productKey
-                    } else { "Not available" }
+                    OperatingSystem = "$($autopilotDevice.model) ($($autopilotDevice.manufacturer))"
+                    PrimaryUser = "Not enrolled"
+                    AutopilotLastContact = if ($autopilotDevice.lastContactDateTime) {
+                        [DateTime]::Parse($autopilotDevice.lastContactDateTime)
+                    } else { $null }
                 }
                 $missingDevices += $deviceInfo
             }
