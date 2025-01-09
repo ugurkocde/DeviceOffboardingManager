@@ -1,20 +1,40 @@
 # Device Offboarding Manager
 
+<div align="center">
+  <p>
+    <a href="https://twitter.com/UgurKocDe">
+      <img src="https://img.shields.io/badge/Follow-@UgurKocDe-1DA1F2?style=flat&logo=x&logoColor=white" alt="Twitter Follow"/>
+    </a>
+    <a href="https://www.linkedin.com/in/ugurkocde/">
+      <img src="https://img.shields.io/badge/LinkedIn-Connect-0A66C2?style=flat&logo=linkedin" alt="LinkedIn"/>
+    </a>
+    <img src="https://img.shields.io/github/license/ugurkocde/IntuneAssignmentChecker?style=flat" alt="License"/>
+  </p>
+  <a href="https://www.powershellgallery.com/packages/IntuneAssignmentChecker">
+      <img src="https://img.shields.io/powershellgallery/v/IntuneAssignmentChecker?style=flat&label=PSGallery%20Version" alt="PowerShell Gallery Version"/>
+    </a>
+    <a href="https://www.powershellgallery.com/packages/IntuneAssignmentChecker">
+      <img src="https://img.shields.io/powershellgallery/dt/IntuneAssignmentChecker?style=flat&label=PSGallery%20Downloads&color=brightgreen" alt="PowerShell Gallery Downloads"/>
+    </a>
+</div>
+
 A modern PowerShell-based GUI tool for managing and offboarding devices from Microsoft Intune, Autopilot, and Entra ID (formerly Azure AD). This tool provides a streamlined interface for device lifecycle management across Microsoft services.
 
-![Device Offboarding Manager](screenshots/main.png)
+![Home](media/home.png)
 
 ## Table of Contents
 
 - [Device Offboarding Manager](#device-offboarding-manager)
   - [Table of Contents](#table-of-contents)
+  - [🚀 Quick Start](#-quick-start)
+    - [Option 1: Install from PowerShell Gallery (Recommended)](#option-1-install-from-powershell-gallery-recommended)
+    - [Option 2: Manual Installation](#option-2-manual-installation)
   - [Features](#features)
     - [Core Functionality](#core-functionality)
     - [Device Management](#device-management)
     - [Dashboard Analytics](#dashboard-analytics)
     - [Playbooks](#playbooks)
   - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
   - [Usage](#usage)
     - [Authentication](#authentication)
     - [Device Management](#device-management-1)
@@ -22,6 +42,42 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
     - [Playbooks](#playbooks-1)
   - [Contributing](#contributing)
   - [License](#license)
+
+## 🚀 Quick Start
+
+> **Important**: All commands must be run in a PowerShell 7 session. The script will not work in PowerShell 5.1 or earlier versions.
+
+### Option 1: Install from PowerShell Gallery (Recommended)
+
+```powershell
+# Install from PowerShell Gallery
+Install-PSResource DeviceOffboardingManager
+
+# Open a new PowerShell 7 session to run the script with
+DeviceOffboardingManager
+```
+
+If you encounter any issues during installation, try reinstalling:
+
+```powershell
+Install-PSResource DeviceOffboardingManager -Reinstall
+```
+
+To update to the latest version:
+
+```powershell
+Update-PSResource DeviceOffboardingManager
+```
+
+### Option 2: Manual Installation
+
+```powershell
+# Install Microsoft Graph Authentication Modul
+Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
+
+# Download and run the script
+.\DeviceOffboardingManager.ps1
+```
 
 ## Features
 
@@ -34,6 +90,8 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
 
 ### Device Management
 
+![Homer](media/device_offboarding.png)
+
 - Search devices by name or serial number
 - View device details including:
   - Last contact times
@@ -45,6 +103,8 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
 
 ### Dashboard Analytics
 
+![Dashboard Analytics](media/dashboard.png)
+
 - Total device counts per service
 - Stale device tracking (30/90/180 days)
 - Personal vs Corporate device distribution
@@ -52,6 +112,8 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
 - Real-time statistics updates
 
 ### Playbooks
+
+![Playbooks](media/playbooks.png)
 
 - Automated device management tasks
 - Pre-built reports and analyses
@@ -69,16 +131,6 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
    - DeviceManagementServiceConfig.ReadWrite.All
    - Group.Read.All
    - User.Read.All
-
-## Installation
-
-1. Clone the script (DeviceOffboardingManager.ps1)
-
-2. Run the script:
-
-```powershell
-.\DeviceOffboardingManager.ps1
-```
 
 ## Usage
 
