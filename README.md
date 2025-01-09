@@ -1,4 +1,4 @@
-# Device Offboarding Manager
+# ⚙️ Device Offboarding Manager
 
 <div align="center">
   <p>
@@ -24,24 +24,24 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
 
 ## Table of Contents
 
-- [Device Offboarding Manager](#device-offboarding-manager)
+- [⚙️ Device Offboarding Manager](#️-device-offboarding-manager)
   - [Table of Contents](#table-of-contents)
   - [🚀 Quick Start](#-quick-start)
     - [Option 1: Install from PowerShell Gallery (Recommended)](#option-1-install-from-powershell-gallery-recommended)
     - [Option 2: Manual Installation](#option-2-manual-installation)
-  - [Features](#features)
-    - [Core Functionality](#core-functionality)
-    - [Device Management](#device-management)
-    - [Dashboard Analytics](#dashboard-analytics)
-    - [Playbooks](#playbooks)
-  - [Prerequisites](#prerequisites)
-  - [Usage](#usage)
-    - [Authentication](#authentication)
-    - [Device Management](#device-management-1)
-    - [Dashboard](#dashboard)
-    - [Playbooks](#playbooks-1)
-  - [Contributing](#contributing)
-  - [License](#license)
+  - [🎯 Features](#-features)
+    - [🔑 Core Functionality](#-core-functionality)
+    - [💻 Device Management](#-device-management)
+    - [📊 Dashboard Analytics](#-dashboard-analytics)
+    - [📚 Playbooks](#-playbooks)
+  - [⚡ Prerequisites](#-prerequisites)
+  - [🔧 Usage](#-usage)
+    - [🔐 Authentication](#-authentication)
+    - [💻 Device Management](#-device-management-1)
+    - [📊 Dashboard](#-dashboard)
+    - [📚 Playbooks](#-playbooks-1)
+  - [👥 Contributing](#-contributing)
+  - [📄 License](#-license)
 
 ## 🚀 Quick Start
 
@@ -86,16 +86,16 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 .\DeviceOffboardingManager.ps1
 ```
 
-## Features
+## 🎯 Features
 
-### Core Functionality
+### 🔑 Core Functionality
 
 - **Multi-Service Integration**: Manage devices across Intune, Autopilot, and Entra ID
 - **Bulk Operations**: Support for bulk device imports and operations
 - **Real-time Dashboard**: View device statistics and distribution
 - **Secure Authentication**: Multiple authentication methods including interactive, certificate, and client secret
 
-### Device Management
+### 💻 Device Management
 
 ![Homer](media/device_offboarding.png)
 
@@ -108,7 +108,7 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 - Bulk device offboarding with confirmation
 - Automatic retrieval of BitLocker/FileVault keys
 
-### Dashboard Analytics
+### 📊 Dashboard Analytics
 
 ![Dashboard Analytics](media/dashboard.png)
 
@@ -118,7 +118,7 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 - Platform distribution visualization
 - Real-time statistics updates
 
-### Playbooks
+### 📚 Playbooks
 
 ![Playbooks](media/playbooks.png)
 
@@ -126,7 +126,7 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 - Pre-built reports and analyses
 - Custom playbook support for specific scenarios
 
-## Prerequisites
+## ⚡ Prerequisites
 
 1. PowerShell 7.0 or higher
 2. Microsoft.Graph.Authentication module
@@ -139,9 +139,9 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
    - Group.Read.All
    - User.Read.All
 
-## Usage
+## 🔧 Usage
 
-### Authentication
+### 🔐 Authentication
 
 The tool supports three authentication methods:
 
@@ -156,7 +156,7 @@ To connect:
 3. Provide required credentials
 4. Verify connection status in the tenant information section
 
-### Device Management
+### 💻 Device Management
 
 1. **Search for Devices**:
 
@@ -177,7 +177,7 @@ To connect:
    - Note any encryption recovery keys
    - Confirm the operation
 
-### Dashboard
+### 📊 Dashboard
 
 The dashboard provides real-time insights into your device management environment:
 
@@ -187,7 +187,7 @@ The dashboard provides real-time insights into your device management environmen
 - Platform distribution
 - Quick access to common tasks
 
-### Playbooks
+### 📚 Playbooks
 
 Automated tasks for common scenarios:
 
@@ -199,7 +199,7 @@ Automated tasks for common scenarios:
 - OS-specific device reports
 - Encryption key reports
 
-## Contributing
+## 👥 Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
@@ -207,6 +207,6 @@ Automated tasks for common scenarios:
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
