@@ -10,11 +10,11 @@
     </a>
     <img src="https://img.shields.io/github/license/ugurkocde/IntuneAssignmentChecker?style=flat" alt="License"/>
   </p>
-  <a href="https://www.powershellgallery.com/packages/IntuneAssignmentChecker">
-      <img src="https://img.shields.io/powershellgallery/v/IntuneAssignmentChecker?style=flat&label=PSGallery%20Version" alt="PowerShell Gallery Version"/>
+  <a href="https://www.powershellgallery.com/packages/DeviceOffboardingManager">
+      <img src="https://img.shields.io/powershellgallery/v/DeviceOffboardingManager?style=flat&label=PSGallery%20Version" alt="PowerShell Gallery Version"/>
     </a>
-    <a href="https://www.powershellgallery.com/packages/IntuneAssignmentChecker">
-      <img src="https://img.shields.io/powershellgallery/dt/IntuneAssignmentChecker?style=flat&label=PSGallery%20Downloads&color=brightgreen" alt="PowerShell Gallery Downloads"/>
+    <a href="https://www.powershellgallery.com/packages/DeviceOffboardingManager">
+      <img src="https://img.shields.io/powershellgallery/dt/DeviceOffboardingManager?style=flat&label=PSGallery%20Downloads&color=brightgreen" alt="PowerShell Gallery Downloads"/>
     </a>
 </div>
 
