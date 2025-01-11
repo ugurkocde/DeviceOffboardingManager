@@ -20,11 +20,21 @@
 
 A modern PowerShell-based GUI tool for managing and offboarding devices from Microsoft Intune, Autopilot, and Entra ID (formerly Azure AD). This tool provides a streamlined interface for device lifecycle management across Microsoft services.
 
-![Home](media/home.png)
+## Watch the full walkthrough of the tool:
+
+<div align="center">
+      <a href="https://www.youtube.com/watch?v=CbximIIAEgc">
+     <img 
+      src="https://img.youtube.com/vi/CbximIIAEgc/maxresdefault.jpg" 
+      alt="IntuneAssignmentChecker" 
+      style="width:100%;">
+      </a>
+</div>
 
 ## Table of Contents
 
 - [⚙️ Device Offboarding Manager](#️-device-offboarding-manager)
+  - [Watch the full walkthrough of the tool:](#watch-the-full-walkthrough-of-the-tool)
   - [Table of Contents](#table-of-contents)
   - [🚀 Quick Start](#-quick-start)
     - [Option 1: Install from PowerShell Gallery (Recommended)](#option-1-install-from-powershell-gallery-recommended)
