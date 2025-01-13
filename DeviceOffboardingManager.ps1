@@ -2343,7 +2343,7 @@ function Connect-ToGraph {
                 # Update UI elements
                 $Window.FindName('TenantDisplayName').Text = $org.displayName
                 $Window.FindName('TenantId').Text = $org.id
-                $Window.FindName('TenantDomain').Text = ($org.verifieddomains | Where-Object {$_.isDefault -eq $true}).name
+                $Window.FindName('TenantDomain').Text = ($org.verifieddomains | Where-Object { $_.isDefault -eq $true }).name
                 $Window.FindName('TenantInfoSection').Visibility = 'Visible'
             }
             else {
@@ -3569,13 +3569,51 @@ function Update-DashboardStatistics {
         $Window.FindName('EntraIDDevicesCount').Text = $entraDevices.Count
     
         # Calculate stale devices
-        $thirtyDaysAgo = (Get-Date).AddDays(-30).ToString('yyyy-MM-ddTHH:mm:ssZ')
-        $ninetyDaysAgo = (Get-Date).AddDays(-90).ToString('yyyy-MM-ddTHH:mm:ssZ')
-        $oneEightyDaysAgo = (Get-Date).AddDays(-180).ToString('yyyy-MM-ddTHH:mm:ssZ')
+        $thirtyDaysAgo = (Get-Date).AddDays(-30)
+        $ninetyDaysAgo = (Get-Date).AddDays(-90)
+        $onehundredEightyDaysAgo = (Get-Date).AddDays(-180)
     
-        $stale30 = ($intuneDevices | Where-Object { $_.lastSyncDateTime -lt $thirtyDaysAgo }).Count
-        $stale90 = ($intuneDevices | Where-Object { $_.lastSyncDateTime -lt $ninetyDaysAgo }).Count
-        $stale180 = ($intuneDevices | Where-Object { $_.lastSyncDateTime -lt $oneEightyDaysAgo }).Count
+        $stale30 = ($intuneDevices | Where-Object { 
+                if ($_.lastSyncDateTime) {
+                    try { 
+                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        return $lastSync -lt $thirtyDaysAgo 
+                    }
+                    catch { 
+                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
+                        return $false 
+                    }
+                }
+                else { return $false }
+            }).Count
+        
+        $stale90 = ($intuneDevices | Where-Object { 
+                if ($_.lastSyncDateTime) {
+                    try { 
+                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        return $lastSync -lt $ninetyDaysAgo 
+                    }
+                    catch { 
+                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
+                        return $false 
+                    }
+                }
+                else { return $false }
+            }).Count
+        
+        $stale180 = ($intuneDevices | Where-Object { 
+                if ($_.lastSyncDateTime) {
+                    try { 
+                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        return $lastSync -lt $onehundredEightyDaysAgo 
+                    }
+                    catch { 
+                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
+                        return $false 
+                    }
+                }
+                else { return $false }
+            }).Count
     
         $Window.FindName('StaleDevices30Count').Text = $stale30
         $Window.FindName('StaleDevices90Count').Text = $stale90
@@ -3962,9 +4000,6 @@ function Invoke-Playbook {
             Write-Log "Executing playbook: $playbookPath"
             
             $rawResults = & $playbookPath
-            Write-Log "Raw results type: $($rawResults.GetType())"
-            Write-Log "Raw results count: $($rawResults.Count)"
-            Write-Log "Raw results: $($rawResults | ConvertTo-Json -Depth 10)"
             
             # Filter out only the actual device objects
             $results = $rawResults | Where-Object {
@@ -3974,7 +4009,6 @@ function Invoke-Playbook {
                 -not $_.PSObject.Properties['ClassId2e4f51ef21dd47e99d3c952918aff9cd']
             }
             
-            Write-Log "Processing $($results.Count) results"
             $status.Text = "Processing results..."
             
             if ($results) {
@@ -3988,23 +4022,17 @@ function Invoke-Playbook {
                         AutopilotLastContact = $_.AutopilotLastContact
                     }
                 }
-                Write-Log "Created $($deviceObjects.Count) device objects"
                 
                 # Update the DataGrid with results
                 $PlaybookResultsDataGrid.Dispatcher.Invoke([Action] {
-                        Write-Log "Starting UI update..."
-                        Write-Log "Current PlaybookResultsGrid visibility: $($PlaybookResultsGrid.Visibility)"
-                        Write-Log "Current PlaybooksPage visibility: $($PlaybooksPage.Visibility)"
                     
                         # Clear existing results
                         $PlaybookResultsDataGrid.ItemsSource = $null
-                        Write-Log "Cleared existing ItemsSource"
                     
                         # Add each device to the collection
                         $collection = New-Object System.Collections.ObjectModel.ObservableCollection[object]
                         foreach ($device in $deviceObjects) {
                             $collection.Add($device)
-                            Write-Log "Added device: $($device.DeviceName)"
                         }
                         # Configure DataGrid columns for playbook results
                         $PlaybookResultsDataGrid.Columns.Clear()
@@ -4036,21 +4064,17 @@ function Invoke-Playbook {
 
                         # Set the ItemsSource
                         $PlaybookResultsDataGrid.ItemsSource = $collection
-                        Write-Log "Added $($collection.Count) items to DataGrid"
-                        Write-Log "Added $($collection.Count) items to DataGrid"
                         # Update visibility and header text
                         $Window.FindName('PlaybooksScrollViewer').Visibility = 'Collapsed'
                         $PlaybookResultsGrid.Visibility = 'Visible'
                         $Window.FindName('PlaybookResultsHeader').Text = $PlaybookName
-                        Write-Log "Updated visibility settings and header text for playbook results"
                     
                         # Force layout update
                         $PlaybookResultsDataGrid.UpdateLayout()
-                        Write-Log "Forced DataGrid layout update"
-                        Write-Log "UI update completed"
                     })
                 
                 $status.Text = "Playbook completed successfully!"
+                Write-Log "Playbook completed successfully!"
                 Start-Sleep -Seconds 2
                 $progressWindow.Close()
             }
