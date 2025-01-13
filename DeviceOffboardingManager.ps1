@@ -2343,7 +2343,7 @@ function Connect-ToGraph {
                 # Update UI elements
                 $Window.FindName('TenantDisplayName').Text = $org.displayName
                 $Window.FindName('TenantId').Text = $org.id
-                $Window.FindName('TenantDomain').Text = $org.verifiedDomains[0].name
+                $Window.FindName('TenantDomain').Text = ($org.verifieddomains | Where-Object {$_.isDefault -eq $true}).name
                 $Window.FindName('TenantInfoSection').Visibility = 'Visible'
             }
             else {
