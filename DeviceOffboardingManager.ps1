@@ -39,6 +39,9 @@
 #> 
 Param()
 
+#Requires -Version 7.0
+#Requires -Modules Microsoft.Graph.Authentication
+
 # Made by Ugur with ❤️
 # Guide and documentation available at https://github.com/ugurkocde/DeviceOffboardingManager
 # Feedback and contributions are welcome!
