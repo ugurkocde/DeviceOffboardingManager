@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.1
+.VERSION 0.1.1
 
 .GUID a686724d-588d-472e-b927-c4840c32eed1
 
@@ -2493,9 +2493,6 @@ $Window.Add_Loaded({
                     Write-Log "Warning: Could not retrieve tenant details for existing connection: $_"
                 }
                 
-                # Update dashboard statistics for existing connection
-                Update-DashboardStatistics
-                
                 # Verify permissions for existing connection
                 $currentPermissions = $context.Scopes
                 $missingPermissions = @()
@@ -2626,9 +2623,6 @@ $AuthenticateButton.Add_Click({
                 $MenuDashboard.IsEnabled = $true
                 $MenuDeviceManagement.IsEnabled = $true
                 $MenuPlaybooks.IsEnabled = $true
-
-                # Update dashboard statistics after successful authentication
-                Update-DashboardStatistics
             }
             else {
                 # Reset button state on failed connection
@@ -3445,11 +3439,6 @@ $Window.Add_Loaded({
         $DeviceManagementPage.Visibility = 'Collapsed'
         $PlaybooksPage.Visibility = 'Collapsed'
         $PlaybookResultsGrid.Visibility = 'Collapsed'
-
-        # Update dashboard statistics if connected
-        if (-not $AuthenticateButton.IsEnabled) {
-            Update-DashboardStatistics
-        }
     })
 
 # Add menu switching functionality
@@ -3494,18 +3483,67 @@ $MenuPlaybooks.Add_Checked({
 function Update-DashboardStatistics {
     try {
         Write-Log "Updating dashboard statistics..."
-    
-        # Get all managed devices
-        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices"
-        $intuneDevices = Get-GraphPagedResults -Uri $uri
-    
-        # Get all Autopilot devices
-        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
-        $autopilotDevices = Get-GraphPagedResults -Uri $uri
-    
-        # Get all EntraID devices
-        $uri = "https://graph.microsoft.com/v1.0/devices"
-        $entraDevices = Get-GraphPagedResults -Uri $uri
+        $startTime = Get-Date
+        Write-Log "Starting parallel API calls at $startTime"
+            
+        # Run each call in a separate thread job with timing
+        $intuneJob = Start-ThreadJob -ScriptBlock {
+            function Get-GraphPagedResults {
+                param([string]$Uri)
+                $results = @()
+                $nextLink = $Uri
+                do {
+                    $response = Invoke-MgGraphRequest -Uri $nextLink -Method GET
+                    if ($response.value) { $results += $response.value }
+                    $nextLink = $response.'@odata.nextLink'
+                } while ($nextLink)
+                return $results
+            }
+            # Pull Intune devices
+            $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices"
+            return Get-GraphPagedResults -Uri $uri
+        }
+        
+        $autopilotJob = Start-ThreadJob -ScriptBlock {
+            function Get-GraphPagedResults {
+                param([string]$Uri)
+                $results = @()
+                $nextLink = $Uri
+                do {
+                    $response = Invoke-MgGraphRequest -Uri $nextLink -Method GET
+                    if ($response.value) { $results += $response.value }
+                    $nextLink = $response.'@odata.nextLink'
+                } while ($nextLink)
+                return $results
+            }
+            # Pull Autopilot devices
+            $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+            return Get-GraphPagedResults -Uri $uri
+        }
+        
+        $entraJob = Start-ThreadJob -ScriptBlock {
+            function Get-GraphPagedResults {
+                param([string]$Uri)
+                $results = @()
+                $nextLink = $Uri
+                do {
+                    $response = Invoke-MgGraphRequest -Uri $nextLink -Method GET
+                    if ($response.value) { $results += $response.value }
+                    $nextLink = $response.'@odata.nextLink'
+                } while ($nextLink)
+                return $results
+            }
+            # Pull Entra ID devices
+            $uri = "https://graph.microsoft.com/v1.0/devices"
+            return Get-GraphPagedResults -Uri $uri
+        }
+        
+        # Wait for jobs to finish and grab results with timing
+        Write-Log "Waiting for all jobs to complete..."
+        Wait-Job -Job $intuneJob, $autopilotJob, $entraJob | Out-Null
+        $intuneDevices = Receive-Job -Job $intuneJob
+        $autopilotDevices = Receive-Job -Job $autopilotJob
+        $entraDevices = Receive-Job -Job $entraJob
     
         # Update top row counts
         $Window.FindName('IntuneDevicesCount').Text = $intuneDevices.Count
@@ -3755,21 +3793,6 @@ $SearchResultsDataGrid.Add_LoadingRow({
                 })
         }
     })
-
-# Update dashboard when switching to Dashboard tab
-$MenuDashboard.Add_Checked({
-        $HomePage.Visibility = 'Collapsed'
-        $DashboardPage.Visibility = 'Visible'
-        $DeviceManagementPage.Visibility = 'Collapsed'
-        $PlaybooksPage.Visibility = 'Collapsed'
-        $PlaybookResultsGrid.Visibility = 'Collapsed'
-        
-        # Update dashboard statistics if connected
-        if (-not $AuthenticateButton.IsEnabled) {
-            Update-DashboardStatistics
-        }
-    })
-
 function Show-PlaybookProgressModal {
     param(
         [string]$PlaybookName,
