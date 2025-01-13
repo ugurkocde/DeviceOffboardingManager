@@ -3487,6 +3487,8 @@ function Update-DashboardStatistics {
         Write-Log "Starting parallel API calls at $startTime"
             
         # Run each call in a separate thread job with timing
+        Write-Log "Starting Intune devices job..."
+        $intuneJobStart = Get-Date
         $intuneJob = Start-ThreadJob -ScriptBlock {
             function Get-GraphPagedResults {
                 param([string]$Uri)
@@ -3504,6 +3506,8 @@ function Update-DashboardStatistics {
             return Get-GraphPagedResults -Uri $uri
         }
         
+        Write-Log "Starting Autopilot devices job..."
+        $autopilotJobStart = Get-Date
         $autopilotJob = Start-ThreadJob -ScriptBlock {
             function Get-GraphPagedResults {
                 param([string]$Uri)
@@ -3521,6 +3525,8 @@ function Update-DashboardStatistics {
             return Get-GraphPagedResults -Uri $uri
         }
         
+        Write-Log "Starting Entra ID devices job..."
+        $entraJobStart = Get-Date
         $entraJob = Start-ThreadJob -ScriptBlock {
             function Get-GraphPagedResults {
                 param([string]$Uri)
@@ -3541,9 +3547,18 @@ function Update-DashboardStatistics {
         # Wait for jobs to finish and grab results with timing
         Write-Log "Waiting for all jobs to complete..."
         Wait-Job -Job $intuneJob, $autopilotJob, $entraJob | Out-Null
+        
         $intuneDevices = Receive-Job -Job $intuneJob
+        $intuneJobDuration = (Get-Date) - $intuneJobStart
+        Write-Log "Intune devices job completed in $($intuneJobDuration.TotalSeconds) seconds"
+        
         $autopilotDevices = Receive-Job -Job $autopilotJob
+        $autopilotJobDuration = (Get-Date) - $autopilotJobStart
+        Write-Log "Autopilot devices job completed in $($autopilotJobDuration.TotalSeconds) seconds"
+        
         $entraDevices = Receive-Job -Job $entraJob
+        $entraJobDuration = (Get-Date) - $entraJobStart
+        Write-Log "Entra ID devices job completed in $($entraJobDuration.TotalSeconds) seconds"
     
         # Update top row counts
         $Window.FindName('IntuneDevicesCount').Text = $intuneDevices.Count
