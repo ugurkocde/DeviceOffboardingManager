@@ -118,7 +118,7 @@ function Get-GraphPagedResults {
 <Window 
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Device Offboarding Manager (0.1 Preview)" Height="700" Width="1200" 
+    Title="Device Offboarding Manager (Preview)" Height="700" Width="1200" 
     Background="#F0F0F0"
     WindowStartupLocation="CenterScreen" 
     ResizeMode="NoResize">
@@ -3772,6 +3772,7 @@ function Update-DashboardStatistics {
         [System.Windows.MessageBox]::Show("Error updating dashboard statistics. Please ensure you are connected to MS Graph.")
     }
 }
+
 # Connect playbook buttons
 $PlaybookButtons = @(
     $Window.FindName('PlaybookAutopilotNotIntune'),
