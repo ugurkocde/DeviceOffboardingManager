@@ -80,12 +80,6 @@ If you encounter any issues during installation, try reinstalling:
 Install-PSResource DeviceOffboardingManager -Reinstall
 ```
 
-To update to the latest version:
-
-```powershell
-Update-PSResource DeviceOffboardingManager
-```
-
 ### Option 2: Manual Installation
 
 ```powershell
@@ -94,6 +88,13 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 
 # Download and run the script
 .\DeviceOffboardingManager.ps1
+```
+
+### Update to the latest Version
+
+```powershell
+# Restart the PowerShell Session after installing the new version
+Update-PSResource DeviceOffboardingManager
 ```
 
 ## 🎯 Features
