@@ -80,21 +80,53 @@ function Get-LatestVersion {
 function Update-VersionDisplays {
     param($window)
     
-    $installedVersionBox = $window.FindName('InstalledVersion')
-    $latestVersionBox = $window.FindName('LatestVersion')
+    $updateStatus = $window.FindName('UpdateStatus')
     
-    if ($installedVersionBox -and $latestVersionBox) {
+    if ($updateStatus) {
         $installedVersion = Get-InstalledVersion
         $latestVersion = Get-LatestVersion
         
-        $installedVersionBox.Text = $installedVersion
-        $latestVersionBox.Text = $latestVersion
-        
-        # Update colors based on version comparison
+        # Update display and add click handler based on version comparison
         if ($installedVersion -ne "Unknown" -and $latestVersion -ne "Unknown") {
             if ([version]$installedVersion -lt [version]$latestVersion) {
-                $latestVersionBox.Foreground = "#4FD1C5"  # Highlight newer version
+                $updateStatus.Text = "Update available"
+                $updateStatus.Foreground = "#4FD1C5"  # Highlight newer version
+                $updateStatus.Cursor = "Hand"
+                
+                # Remove existing handler if any
+                $updateStatus.RemoveHandler(
+                    [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                    [System.Windows.Input.MouseButtonEventHandler]{ param($s,$e) }
+                )
+                
+                # Add click handler
+                $updateStatus.AddHandler(
+                    [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                    [System.Windows.Input.MouseButtonEventHandler]{
+                        Start-Process "https://github.com/ugurkocde/DeviceOffboardingManager/blob/main/README.md#update-to-the-latest-version"
+                    }
+                )
+            } else {
+                $updateStatus.Text = "No Update available"
+                $updateStatus.Foreground = "#A0A0A0"  # Default gray color
+                $updateStatus.Cursor = "Arrow"
+                
+                # Remove click handler if exists
+                $updateStatus.RemoveHandler(
+                    [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                    [System.Windows.Input.MouseButtonEventHandler]{ param($s,$e) }
+                )
             }
+        } else {
+            $updateStatus.Text = "Version check unavailable"
+            $updateStatus.Foreground = "#A0A0A0"
+            $updateStatus.Cursor = "Arrow"
+            
+            # Remove click handler if exists
+            $updateStatus.RemoveHandler(
+                [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                [System.Windows.Input.MouseButtonEventHandler]{ param($s,$e) }
+            )
         }
     }
 }
@@ -625,48 +657,34 @@ function Get-GraphPagedResults {
                             CornerRadius="6" 
                             Padding="10">
                         <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
 
-                            <TextBlock Text="Installed: "
-                                     Grid.Row="0"
-                                     Foreground="#A0A0A0"
-                                     FontSize="11"
-                                     VerticalAlignment="Center"/>
-                            <TextBox x:Name="InstalledVersion"
-                                   Grid.Row="0"
-                                   Grid.Column="1"
-                                   Text=""
-                                   Foreground="#A0A0A0"
-                                   FontSize="11"
-                                   Background="Transparent"
-                                   BorderThickness="0"
-                                   IsReadOnly="True"
-                                   TextWrapping="NoWrap"
-                                   VerticalAlignment="Center"/>
-
-                            <TextBlock Text="Latest: "
-                                     Grid.Row="1"
-                                     Foreground="#A0A0A0"
-                                     FontSize="11"
-                                     VerticalAlignment="Center"/>
-                            <TextBox x:Name="LatestVersion"
-                                   Grid.Row="1"
-                                   Grid.Column="1"
-                                   Text=""
-                                   Foreground="#A0A0A0"
-                                   FontSize="11"
-                                   Background="Transparent"
-                                   BorderThickness="0"
-                                   IsReadOnly="True"
-                                   TextWrapping="NoWrap"
-                                   VerticalAlignment="Center"/>
+                            <TextBlock x:Name="UpdateStatus"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="5"
+                                    Text=""
+                                    Foreground="#A0A0A0"
+                                    FontSize="11"
+                                    TextWrapping="NoWrap"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Cursor="Hand">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="TextDecorations" Value="Underline"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
                         </Grid>
                     </Border>
 
