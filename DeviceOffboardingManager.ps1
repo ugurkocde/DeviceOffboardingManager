@@ -49,6 +49,56 @@ Param()
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Windows.Forms
 
+# Function to get installed version
+function Get-InstalledVersion {
+    try {
+        $module = Get-InstalledPSResource DeviceOffboardingManager | Sort-Object Version -Descending | Select-Object -First 1
+        if ($module) {
+            return $module.Version.ToString()
+        }
+        return $script:PSScriptRoot.VERSION
+    }
+    catch {
+        Write-Log "Error getting installed version: $_"
+        return "Unknown"
+    }
+}
+
+# Function to get latest version from PowerShell Gallery
+function Get-LatestVersion {
+    try {
+        $module = Find-Script -Name DeviceOffboardingManager -ErrorAction Stop
+        return $module.Version
+    }
+    catch {
+        Write-Log "Error getting latest version: $_"
+        return "Unknown"
+    }
+}
+
+# Function to update version displays
+function Update-VersionDisplays {
+    param($window)
+    
+    $installedVersionBox = $window.FindName('InstalledVersion')
+    $latestVersionBox = $window.FindName('LatestVersion')
+    
+    if ($installedVersionBox -and $latestVersionBox) {
+        $installedVersion = Get-InstalledVersion
+        $latestVersion = Get-LatestVersion
+        
+        $installedVersionBox.Text = $installedVersion
+        $latestVersionBox.Text = $latestVersion
+        
+        # Update colors based on version comparison
+        if ($installedVersion -ne "Unknown" -and $latestVersion -ne "Unknown") {
+            if ([version]$installedVersion -lt [version]$latestVersion) {
+                $latestVersionBox.Foreground = "#4FD1C5"  # Highlight newer version
+            }
+        }
+    }
+}
+
 # Add the DeviceObject class definition
 if (-not ([System.Management.Automation.PSTypeName]'DeviceObject').Type) {
     Add-Type -TypeDefinition @"
@@ -567,6 +617,57 @@ function Get-GraphPagedResults {
                                        VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
+                    </Border>
+
+                    <!-- Version Info -->
+                    <Border Background="#1B2A47" 
+                            Margin="15,5,15,5" 
+                            CornerRadius="6" 
+                            Padding="10">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Text="Installed: "
+                                     Grid.Row="0"
+                                     Foreground="#A0A0A0"
+                                     FontSize="11"
+                                     VerticalAlignment="Center"/>
+                            <TextBox x:Name="InstalledVersion"
+                                   Grid.Row="0"
+                                   Grid.Column="1"
+                                   Text=""
+                                   Foreground="#A0A0A0"
+                                   FontSize="11"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   IsReadOnly="True"
+                                   TextWrapping="NoWrap"
+                                   VerticalAlignment="Center"/>
+
+                            <TextBlock Text="Latest: "
+                                     Grid.Row="1"
+                                     Foreground="#A0A0A0"
+                                     FontSize="11"
+                                     VerticalAlignment="Center"/>
+                            <TextBox x:Name="LatestVersion"
+                                   Grid.Row="1"
+                                   Grid.Column="1"
+                                   Text=""
+                                   Foreground="#A0A0A0"
+                                   FontSize="11"
+                                   Background="Transparent"
+                                   BorderThickness="0"
+                                   IsReadOnly="True"
+                                   TextWrapping="NoWrap"
+                                   VerticalAlignment="Center"/>
+                        </Grid>
                     </Border>
 
                     <Button x:Name="PrerequisitesButton"
@@ -2519,6 +2620,10 @@ $Window.Add_Loaded({
                     )
                 }
             }
+
+            # Update version displays
+            Update-VersionDisplays -window $Window
+            Write-Log "Version displays updated"
         }
         catch {
             Write-Log "Error occurred during window load: $_"
