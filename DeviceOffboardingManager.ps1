@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.1
+.VERSION 0.1.1
 
 .GUID a686724d-588d-472e-b927-c4840c32eed1
 
@@ -39,12 +39,99 @@
 #> 
 Param()
 
+#Requires -Version 7.0
+#Requires -Modules Microsoft.Graph.Authentication
+
 # Made by Ugur with ❤️
 # Guide and documentation available at https://github.com/ugurkocde/DeviceOffboardingManager
 # Feedback and contributions are welcome!
 
 Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Windows.Forms
+
+# Function to get installed version
+function Get-InstalledVersion {
+    try {
+        $module = Get-InstalledPSResource DeviceOffboardingManager | Sort-Object Version -Descending | Select-Object -First 1
+        if ($module) {
+            return $module.Version.ToString()
+        }
+        return $script:PSScriptRoot.VERSION
+    }
+    catch {
+        Write-Log "Error getting installed version: $_"
+        return "Unknown"
+    }
+}
+
+# Function to get latest version from PowerShell Gallery
+function Get-LatestVersion {
+    try {
+        $module = Find-Script -Name DeviceOffboardingManager -ErrorAction Stop
+        return $module.Version
+    }
+    catch {
+        Write-Log "Error getting latest version: $_"
+        return "Unknown"
+    }
+}
+
+# Function to update version displays
+function Update-VersionDisplays {
+    param($window)
+    
+    $updateStatus = $window.FindName('UpdateStatus')
+    
+    if ($updateStatus) {
+        $installedVersion = Get-InstalledVersion
+        $latestVersion = Get-LatestVersion
+        
+        # Update display and add click handler based on version comparison
+        if ($installedVersion -ne "Unknown" -and $latestVersion -ne "Unknown") {
+            if ([version]$installedVersion -lt [version]$latestVersion) {
+                $updateStatus.Text = "Update available"
+                $updateStatus.Foreground = "#4FD1C5"  # Highlight newer version
+                $updateStatus.Cursor = "Hand"
+                
+                # Remove existing handler if any
+                $updateStatus.RemoveHandler(
+                    [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                    [System.Windows.Input.MouseButtonEventHandler] { param($s, $e) }
+                )
+                
+                # Add click handler
+                $updateStatus.AddHandler(
+                    [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                    [System.Windows.Input.MouseButtonEventHandler] {
+                        Start-Process "https://github.com/ugurkocde/DeviceOffboardingManager/blob/main/README.md#update-to-the-latest-version"
+                    }
+                )
+            }
+            else {
+                $updateStatus.Text = "No Update available"
+                $updateStatus.Foreground = "#A0A0A0"  # Default gray color
+                $updateStatus.Cursor = "Arrow"
+                
+                # Remove click handler if exists
+                $updateStatus.RemoveHandler(
+                    [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                    [System.Windows.Input.MouseButtonEventHandler] { param($s, $e) }
+                )
+            }
+        }
+        else {
+            $updateStatus.Text = "Version check unavailable"
+            $updateStatus.Foreground = "#A0A0A0"
+            $updateStatus.Cursor = "Arrow"
+            
+            # Remove click handler if exists
+            $updateStatus.RemoveHandler(
+                [System.Windows.Controls.TextBlock]::MouseDownEvent,
+                [System.Windows.Input.MouseButtonEventHandler] { param($s, $e) }
+            )
+        }
+    }
+}
 
 # Add the DeviceObject class definition
 if (-not ([System.Management.Automation.PSTypeName]'DeviceObject').Type) {
@@ -115,7 +202,7 @@ function Get-GraphPagedResults {
 <Window 
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Device Offboarding Manager (0.1 Preview)" Height="700" Width="1200" 
+    Title="Device Offboarding Manager (Preview)" Height="700" Width="1200" 
     Background="#F0F0F0"
     WindowStartupLocation="CenterScreen" 
     ResizeMode="NoResize">
@@ -564,6 +651,43 @@ function Get-GraphPagedResults {
                                        VerticalAlignment="Center"/>
                             </Grid>
                         </StackPanel>
+                    </Border>
+
+                    <!-- Version Info -->
+                    <Border Background="#1B2A47" 
+                            Margin="15,5,15,5" 
+                            CornerRadius="6" 
+                            Padding="10">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock x:Name="UpdateStatus"
+                                    Grid.Column="0"
+                                    Grid.ColumnSpan="5"
+                                    Text=""
+                                    Foreground="#A0A0A0"
+                                    FontSize="11"
+                                    TextWrapping="NoWrap"
+                                    VerticalAlignment="Center"
+                                    HorizontalAlignment="Center"
+                                    Cursor="Hand">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="TextDecorations" Value="Underline"/>
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </Grid>
                     </Border>
 
                     <Button x:Name="PrerequisitesButton"
@@ -2340,7 +2464,7 @@ function Connect-ToGraph {
                 # Update UI elements
                 $Window.FindName('TenantDisplayName').Text = $org.displayName
                 $Window.FindName('TenantId').Text = $org.id
-                $Window.FindName('TenantDomain').Text = ($org.verifieddomains | Where-Object {$_.isDefault -eq $true}).name
+                $Window.FindName('TenantDomain').Text = ($org.verifieddomains | Where-Object { $_.isDefault -eq $true }).name
                 $Window.FindName('TenantInfoSection').Visibility = 'Visible'
             }
             else {
@@ -2493,9 +2617,6 @@ $Window.Add_Loaded({
                     Write-Log "Warning: Could not retrieve tenant details for existing connection: $_"
                 }
                 
-                # Update dashboard statistics for existing connection
-                Update-DashboardStatistics
-                
                 # Verify permissions for existing connection
                 $currentPermissions = $context.Scopes
                 $missingPermissions = @()
@@ -2519,6 +2640,10 @@ $Window.Add_Loaded({
                     )
                 }
             }
+
+            # Update version displays
+            Update-VersionDisplays -window $Window
+            Write-Log "Version displays updated"
         }
         catch {
             Write-Log "Error occurred during window load: $_"
@@ -2626,9 +2751,6 @@ $AuthenticateButton.Add_Click({
                 $MenuDashboard.IsEnabled = $true
                 $MenuDeviceManagement.IsEnabled = $true
                 $MenuPlaybooks.IsEnabled = $true
-
-                # Update dashboard statistics after successful authentication
-                Update-DashboardStatistics
             }
             else {
                 # Reset button state on failed connection
@@ -3445,11 +3567,6 @@ $Window.Add_Loaded({
         $DeviceManagementPage.Visibility = 'Collapsed'
         $PlaybooksPage.Visibility = 'Collapsed'
         $PlaybookResultsGrid.Visibility = 'Collapsed'
-
-        # Update dashboard statistics if connected
-        if (-not $AuthenticateButton.IsEnabled) {
-            Update-DashboardStatistics
-        }
     })
 
 # Add menu switching functionality
@@ -3494,18 +3611,82 @@ $MenuPlaybooks.Add_Checked({
 function Update-DashboardStatistics {
     try {
         Write-Log "Updating dashboard statistics..."
-    
-        # Get all managed devices
-        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices"
-        $intuneDevices = Get-GraphPagedResults -Uri $uri
-    
-        # Get all Autopilot devices
-        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
-        $autopilotDevices = Get-GraphPagedResults -Uri $uri
-    
-        # Get all EntraID devices
-        $uri = "https://graph.microsoft.com/v1.0/devices"
-        $entraDevices = Get-GraphPagedResults -Uri $uri
+        $startTime = Get-Date
+        Write-Log "Starting parallel API calls at $startTime"
+            
+        # Run each call in a separate thread job with timing
+        Write-Log "Starting Intune devices job..."
+        $intuneJobStart = Get-Date
+        $intuneJob = Start-ThreadJob -ScriptBlock {
+            function Get-GraphPagedResults {
+                param([string]$Uri)
+                $results = @()
+                $nextLink = $Uri
+                do {
+                    $response = Invoke-MgGraphRequest -Uri $nextLink -Method GET
+                    if ($response.value) { $results += $response.value }
+                    $nextLink = $response.'@odata.nextLink'
+                } while ($nextLink)
+                return $results
+            }
+            # Pull Intune devices
+            $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices"
+            return Get-GraphPagedResults -Uri $uri
+        }
+        
+        Write-Log "Starting Autopilot devices job..."
+        $autopilotJobStart = Get-Date
+        $autopilotJob = Start-ThreadJob -ScriptBlock {
+            function Get-GraphPagedResults {
+                param([string]$Uri)
+                $results = @()
+                $nextLink = $Uri
+                do {
+                    $response = Invoke-MgGraphRequest -Uri $nextLink -Method GET
+                    if ($response.value) { $results += $response.value }
+                    $nextLink = $response.'@odata.nextLink'
+                } while ($nextLink)
+                return $results
+            }
+            # Pull Autopilot devices
+            $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+            return Get-GraphPagedResults -Uri $uri
+        }
+        
+        Write-Log "Starting Entra ID devices job..."
+        $entraJobStart = Get-Date
+        $entraJob = Start-ThreadJob -ScriptBlock {
+            function Get-GraphPagedResults {
+                param([string]$Uri)
+                $results = @()
+                $nextLink = $Uri
+                do {
+                    $response = Invoke-MgGraphRequest -Uri $nextLink -Method GET
+                    if ($response.value) { $results += $response.value }
+                    $nextLink = $response.'@odata.nextLink'
+                } while ($nextLink)
+                return $results
+            }
+            # Pull Entra ID devices
+            $uri = "https://graph.microsoft.com/v1.0/devices"
+            return Get-GraphPagedResults -Uri $uri
+        }
+        
+        # Wait for jobs to finish and grab results with timing
+        Write-Log "Waiting for all jobs to complete..."
+        Wait-Job -Job $intuneJob, $autopilotJob, $entraJob | Out-Null
+        
+        $intuneDevices = Receive-Job -Job $intuneJob
+        $intuneJobDuration = (Get-Date) - $intuneJobStart
+        Write-Log "Intune devices job completed in $($intuneJobDuration.TotalSeconds) seconds"
+        
+        $autopilotDevices = Receive-Job -Job $autopilotJob
+        $autopilotJobDuration = (Get-Date) - $autopilotJobStart
+        Write-Log "Autopilot devices job completed in $($autopilotJobDuration.TotalSeconds) seconds"
+        
+        $entraDevices = Receive-Job -Job $entraJob
+        $entraJobDuration = (Get-Date) - $entraJobStart
+        Write-Log "Entra ID devices job completed in $($entraJobDuration.TotalSeconds) seconds"
     
         # Update top row counts
         $Window.FindName('IntuneDevicesCount').Text = $intuneDevices.Count
@@ -3513,13 +3694,51 @@ function Update-DashboardStatistics {
         $Window.FindName('EntraIDDevicesCount').Text = $entraDevices.Count
     
         # Calculate stale devices
-        $thirtyDaysAgo = (Get-Date).AddDays(-30).ToString('yyyy-MM-ddTHH:mm:ssZ')
-        $ninetyDaysAgo = (Get-Date).AddDays(-90).ToString('yyyy-MM-ddTHH:mm:ssZ')
-        $oneEightyDaysAgo = (Get-Date).AddDays(-180).ToString('yyyy-MM-ddTHH:mm:ssZ')
+        $thirtyDaysAgo = (Get-Date).AddDays(-30)
+        $ninetyDaysAgo = (Get-Date).AddDays(-90)
+        $onehundredEightyDaysAgo = (Get-Date).AddDays(-180)
     
-        $stale30 = ($intuneDevices | Where-Object { $_.lastSyncDateTime -lt $thirtyDaysAgo }).Count
-        $stale90 = ($intuneDevices | Where-Object { $_.lastSyncDateTime -lt $ninetyDaysAgo }).Count
-        $stale180 = ($intuneDevices | Where-Object { $_.lastSyncDateTime -lt $oneEightyDaysAgo }).Count
+        $stale30 = ($intuneDevices | Where-Object { 
+                if ($_.lastSyncDateTime) {
+                    try { 
+                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        return $lastSync -lt $thirtyDaysAgo 
+                    }
+                    catch { 
+                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
+                        return $false 
+                    }
+                }
+                else { return $false }
+            }).Count
+        
+        $stale90 = ($intuneDevices | Where-Object { 
+                if ($_.lastSyncDateTime) {
+                    try { 
+                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        return $lastSync -lt $ninetyDaysAgo 
+                    }
+                    catch { 
+                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
+                        return $false 
+                    }
+                }
+                else { return $false }
+            }).Count
+        
+        $stale180 = ($intuneDevices | Where-Object { 
+                if ($_.lastSyncDateTime) {
+                    try { 
+                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        return $lastSync -lt $onehundredEightyDaysAgo 
+                    }
+                    catch { 
+                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
+                        return $false 
+                    }
+                }
+                else { return $false }
+            }).Count
     
         $Window.FindName('StaleDevices30Count').Text = $stale30
         $Window.FindName('StaleDevices90Count').Text = $stale90
@@ -3678,6 +3897,7 @@ function Update-DashboardStatistics {
         [System.Windows.MessageBox]::Show("Error updating dashboard statistics. Please ensure you are connected to MS Graph.")
     }
 }
+
 # Connect playbook buttons
 $PlaybookButtons = @(
     $Window.FindName('PlaybookAutopilotNotIntune'),
@@ -3729,6 +3949,21 @@ foreach ($button in $PlaybookButtons) {
 $SearchResultsDataGrid = $Window.FindName('SearchResultsDataGrid')
 $OffboardButton = $Window.FindName('OffboardButton')
 
+# Create and configure Select All checkbox
+$SelectAllCheckBox = New-Object System.Windows.Controls.CheckBox
+$SelectAllCheckBox.Content = "Select All"
+($SearchResultsDataGrid.Columns[0]).Header = $SelectAllCheckBox
+
+# Add Select All checkbox click handler
+$SelectAllCheckBox.Add_Click({
+        $allChecked = $SelectAllCheckBox.IsChecked
+        if ($SearchResultsDataGrid.ItemsSource) {
+            foreach ($device in $SearchResultsDataGrid.ItemsSource) {
+                $device.IsSelected = $allChecked
+            }
+        }
+    })
+
 # Initially disable the Offboard button
 $OffboardButton.IsEnabled = $false
 
@@ -3746,8 +3981,14 @@ $SearchResultsDataGrid.Add_LoadingRow({
         $dataContext = $row.DataContext
         if ($dataContext -and $dataContext.GetType().Name -eq 'DeviceObject') {
             $dataContext.add_PropertyChanged({
-                    param($s, $ev)
-                    if ($ev.PropertyName -eq 'IsSelected') {
+                    param($sender, $e)
+                    if ($e.PropertyName -eq 'IsSelected') {
+                        # Update Select All checkbox state
+                        if ($SearchResultsDataGrid.ItemsSource) {
+                            $allSelected = -not ($SearchResultsDataGrid.ItemsSource | Where-Object { -not $_.IsSelected })
+                            $SelectAllCheckBox.IsChecked = $allSelected
+                        }
+                        
                         # Update Offboard button state
                         $selectedDevices = $SearchResultsDataGrid.ItemsSource | Where-Object { $_.IsSelected }
                         $OffboardButton.IsEnabled = ($null -ne $selectedDevices -and $selectedDevices.Count -gt 0)
@@ -3755,21 +3996,6 @@ $SearchResultsDataGrid.Add_LoadingRow({
                 })
         }
     })
-
-# Update dashboard when switching to Dashboard tab
-$MenuDashboard.Add_Checked({
-        $HomePage.Visibility = 'Collapsed'
-        $DashboardPage.Visibility = 'Visible'
-        $DeviceManagementPage.Visibility = 'Collapsed'
-        $PlaybooksPage.Visibility = 'Collapsed'
-        $PlaybookResultsGrid.Visibility = 'Collapsed'
-        
-        # Update dashboard statistics if connected
-        if (-not $AuthenticateButton.IsEnabled) {
-            Update-DashboardStatistics
-        }
-    })
-
 function Show-PlaybookProgressModal {
     param(
         [string]$PlaybookName,
@@ -3921,9 +4147,6 @@ function Invoke-Playbook {
             Write-Log "Executing playbook: $playbookPath"
             
             $rawResults = & $playbookPath
-            Write-Log "Raw results type: $($rawResults.GetType())"
-            Write-Log "Raw results count: $($rawResults.Count)"
-            Write-Log "Raw results: $($rawResults | ConvertTo-Json -Depth 10)"
             
             # Filter out only the actual device objects
             $results = $rawResults | Where-Object {
@@ -3933,7 +4156,6 @@ function Invoke-Playbook {
                 -not $_.PSObject.Properties['ClassId2e4f51ef21dd47e99d3c952918aff9cd']
             }
             
-            Write-Log "Processing $($results.Count) results"
             $status.Text = "Processing results..."
             
             if ($results) {
@@ -3947,23 +4169,17 @@ function Invoke-Playbook {
                         AutopilotLastContact = $_.AutopilotLastContact
                     }
                 }
-                Write-Log "Created $($deviceObjects.Count) device objects"
                 
                 # Update the DataGrid with results
                 $PlaybookResultsDataGrid.Dispatcher.Invoke([Action] {
-                        Write-Log "Starting UI update..."
-                        Write-Log "Current PlaybookResultsGrid visibility: $($PlaybookResultsGrid.Visibility)"
-                        Write-Log "Current PlaybooksPage visibility: $($PlaybooksPage.Visibility)"
                     
                         # Clear existing results
                         $PlaybookResultsDataGrid.ItemsSource = $null
-                        Write-Log "Cleared existing ItemsSource"
                     
                         # Add each device to the collection
                         $collection = New-Object System.Collections.ObjectModel.ObservableCollection[object]
                         foreach ($device in $deviceObjects) {
                             $collection.Add($device)
-                            Write-Log "Added device: $($device.DeviceName)"
                         }
                         # Configure DataGrid columns for playbook results
                         $PlaybookResultsDataGrid.Columns.Clear()
@@ -3995,21 +4211,17 @@ function Invoke-Playbook {
 
                         # Set the ItemsSource
                         $PlaybookResultsDataGrid.ItemsSource = $collection
-                        Write-Log "Added $($collection.Count) items to DataGrid"
-                        Write-Log "Added $($collection.Count) items to DataGrid"
                         # Update visibility and header text
                         $Window.FindName('PlaybooksScrollViewer').Visibility = 'Collapsed'
                         $PlaybookResultsGrid.Visibility = 'Visible'
                         $Window.FindName('PlaybookResultsHeader').Text = $PlaybookName
-                        Write-Log "Updated visibility settings and header text for playbook results"
                     
                         # Force layout update
                         $PlaybookResultsDataGrid.UpdateLayout()
-                        Write-Log "Forced DataGrid layout update"
-                        Write-Log "UI update completed"
                     })
                 
                 $status.Text = "Playbook completed successfully!"
+                Write-Log "Playbook completed successfully!"
                 Start-Sleep -Seconds 2
                 $progressWindow.Close()
             }
