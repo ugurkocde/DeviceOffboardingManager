@@ -96,17 +96,18 @@ function Update-VersionDisplays {
                 # Remove existing handler if any
                 $updateStatus.RemoveHandler(
                     [System.Windows.Controls.TextBlock]::MouseDownEvent,
-                    [System.Windows.Input.MouseButtonEventHandler]{ param($s,$e) }
+                    [System.Windows.Input.MouseButtonEventHandler] { param($s, $e) }
                 )
                 
                 # Add click handler
                 $updateStatus.AddHandler(
                     [System.Windows.Controls.TextBlock]::MouseDownEvent,
-                    [System.Windows.Input.MouseButtonEventHandler]{
+                    [System.Windows.Input.MouseButtonEventHandler] {
                         Start-Process "https://github.com/ugurkocde/DeviceOffboardingManager/blob/main/README.md#update-to-the-latest-version"
                     }
                 )
-            } else {
+            }
+            else {
                 $updateStatus.Text = "No Update available"
                 $updateStatus.Foreground = "#A0A0A0"  # Default gray color
                 $updateStatus.Cursor = "Arrow"
@@ -114,10 +115,11 @@ function Update-VersionDisplays {
                 # Remove click handler if exists
                 $updateStatus.RemoveHandler(
                     [System.Windows.Controls.TextBlock]::MouseDownEvent,
-                    [System.Windows.Input.MouseButtonEventHandler]{ param($s,$e) }
+                    [System.Windows.Input.MouseButtonEventHandler] { param($s, $e) }
                 )
             }
-        } else {
+        }
+        else {
             $updateStatus.Text = "Version check unavailable"
             $updateStatus.Foreground = "#A0A0A0"
             $updateStatus.Cursor = "Arrow"
@@ -125,7 +127,7 @@ function Update-VersionDisplays {
             # Remove click handler if exists
             $updateStatus.RemoveHandler(
                 [System.Windows.Controls.TextBlock]::MouseDownEvent,
-                [System.Windows.Input.MouseButtonEventHandler]{ param($s,$e) }
+                [System.Windows.Input.MouseButtonEventHandler] { param($s, $e) }
             )
         }
     }
@@ -3947,6 +3949,21 @@ foreach ($button in $PlaybookButtons) {
 $SearchResultsDataGrid = $Window.FindName('SearchResultsDataGrid')
 $OffboardButton = $Window.FindName('OffboardButton')
 
+# Create and configure Select All checkbox
+$SelectAllCheckBox = New-Object System.Windows.Controls.CheckBox
+$SelectAllCheckBox.Content = "Select All"
+($SearchResultsDataGrid.Columns[0]).Header = $SelectAllCheckBox
+
+# Add Select All checkbox click handler
+$SelectAllCheckBox.Add_Click({
+        $allChecked = $SelectAllCheckBox.IsChecked
+        if ($SearchResultsDataGrid.ItemsSource) {
+            foreach ($device in $SearchResultsDataGrid.ItemsSource) {
+                $device.IsSelected = $allChecked
+            }
+        }
+    })
+
 # Initially disable the Offboard button
 $OffboardButton.IsEnabled = $false
 
@@ -3964,8 +3981,14 @@ $SearchResultsDataGrid.Add_LoadingRow({
         $dataContext = $row.DataContext
         if ($dataContext -and $dataContext.GetType().Name -eq 'DeviceObject') {
             $dataContext.add_PropertyChanged({
-                    param($s, $ev)
-                    if ($ev.PropertyName -eq 'IsSelected') {
+                    param($sender, $e)
+                    if ($e.PropertyName -eq 'IsSelected') {
+                        # Update Select All checkbox state
+                        if ($SearchResultsDataGrid.ItemsSource) {
+                            $allSelected = -not ($SearchResultsDataGrid.ItemsSource | Where-Object { -not $_.IsSelected })
+                            $SelectAllCheckBox.IsChecked = $allSelected
+                        }
+                        
                         # Update Offboard button state
                         $selectedDevices = $SearchResultsDataGrid.ItemsSource | Where-Object { $_.IsSelected }
                         $OffboardButton.IsEnabled = ($null -ne $selectedDevices -and $selectedDevices.Count -gt 0)
