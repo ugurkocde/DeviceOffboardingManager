@@ -142,13 +142,14 @@ Update-PSResource DeviceOffboardingManager
 1. PowerShell 7.0 or higher
 2. Microsoft.Graph.Authentication module
 3. Required Microsoft Graph API permissions:
-   - Device.Read.All
+   - Device.ReadWrite.All
    - DeviceManagementApps.Read.All
    - DeviceManagementConfiguration.Read.All
    - DeviceManagementManagedDevices.ReadWrite.All
    - DeviceManagementServiceConfig.ReadWrite.All
    - Group.Read.All
    - User.Read.All
+   - BitlockerKey.Read.All
 
 ## 🔧 Usage
 
