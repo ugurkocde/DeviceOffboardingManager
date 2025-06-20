@@ -1,0 +1,24 @@
+name: Publish PowerShell Script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Publish-Script:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Publish to PowerShell Gallery
+        shell: pwsh
+        run: |
+          $env:PSGalleryApiKey = "${{ secrets.NUGET_KEY }}"
+          Publish-Script -Path ./DeviceOffboardingManager.ps1 -Repository PSGallery -NuGetApiKey $env:PSGalleryApiKey
+
+      - name: Add Gallery Link to Summary
+        shell: bash
+        run: |
+          version=$(grep -Po '^\.VERSION \K[0-9.]+' ./DeviceOffboardingManager.ps1)
+          echo "Successfully published [DeviceOffboardingManager version $version](https://www.powershellgallery.com/packages/DeviceOffboardingManager/$version) to PowerShell Gallery." >> $GITHUB_STEP_SUMMARY
+          echo "View the package at: https://www.powershellgallery.com/packages/DeviceOffboardingManager/$version"
