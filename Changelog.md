@@ -15,9 +15,10 @@
   - Export search results to CSV
   - Export playbook results to CSV
   - Includes all device details in a clean format
-- **Clickable Dashboard Cards**: Made dashboard cards interactive with export functionality
+- **Clickable Dashboard Cards**: Made all dashboard cards interactive with export functionality
   - Click on any stale device card (30/90/180 days) to view and export the device list
   - Click on personal or corporate device cards to view and export those lists
+  - Click on Intune, Autopilot, or Entra ID total device cards to view all devices from that service
   - Each card shows a modal with the device details and export button
 
 ## Version 0.1.1 - 1/18/2025

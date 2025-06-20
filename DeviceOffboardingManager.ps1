@@ -967,7 +967,16 @@ function Get-GraphPagedResults {
 
                 <!-- Top Row Statistics -->
                 <UniformGrid Grid.Row="0" Rows="1" Margin="20,20,20,10">
-                    <Border Background="#1B2A47" Margin="0,0,10,0" CornerRadius="8">
+                    <Border x:Name="IntuneDevicesCard" Background="#1B2A47" Margin="0,0,10,0" CornerRadius="8" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -997,7 +1006,16 @@ function Get-GraphPagedResults {
                         </Grid>
                     </Border>
 
-                    <Border Background="#1B2A47" Margin="10,0" CornerRadius="8">
+                    <Border x:Name="AutopilotDevicesCard" Background="#1B2A47" Margin="10,0" CornerRadius="8" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1027,7 +1045,16 @@ function Get-GraphPagedResults {
                         </Grid>
                     </Border>
 
-                    <Border Background="#1B2A47" Margin="10,0,0,0" CornerRadius="8">
+                    <Border x:Name="EntraIDDevicesCard" Background="#1B2A47" Margin="10,0,0,0" CornerRadius="8" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -5164,6 +5191,97 @@ $CorporateDevicesCard.Add_MouseLeftButtonUp({
             catch {
                 Write-Log "Error fetching corporate devices: $_"
                 [System.Windows.MessageBox]::Show("Error fetching corporate devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
+# Connect total device count card click handlers
+$IntuneDevicesCard = $Window.FindName('IntuneDevicesCard')
+$IntuneDevicesCard.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching all Intune devices..."
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices"
+                $intuneDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $intuneDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.deviceName
+                        SerialNumber = $device.serialNumber
+                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        OperatingSystem = $device.operatingSystem
+                        OSVersion = $device.osVersion
+                        PrimaryUser = $device.userPrincipalName
+                        Ownership = $device.managedDeviceOwnerType
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "All Intune Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching Intune devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching Intune devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
+$AutopilotDevicesCard = $Window.FindName('AutopilotDevicesCard')
+$AutopilotDevicesCard.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching all Autopilot devices..."
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+                $autopilotDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $autopilotDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.displayName
+                        SerialNumber = $device.serialNumber
+                        LastContact = if ($device.lastContactedDateTime) { [DateTime]::Parse($device.lastContactedDateTime).ToString('yyyy-MM-dd HH:mm') } else { "N/A" }
+                        OperatingSystem = "Windows"
+                        OSVersion = $device.systemFamily
+                        PrimaryUser = $device.userPrincipalName
+                        Ownership = $device.managedDeviceOwnerType
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "All Autopilot Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching Autopilot devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching Autopilot devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
+$EntraIDDevicesCard = $Window.FindName('EntraIDDevicesCard')
+$EntraIDDevicesCard.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching all Entra ID devices..."
+                $uri = "https://graph.microsoft.com/v1.0/devices"
+                $entraDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $entraDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.displayName
+                        SerialNumber = "N/A"
+                        LastContact = if ($device.approximateLastSignInDateTime) { [DateTime]::Parse($device.approximateLastSignInDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        OperatingSystem = $device.operatingSystem
+                        OSVersion = $device.operatingSystemVersion
+                        PrimaryUser = "N/A"
+                        Ownership = if ($device.deviceOwnership) { $device.deviceOwnership } else { "N/A" }
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "All Entra ID Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching Entra ID devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching Entra ID devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
             }
         }
     })
