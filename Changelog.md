@@ -1,4 +1,4 @@
-## Version 0.2 - TBD
+## Version 0.2 - 6/20/2025
 
 - **Improved Bulk Offboarding**: Removed individual device confirmation dialogs when offboarding multiple devices (Issue #28)
 - **Offboarding Summary**: Added a comprehensive summary dialog that shows results for all devices after bulk offboarding
