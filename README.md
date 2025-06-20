@@ -66,18 +66,12 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 
 ```powershell
 # Install from PowerShell Gallery
-Install-PSResource DeviceOffboardingManager
+Install-Script DeviceOffboardingManager
 ```
 
 ```powershell
 # Open a new PowerShell 7 session to run the script with
 DeviceOffboardingManager
-```
-
-If you encounter any issues during installation, try reinstalling:
-
-```powershell
-Install-PSResource DeviceOffboardingManager -Reinstall
 ```
 
 ### Option 2: Manual Installation
@@ -94,7 +88,7 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 
 ```powershell
 # Restart the PowerShell Session after installing the new version
-Update-PSResource DeviceOffboardingManager
+Install-Script DeviceOffboardingManager -Force
 ```
 
 ## 🎯 Features
