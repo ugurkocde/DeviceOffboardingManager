@@ -1060,7 +1060,16 @@ function Get-GraphPagedResults {
 
                 <!-- Middle Row - Stale Devices -->
                 <UniformGrid Grid.Row="1" Rows="1" Margin="20,10,20,10">
-                    <Border Background="#1B2A47" Margin="0,0,10,0" CornerRadius="8">
+                    <Border x:Name="StaleDevices30Card" Background="#1B2A47" Margin="0,0,10,0" CornerRadius="8" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1097,7 +1106,16 @@ function Get-GraphPagedResults {
                         </Grid>
                     </Border>
 
-                    <Border Background="#1B2A47" Margin="10,0" CornerRadius="8">
+                    <Border x:Name="StaleDevices90Card" Background="#1B2A47" Margin="10,0" CornerRadius="8" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1134,7 +1152,16 @@ function Get-GraphPagedResults {
                         </Grid>
                     </Border>
 
-                    <Border Background="#1B2A47" Margin="10,0,0,0" CornerRadius="8">
+                    <Border x:Name="StaleDevices180Card" Background="#1B2A47" Margin="10,0,0,0" CornerRadius="8" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1181,7 +1208,16 @@ function Get-GraphPagedResults {
                     </Grid.ColumnDefinitions>
 
                     <!-- Personal Devices -->
-                    <Border Grid.Column="0" Background="#1B2A47" Margin="0,0,10,0" CornerRadius="8" Height="220">
+                    <Border x:Name="PersonalDevicesCard" Grid.Column="0" Background="#1B2A47" Margin="0,0,10,0" CornerRadius="8" Height="220" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1220,7 +1256,16 @@ function Get-GraphPagedResults {
                     </Border>
 
                     <!-- Corporate Devices -->
-                    <Border Grid.Column="1" Background="#1B2A47" Margin="10,0" CornerRadius="8" Height="220">
+                    <Border x:Name="CorporateDevicesCard" Grid.Column="1" Background="#1B2A47" Margin="10,0" CornerRadius="8" Height="220" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
                         <Grid Margin="20">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
@@ -1472,6 +1517,8 @@ function Get-GraphPagedResults {
                 <Grid Grid.Row="5">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
                     <!-- Left Side -->
@@ -1510,6 +1557,40 @@ function Get-GraphPagedResults {
                                                     <Setter Property="Background" Value="#FCA5A5"/>
                                                 </Trigger>
                                             </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    
+                    <!-- Export Button -->
+                    <Button x:Name="ExportSearchResultsButton"
+                            Content="Export Results"
+                            Grid.Column="1"
+                            Height="40"
+                            Padding="20,0"
+                            Background="#0078D4"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Margin="0,0,8,0">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="6">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"/>
+                                            </Border>
                                         </ControlTemplate>
                                     </Setter.Value>
                                 </Setter>
@@ -1635,10 +1716,14 @@ function Get-GraphPagedResults {
                         <RowDefinition Height="*"/>     <!-- DataGrid -->
                     </Grid.RowDefinitions>
                     <!-- Header with Back Button -->
-                    <StackPanel Grid.Row="0"
-                              Orientation="Horizontal"
-                              Margin="20,0,20,10">
-                        <Button x:Name="BackToPlaybooksButton"
+                    <Grid Grid.Row="0" Margin="20,0,20,10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0"
+                                x:Name="BackToPlaybooksButton"
                                 Content="← Back to Playbooks"
                                 Height="32"
                                 Padding="12,0"
@@ -1651,7 +1736,21 @@ function Get-GraphPagedResults {
                                 </Style>
                             </Button.Resources>
                         </Button>
-                    </StackPanel>
+                        <Button Grid.Column="2"
+                                x:Name="ExportPlaybookResultsButton"
+                                Content="Export to CSV"
+                                Height="32"
+                                Padding="12,0"
+                                Background="#0078D4"
+                                Foreground="White"
+                                BorderThickness="0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
                     <!-- Results Header -->
                     <TextBlock Grid.Row="1"
                               x:Name="PlaybookResultsHeader"
@@ -2530,6 +2629,54 @@ function Write-Log {
     Add-Content -Path $script:LogFilePath -Value $logMessage
 }
 
+function Export-DeviceListToCSV {
+    param(
+        [Parameter(Mandatory = $true)]
+        [array]$DeviceList,
+        [Parameter(Mandatory = $true)]
+        [string]$DefaultFileName
+    )
+    
+    try {
+        # Create SaveFileDialog
+        $saveFileDialog = New-Object System.Windows.Forms.SaveFileDialog
+        $saveFileDialog.Filter = "CSV Files (*.csv)|*.csv|All Files (*.*)|*.*"
+        $saveFileDialog.DefaultExt = "csv"
+        $saveFileDialog.FileName = $DefaultFileName
+        $saveFileDialog.Title = "Export Device List"
+        
+        if ($saveFileDialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+            $exportPath = $saveFileDialog.FileName
+            
+            # Export to CSV
+            $DeviceList | Export-Csv -Path $exportPath -NoTypeInformation -Force
+            
+            Write-Log "Exported $($DeviceList.Count) devices to: $exportPath"
+            
+            # Show success message
+            [System.Windows.MessageBox]::Show(
+                "Successfully exported $($DeviceList.Count) devices to:`n$exportPath",
+                "Export Successful",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information
+            )
+            
+            return $true
+        }
+        return $false
+    }
+    catch {
+        Write-Log "Error exporting device list: $_"
+        [System.Windows.MessageBox]::Show(
+            "Error exporting device list: $_",
+            "Export Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return $false
+    }
+}
+
 # Connect to Controls
 $SearchButton = $Window.FindName("SearchButton")
 $OffboardButton = $Window.FindName("OffboardButton")
@@ -3101,26 +3248,37 @@ $OffboardButton.Add_Click({
                 if ($intuneDevice) {
                     # Check OS type and get appropriate encryption key
                     if ($intuneDevice.operatingSystem -eq "Windows") {
-                        # First get the key ID using Azure AD device ID
-                        $uri = "https://graph.microsoft.com/beta/informationProtection/bitlocker/recoveryKeys?`$filter=deviceId eq '$($intuneDevice.azureADDeviceId)'"
-                        $keyIdResponse = Get-GraphPagedResults -Uri $uri
-                        
-                        if ($keyIdResponse.Count -gt 0) {
-                            # Get the actual key using the key ID from the first recovery key
-                            $recoveryKeyId = $keyIdResponse.id
-                            $uri = "https://graph.microsoft.com/beta/informationProtection/bitlocker/recoveryKeys/$($recoveryKeyId)?`$select=key"
-                            $recoveryKeyData = Invoke-MgGraphRequest -Uri $uri -Method GET
+                        try {
+                            # First get the key ID using Azure AD device ID
+                            $uri = "https://graph.microsoft.com/beta/informationProtection/bitlocker/recoveryKeys?`$filter=deviceId eq '$($intuneDevice.azureADDeviceId)'"
+                            $keyIdResponse = Get-GraphPagedResults -Uri $uri
                             
-                            if ($recoveryKeyData.key) {
-                                $keyInfo.KeyText = "BitLocker Recovery Key: $($recoveryKeyData.key)"
-                                $keyInfo.Key = $recoveryKeyData.key
+                            if ($keyIdResponse.Count -gt 0) {
+                                # Get the actual key using the key ID from the first recovery key
+                                $recoveryKeyId = $keyIdResponse.id
+                                $uri = "https://graph.microsoft.com/beta/informationProtection/bitlocker/recoveryKeys/$($recoveryKeyId)?`$select=key"
+                                $recoveryKeyData = Invoke-MgGraphRequest -Uri $uri -Method GET
+                                
+                                if ($recoveryKeyData.key) {
+                                    $keyInfo.KeyText = "BitLocker Recovery Key: $($recoveryKeyData.key)"
+                                    $keyInfo.Key = $recoveryKeyData.key
+                                }
+                                else {
+                                    $keyInfo.KeyText = "Error retrieving BitLocker key details."
+                                }
                             }
                             else {
-                                $keyInfo.KeyText = "Error retrieving BitLocker key details."
+                                $keyInfo.KeyText = "No BitLocker recovery key found for this device."
                             }
                         }
-                        else {
-                            $keyInfo.KeyText = "No BitLocker recovery key found for this device."
+                        catch {
+                            Write-Log "Error retrieving BitLocker key: $_"
+                            if ($_.Exception.Response.StatusCode -eq 'Forbidden') {
+                                $keyInfo.KeyText = "BitLocker key access denied. Ensure BitlockerKey.Read.All permission is granted."
+                            }
+                            else {
+                                $keyInfo.KeyText = "Error retrieving BitLocker key. Check logs for details."
+                            }
                         }
                     }
                     elseif ($intuneDevice.operatingSystem -eq "macOS") {
@@ -3404,6 +3562,42 @@ $OffboardButton.Add_Click({
             [System.Windows.MessageBox]::Show("Critical error in offboarding operation. Please check the logs for details.")
         }
     })
+
+# Export search results button
+$ExportSearchResultsButton = $Window.FindName('ExportSearchResultsButton')
+$ExportSearchResultsButton.Add_Click({
+        $results = $SearchResultsDataGrid.ItemsSource
+        if ($results -and $results.Count -gt 0) {
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $fileName = "Device_Search_Results_${timestamp}.csv"
+            
+            # Create a clean export list without UI-specific properties
+            $exportData = @()
+            foreach ($device in $results) {
+                $exportData += [PSCustomObject]@{
+                    DeviceName = $device.DeviceName
+                    SerialNumber = $device.SerialNumber
+                    LastContact = $device.LastContact
+                    OperatingSystem = $device.OperatingSystem
+                    OSVersion = $device.OSVersion
+                    PrimaryUser = $device.PrimaryUser
+                    IntuneStatus = $device.IntuneStatus
+                    AutopilotStatus = $device.AutopilotStatus
+                    EntraIDStatus = $device.EntraIDStatus
+                }
+            }
+            
+            Export-DeviceListToCSV -DeviceList $exportData -DefaultFileName $fileName
+        }
+        else {
+            [System.Windows.MessageBox]::Show(
+                "No search results to export.",
+                "Export",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information
+            )
+        }
+    })
     
 function Show-OffboardingSummary {
     param(
@@ -3636,6 +3830,111 @@ function Show-OffboardingSummary {
     $summaryWindow.ShowDialog() | Out-Null
 }
 
+function Show-DashboardCardResults {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Title,
+        [Parameter(Mandatory = $true)]
+        [array]$DeviceList
+    )
+    
+    [xml]$dashboardResultsXaml = @'
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+        Title="Dashboard Results" Height="600" Width="900" WindowStartupLocation="CenterScreen" Background="#F8F9FA">
+    <Border Background="White" CornerRadius="8" Margin="16">
+        <DockPanel Margin="24">
+            <!-- Header -->
+            <Grid DockPanel.Dock="Top" Margin="0,0,0,24">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="TitleText" Text="Dashboard Results" FontSize="24" FontWeight="SemiBold" Foreground="#1A202C"/>
+                    <TextBlock x:Name="CountText" Text="0 devices found" Foreground="#4A5568" FontSize="14" Margin="0,8,0,0"/>
+                </StackPanel>
+                <Button Grid.Column="1"
+                        x:Name="ExportButton"
+                        Content="Export to CSV"
+                        Height="36"
+                        Padding="16,0"
+                        Background="#0078D4"
+                        Foreground="White"
+                        BorderThickness="0"
+                        VerticalAlignment="Center">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="4"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </Grid>
+
+            <!-- Close Button -->
+            <Button x:Name="CloseButton" DockPanel.Dock="Bottom" Content="Close" Width="120" Height="40" 
+                    Background="#F0F0F0" Foreground="#2D3748" BorderThickness="0" HorizontalAlignment="Right" Margin="0,24,0,0"/>
+
+            <!-- Main Content DataGrid -->
+            <DataGrid x:Name="ResultsDataGrid"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="All"
+                      AlternatingRowBackground="#F8F8F8"
+                      CanUserResizeRows="False"
+                      CanUserReorderColumns="False"
+                      SelectionMode="Extended"
+                      SelectionUnit="FullRow">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Device Name" Binding="{Binding DeviceName}" Width="*" MinWidth="150"/>
+                    <DataGridTextColumn Header="Serial Number" Binding="{Binding SerialNumber}" Width="150"/>
+                    <DataGridTextColumn Header="Last Contact" Binding="{Binding LastContact}" Width="150"/>
+                    <DataGridTextColumn Header="Operating System" Binding="{Binding OperatingSystem}" Width="120"/>
+                    <DataGridTextColumn Header="OS Version" Binding="{Binding OSVersion}" Width="100"/>
+                    <DataGridTextColumn Header="Primary User" Binding="{Binding PrimaryUser}" Width="150"/>
+                    <DataGridTextColumn Header="Ownership" Binding="{Binding Ownership}" Width="100"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </DockPanel>
+    </Border>
+</Window>
+'@
+    
+    $reader = (New-Object System.Xml.XmlNodeReader $dashboardResultsXaml)
+    $dashboardWindow = [Windows.Markup.XamlReader]::Load($reader)
+    
+    # Get controls
+    $titleText = $dashboardWindow.FindName('TitleText')
+    $countText = $dashboardWindow.FindName('CountText')
+    $resultsDataGrid = $dashboardWindow.FindName('ResultsDataGrid')
+    $exportButton = $dashboardWindow.FindName('ExportButton')
+    $closeButton = $dashboardWindow.FindName('CloseButton')
+    
+    # Set title and count
+    $titleText.Text = $Title
+    $countText.Text = "$($DeviceList.Count) devices found"
+    
+    # Set data
+    $resultsDataGrid.ItemsSource = $DeviceList
+    
+    # Export button handler
+    $exportButton.Add_Click({
+        if ($DeviceList.Count -gt 0) {
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $fileName = "Dashboard_${Title.Replace(' ', '_')}_${timestamp}.csv"
+            Export-DeviceListToCSV -DeviceList $DeviceList -DefaultFileName $fileName
+        }
+    })
+    
+    # Close button handler
+    $closeButton.Add_Click({
+        $dashboardWindow.Close()
+    })
+    
+    # Show dialog
+    $dashboardWindow.ShowDialog() | Out-Null
+}
+
 function Show-PrerequisitesDialog {
     $reader = (New-Object System.Xml.XmlNodeReader $prerequisitesModalXaml)
     $prereqWindow = [Windows.Markup.XamlReader]::Load($reader)
@@ -3648,8 +3947,8 @@ function Show-PrerequisitesDialog {
     # Add required permissions with checkboxes
     $requiredPermissions = @(
         @{
-            Name        = "Device.Read.All"
-            Description = "Read all device properties from Entra ID"
+            Name        = "Device.ReadWrite.All"
+            Description = "Read and delete device objects from Entra ID"
         },
         @{
             Name        = "DeviceManagementApps.Read.All"
@@ -3674,6 +3973,10 @@ function Show-PrerequisitesDialog {
         @{
             Name        = "User.Read.All"
             Description = "Read user profile information and check group memberships"
+        },
+        @{
+            Name        = "BitlockerKey.Read.All"
+            Description = "Read BitLocker recovery keys for Windows devices"
         }
     )
 
@@ -4689,6 +4992,180 @@ $BackToPlaybooksButton.Add_Click({
         $Window.FindName('PlaybooksScrollViewer').Visibility = 'Visible'
         $PlaybookResultsGrid.Visibility = 'Collapsed'
         $PlaybookResultsDataGrid.ItemsSource = $null
+    })
+
+# Connect export playbook results button
+$ExportPlaybookResultsButton = $Window.FindName('ExportPlaybookResultsButton')
+$ExportPlaybookResultsButton.Add_Click({
+        $results = $PlaybookResultsDataGrid.ItemsSource
+        if ($results -and $results.Count -gt 0) {
+            $playbookName = $Window.FindName('PlaybookResultsHeader').Text
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $fileName = "Playbook_Results_${timestamp}.csv"
+            Export-DeviceListToCSV -DeviceList $results -DefaultFileName $fileName
+        }
+        else {
+            [System.Windows.MessageBox]::Show(
+                "No results to export.",
+                "Export",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information
+            )
+        }
+    })
+
+# Connect dashboard card click handlers
+$StaleDevices30Card = $Window.FindName('StaleDevices30Card')
+$StaleDevices30Card.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching 30-day stale devices..."
+                $thirtyDaysAgo = (Get-Date).AddDays(-30)
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($thirtyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
+                $staleDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $staleDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.deviceName
+                        SerialNumber = $device.serialNumber
+                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        OperatingSystem = $device.operatingSystem
+                        OSVersion = $device.osVersion
+                        PrimaryUser = $device.userPrincipalName
+                        Ownership = $device.managedDeviceOwnerType
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "30 Day Stale Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching stale devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching stale devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
+$StaleDevices90Card = $Window.FindName('StaleDevices90Card')
+$StaleDevices90Card.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching 90-day stale devices..."
+                $ninetyDaysAgo = (Get-Date).AddDays(-90)
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($ninetyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
+                $staleDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $staleDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.deviceName
+                        SerialNumber = $device.serialNumber
+                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        OperatingSystem = $device.operatingSystem
+                        OSVersion = $device.osVersion
+                        PrimaryUser = $device.userPrincipalName
+                        Ownership = $device.managedDeviceOwnerType
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "90 Day Stale Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching stale devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching stale devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
+$StaleDevices180Card = $Window.FindName('StaleDevices180Card')
+$StaleDevices180Card.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching 180-day stale devices..."
+                $hundredEightyDaysAgo = (Get-Date).AddDays(-180)
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($hundredEightyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
+                $staleDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $staleDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.deviceName
+                        SerialNumber = $device.serialNumber
+                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        OperatingSystem = $device.operatingSystem
+                        OSVersion = $device.osVersion
+                        PrimaryUser = $device.userPrincipalName
+                        Ownership = $device.managedDeviceOwnerType
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "180 Day Stale Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching stale devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching stale devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
+$PersonalDevicesCard = $Window.FindName('PersonalDevicesCard')
+$PersonalDevicesCard.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching personal devices..."
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=managedDeviceOwnerType eq 'personal'"
+                $personalDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $personalDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.deviceName
+                        SerialNumber = $device.serialNumber
+                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        OperatingSystem = $device.operatingSystem
+                        OSVersion = $device.osVersion
+                        PrimaryUser = $device.userPrincipalName
+                        Ownership = "Personal"
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "Personal Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching personal devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching personal devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
+$CorporateDevicesCard = $Window.FindName('CorporateDevicesCard')
+$CorporateDevicesCard.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching corporate devices..."
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=managedDeviceOwnerType eq 'company'"
+                $corporateDevices = Get-GraphPagedResults -Uri $uri
+                
+                $deviceList = @()
+                foreach ($device in $corporateDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName = $device.deviceName
+                        SerialNumber = $device.serialNumber
+                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        OperatingSystem = $device.operatingSystem
+                        OSVersion = $device.osVersion
+                        PrimaryUser = $device.userPrincipalName
+                        Ownership = "Corporate"
+                    }
+                }
+                
+                Show-DashboardCardResults -Title "Corporate Devices" -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching corporate devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching corporate devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
     })
 
 # Connect changelog button

@@ -8,6 +8,17 @@
 - **Enabled Additional Playbooks**: Enabled Intune Not in Autopilot, Corporate Devices, Personal Devices, and Stale Device Report playbooks
 - **Selective Service Offboarding**: Added checkboxes to select/deselect specific services (Entra ID, Intune, Autopilot) during offboarding (Issue #25)
 - **Service Selection Validation**: Added validation to ensure at least one service is selected before offboarding
+- **Fixed BitLocker Permission Documentation**: Added missing BitlockerKey.Read.All permission to prerequisites (Issue #24)
+- **Improved BitLocker Error Handling**: Added specific error messages when BitLocker permissions are missing
+- **Fixed Entra ID Permission**: Updated Device.Read.All to Device.ReadWrite.All to enable device deletion from Entra ID (Issue #23)
+- **Export to CSV Feature**: Added export functionality for device lists (Issue #20)
+  - Export search results to CSV
+  - Export playbook results to CSV
+  - Includes all device details in a clean format
+- **Clickable Dashboard Cards**: Made dashboard cards interactive with export functionality
+  - Click on any stale device card (30/90/180 days) to view and export the device list
+  - Click on personal or corporate device cards to view and export those lists
+  - Each card shows a modal with the device details and export button
 
 ## Version 0.1.1 - 1/18/2025
 
