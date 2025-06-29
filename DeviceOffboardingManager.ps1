@@ -2704,6 +2704,206 @@ function Export-DeviceListToCSV {
     }
 }
 
+function Invoke-DeviceSearch {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string[]]$SearchTexts,
+        [Parameter(Mandatory = $true)]
+        [string]$SearchOption
+    )
+    
+    try {
+        $searchResults = New-Object 'System.Collections.Generic.List[DeviceObject]'
+        $AADCount = 0
+        $IntuneCount = 0
+        $AutopilotCount = 0
+
+        foreach ($SearchText in $SearchTexts) {
+            # Trim whitespace and newlines
+            $SearchText = $SearchText.Trim()
+            
+            if ([string]::IsNullOrWhiteSpace($SearchText)) {
+                continue
+            }
+            
+            if ($SearchOption -eq "Devicename") {
+                # Get devices from all services independently
+                $uri = "https://graph.microsoft.com/v1.0/devices?`$filter=displayName eq '$SearchText'"
+                $AADDevices = Get-GraphPagedResults -Uri $uri
+                
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=deviceName eq '$SearchText'"
+                $IntuneDevices = Get-GraphPagedResults -Uri $uri
+                
+                # Search Autopilot devices by displayName
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(displayName,'$SearchText')"
+                $AutopilotDevices = Get-GraphPagedResults -Uri $uri
+
+                # Process Entra ID devices
+                if ($AADDevices) {
+                    foreach ($AADDevice in $AADDevices) {
+                        $matchingIntuneDevice = $IntuneDevices | Where-Object { $_.deviceName -eq $AADDevice.displayName } | Select-Object -First 1
+                        $matchingAutopilotDevice = $AutopilotDevices | Where-Object { $_.displayName -eq $AADDevice.displayName } | Select-Object -First 1
+                        
+                        # If no Autopilot match by displayName and we have Intune device with serial, try serial number
+                        if (-not $matchingAutopilotDevice -and $matchingIntuneDevice -and $matchingIntuneDevice.serialNumber) {
+                            $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$($matchingIntuneDevice.serialNumber)')"
+                            $matchingAutopilotDevice = (Get-GraphPagedResults -Uri $uri) | Select-Object -First 1
+                        }
+
+                        $CombinedDevice = New-Object DeviceObject
+                        $CombinedDevice.IsSelected = $false
+                        $CombinedDevice.DeviceName = $AADDevice.displayName
+                        $CombinedDevice.SerialNumber = $matchingIntuneDevice?.serialNumber ?? $matchingAutopilotDevice?.serialNumber
+                        $CombinedDevice.OperatingSystem = $AADDevice.operatingSystem
+                        $CombinedDevice.PrimaryUser = $matchingIntuneDevice?.userDisplayName
+                        $CombinedDevice.AzureADLastContact = if ($AADDevice.approximateLastSignInDateTime) { [DateTime]$AADDevice.approximateLastSignInDateTime } else { $null }
+                        $CombinedDevice.IntuneLastContact = if ($matchingIntuneDevice.lastSyncDateTime) { [DateTime]$matchingIntuneDevice.lastSyncDateTime } else { $null }
+                        $CombinedDevice.AutopilotLastContact = if ($matchingAutopilotDevice.lastContactedDateTime) { [DateTime]$matchingAutopilotDevice.lastContactedDateTime } else { $null }
+                        
+                        $searchResults.Add($CombinedDevice)
+                        $AADCount++
+                        if ($matchingIntuneDevice) { $IntuneCount++ }
+                        if ($matchingAutopilotDevice) { $AutopilotCount++ }
+                    }
+                }
+                
+                # Process Intune devices not in Entra ID
+                if ($IntuneDevices) {
+                    foreach ($IntuneDevice in $IntuneDevices) {
+                        # Skip if we already added this device through Entra ID
+                        if ($searchResults | Where-Object { $_.DeviceName -eq $IntuneDevice.deviceName }) {
+                            continue
+                        }
+                        
+                        # Check if device is in Autopilot
+                        $matchingAutopilotDevice = $AutopilotDevices | Where-Object { $_.displayName -eq $IntuneDevice.deviceName } | Select-Object -First 1
+                        
+                        # If no match by displayName and we have serial number, try serial number
+                        if (-not $matchingAutopilotDevice -and $IntuneDevice.serialNumber) {
+                            $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$($IntuneDevice.serialNumber)')"
+                            $matchingAutopilotDevice = (Get-GraphPagedResults -Uri $uri) | Select-Object -First 1
+                        }
+
+                        $CombinedDevice = New-Object DeviceObject
+                        $CombinedDevice.IsSelected = $false
+                        $CombinedDevice.DeviceName = $IntuneDevice.deviceName
+                        $CombinedDevice.SerialNumber = $IntuneDevice.serialNumber ?? $matchingAutopilotDevice?.serialNumber
+                        $CombinedDevice.OperatingSystem = $IntuneDevice.operatingSystem
+                        $CombinedDevice.PrimaryUser = $IntuneDevice.userDisplayName
+                        $CombinedDevice.IntuneLastContact = if ($IntuneDevice.lastSyncDateTime) { [DateTime]$IntuneDevice.lastSyncDateTime } else { $null }
+                        $CombinedDevice.AutopilotLastContact = if ($matchingAutopilotDevice.lastContactedDateTime) { [DateTime]$matchingAutopilotDevice.lastContactedDateTime } else { $null }
+                        
+                        $searchResults.Add($CombinedDevice)
+                        $IntuneCount++
+                        if ($matchingAutopilotDevice) { $AutopilotCount++ }
+                    }
+                }
+                
+                # Process Autopilot devices not in Entra ID or Intune
+                if ($AutopilotDevices) {
+                    foreach ($AutopilotDevice in $AutopilotDevices) {
+                        # Skip if we already added this device
+                        if ($searchResults | Where-Object { 
+                            $_.DeviceName -eq $AutopilotDevice.displayName -or 
+                            ($_.SerialNumber -and $_.SerialNumber -eq $AutopilotDevice.serialNumber)
+                        }) {
+                            continue
+                        }
+
+                        $CombinedDevice = New-Object DeviceObject
+                        $CombinedDevice.IsSelected = $false
+                        $CombinedDevice.DeviceName = $AutopilotDevice.displayName
+                        $CombinedDevice.SerialNumber = $AutopilotDevice.serialNumber
+                        $CombinedDevice.AutopilotLastContact = if ($AutopilotDevice.lastContactedDateTime) { [DateTime]$AutopilotDevice.lastContactedDateTime } else { $null }
+                        
+                        $searchResults.Add($CombinedDevice)
+                        $AutopilotCount++
+                    }
+                }
+            }
+            elseif ($SearchOption -eq "Serialnumber") {
+                # Get devices from all services independently
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=serialNumber eq '$SearchText'"
+                $IntuneDevices = Get-GraphPagedResults -Uri $uri
+                
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$SearchText')"
+                $AutopilotDevices = Get-GraphPagedResults -Uri $uri
+
+                if ($IntuneDevices -or $AutopilotDevices) {
+                    # If device is in Intune
+                    if ($IntuneDevices) {
+                        foreach ($IntuneDevice in $IntuneDevices) {
+                            # Get Entra ID Device
+                            $uri = "https://graph.microsoft.com/v1.0/devices?`$filter=displayName eq '$($IntuneDevice.deviceName)'"
+                            $AADDevice = (Get-GraphPagedResults -Uri $uri) | Select-Object -First 1
+                            
+                            # Get Autopilot Device
+                            $matchingAutopilotDevice = $AutopilotDevices | Where-Object { $_.serialNumber -eq $IntuneDevice.serialNumber } | Select-Object -First 1
+
+                            $CombinedDevice = New-Object DeviceObject
+                            $CombinedDevice.IsSelected = $false
+                            $CombinedDevice.DeviceName = $IntuneDevice.deviceName
+                            $CombinedDevice.SerialNumber = $IntuneDevice.serialNumber
+                            $CombinedDevice.OperatingSystem = $AADDevice?.operatingSystem ?? $IntuneDevice.operatingSystem
+                            $CombinedDevice.PrimaryUser = $IntuneDevice.userDisplayName
+                            $CombinedDevice.AzureADLastContact = if ($AADDevice.approximateLastSignInDateTime) { [DateTime]$AADDevice.approximateLastSignInDateTime } else { $null }
+                            $CombinedDevice.IntuneLastContact = if ($IntuneDevice.lastSyncDateTime) { [DateTime]$IntuneDevice.lastSyncDateTime } else { $null }
+                            $CombinedDevice.AutopilotLastContact = if ($matchingAutopilotDevice.lastContactedDateTime) { [DateTime]$matchingAutopilotDevice.lastContactedDateTime } else { $null }
+                            
+                            $searchResults.Add($CombinedDevice)
+                            if ($AADDevice) { $AADCount++ }
+                            $IntuneCount++
+                            if ($matchingAutopilotDevice) { $AutopilotCount++ }
+                        }
+                    }
+                    
+                    # If device is in Autopilot but not in Intune
+                    if ($AutopilotDevices) {
+                        foreach ($AutopilotDevice in $AutopilotDevices) {
+                            # Skip if we already added this device through Intune
+                            if ($searchResults | Where-Object { $_.SerialNumber -eq $AutopilotDevice.serialNumber }) {
+                                continue
+                            }
+
+                            $CombinedDevice = New-Object DeviceObject
+                            $CombinedDevice.IsSelected = $false
+                            $CombinedDevice.DeviceName = $AutopilotDevice.displayName
+                            $CombinedDevice.SerialNumber = $AutopilotDevice.serialNumber
+                            $CombinedDevice.AutopilotLastContact = if ($AutopilotDevice.lastContactedDateTime) { [DateTime]$AutopilotDevice.lastContactedDateTime } else { $null }
+                            
+                            $searchResults.Add($CombinedDevice)
+                            $AutopilotCount++
+                        }
+                    }
+                }
+            }
+        }
+        
+        # Update UI status
+        $Window.FindName('intune_status').Text = "Intune: $IntuneCount device found"
+        $Window.FindName('intune_status').Foreground = if ($IntuneCount -gt 0) { '#4299E1' } else { '#FC8181' }
+        $Window.FindName('autopilot_status').Text = "Autopilot: $AutopilotCount device found"
+        $Window.FindName('autopilot_status').Foreground = if ($AutopilotCount -gt 0) { '#48BB78' } else { '#FC8181' }
+        $Window.FindName('aad_status').Text = "Entra ID: $AADCount device found"
+        $Window.FindName('aad_status').Foreground = if ($AADCount -gt 0) { '#ED64A6' } else { '#FC8181' }
+
+        if ($searchResults.Count -gt 0) {
+            $SearchResultsDataGrid.ItemsSource = $searchResults
+        }
+        else {
+            $SearchResultsDataGrid.ItemsSource = $null
+            [System.Windows.MessageBox]::Show("No devices found matching the search criteria.")
+        }
+        
+        # Ensure Offboard button is disabled until selection
+        $OffboardButton.IsEnabled = $false
+    }
+    catch {
+        Write-Log "Error occurred during search operation. Exception: $_"
+        [System.Windows.MessageBox]::Show("Error in search operation. Please ensure the Serialnumber or Devicename is valid.")
+    }
+}
+
 # Connect to Controls
 $SearchButton = $Window.FindName("SearchButton")
 $OffboardButton = $Window.FindName("OffboardButton")
@@ -2979,158 +3179,20 @@ $SearchButton.Add_Click({
         }
 
         try {
-            $SearchTexts = $SearchInputText.Text -split ', ' | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-            Write-Log "Searching for devices: $SearchTexts"
-            $searchOption = $Dropdown.SelectedItem
-    
-            $searchResults = New-Object 'System.Collections.Generic.List[DeviceObject]'
-            $AADCount = 0
-            $IntuneCount = 0
-            $AutopilotCount = 0
-    
-            foreach ($SearchText in $SearchTexts) {
-                if ($searchOption -eq "Devicename") {
-                    # Get devices from all services independently
-                    $uri = "https://graph.microsoft.com/v1.0/devices?`$filter=displayName eq '$SearchText'"
-                    $AADDevices = Get-GraphPagedResults -Uri $uri
-                    
-                    $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=deviceName eq '$SearchText'"
-                    $IntuneDevices = Get-GraphPagedResults -Uri $uri
-
-                    # Create a device object for each found device
-                    if ($AADDevices -or $IntuneDevices) {
-                        # If device is in Entra ID
-                        if ($AADDevices) {
-                            foreach ($AADDevice in $AADDevices) {
-                                $matchingIntuneDevice = $IntuneDevices | Where-Object { $_.deviceName -eq $AADDevice.displayName } | Select-Object -First 1
-                                
-                                # Get Autopilot Device if we have a serial number from Intune
-                                $AutopilotDevice = $null
-                                if ($matchingIntuneDevice) {
-                                    $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$($matchingIntuneDevice.serialNumber)')"
-                                    $AutopilotDevice = (Get-GraphPagedResults -Uri $uri) | Select-Object -First 1
-                                }
-
-                                $CombinedDevice = New-Object DeviceObject
-                                $CombinedDevice.IsSelected = $false
-                                $CombinedDevice.DeviceName = $AADDevice.displayName
-                                $CombinedDevice.SerialNumber = $matchingIntuneDevice?.serialNumber
-                                $CombinedDevice.OperatingSystem = $AADDevice.operatingSystem
-                                $CombinedDevice.PrimaryUser = $matchingIntuneDevice?.userDisplayName
-                                $CombinedDevice.AzureADLastContact = if ($AADDevice.approximateLastSignInDateTime) { [DateTime]$AADDevice.approximateLastSignInDateTime } else { $null }
-                                $CombinedDevice.IntuneLastContact = if ($matchingIntuneDevice.lastSyncDateTime) { [DateTime]$matchingIntuneDevice.lastSyncDateTime } else { $null }
-                                $CombinedDevice.AutopilotLastContact = if ($AutopilotDevice.lastContactedDateTime) { [DateTime]$AutopilotDevice.lastContactedDateTime } else { $null }
-                                
-                                $searchResults.Add($CombinedDevice)
-                                $AADCount++
-                                if ($matchingIntuneDevice) { $IntuneCount++ }
-                                if ($AutopilotDevice) { $AutopilotCount++ }
-                            }
-                        }
-                        
-                        # If device is in Intune but not in Entra ID
-                        if ($IntuneDevices) {
-                            foreach ($IntuneDevice in $IntuneDevices) {
-                                # Skip if we already added this device through Entra ID
-                                if ($searchResults | Where-Object { $_.DeviceName -eq $IntuneDevice.deviceName }) {
-                                    continue
-                                }
-                                
-                                # Get Autopilot Device
-                                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$($IntuneDevice.serialNumber)')"
-                                $AutopilotDevice = (Get-GraphPagedResults -Uri $uri) | Select-Object -First 1
-
-                                $CombinedDevice = New-Object DeviceObject
-                                $CombinedDevice.IsSelected = $false
-                                $CombinedDevice.DeviceName = $IntuneDevice.deviceName
-                                $CombinedDevice.SerialNumber = $IntuneDevice.serialNumber
-                                $CombinedDevice.OperatingSystem = $IntuneDevice.operatingSystem
-                                $CombinedDevice.PrimaryUser = $IntuneDevice.userDisplayName
-                                $CombinedDevice.IntuneLastContact = if ($IntuneDevice.lastSyncDateTime) { [DateTime]$IntuneDevice.lastSyncDateTime } else { $null }
-                                $CombinedDevice.AutopilotLastContact = if ($AutopilotDevice.lastContactedDateTime) { [DateTime]$AutopilotDevice.lastContactedDateTime } else { $null }
-                                
-                                $searchResults.Add($CombinedDevice)
-                                $IntuneCount++
-                                if ($AutopilotDevice) { $AutopilotCount++ }
-                            }
-                        }
-                    }
-                }
-                elseif ($searchOption -eq "Serialnumber") {
-                    # Get devices from all services independently
-                    $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=serialNumber eq '$SearchText'"
-                    $IntuneDevices = Get-GraphPagedResults -Uri $uri
-                    
-                    $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$SearchText')"
-                    $AutopilotDevices = Get-GraphPagedResults -Uri $uri
-
-                    if ($IntuneDevices -or $AutopilotDevices) {
-                        # If device is in Intune
-                        if ($IntuneDevices) {
-                            foreach ($IntuneDevice in $IntuneDevices) {
-                                # Get Entra ID Device
-                                $uri = "https://graph.microsoft.com/v1.0/devices?`$filter=displayName eq '$($IntuneDevice.deviceName)'"
-                                $AADDevice = (Get-GraphPagedResults -Uri $uri) | Select-Object -First 1
-                                
-                                # Get Autopilot Device
-                                $matchingAutopilotDevice = $AutopilotDevices | Where-Object { $_.serialNumber -eq $IntuneDevice.serialNumber } | Select-Object -First 1
-
-                                $CombinedDevice = New-Object DeviceObject
-                                $CombinedDevice.IsSelected = $false
-                                $CombinedDevice.DeviceName = $IntuneDevice.deviceName
-                                $CombinedDevice.SerialNumber = $IntuneDevice.serialNumber
-                                $CombinedDevice.OperatingSystem = $AADDevice?.operatingSystem ?? $IntuneDevice.operatingSystem
-                                $CombinedDevice.PrimaryUser = $IntuneDevice.userDisplayName
-                                $CombinedDevice.AzureADLastContact = if ($AADDevice.approximateLastSignInDateTime) { [DateTime]$AADDevice.approximateLastSignInDateTime } else { $null }
-                                $CombinedDevice.IntuneLastContact = if ($IntuneDevice.lastSyncDateTime) { [DateTime]$IntuneDevice.lastSyncDateTime } else { $null }
-                                $CombinedDevice.AutopilotLastContact = if ($matchingAutopilotDevice.lastContactedDateTime) { [DateTime]$matchingAutopilotDevice.lastContactedDateTime } else { $null }
-                                
-                                $searchResults.Add($CombinedDevice)
-                                if ($AADDevice) { $AADCount++ }
-                                $IntuneCount++
-                                if ($matchingAutopilotDevice) { $AutopilotCount++ }
-                            }
-                        }
-                        
-                        # If device is in Autopilot but not in Intune
-                        if ($AutopilotDevices) {
-                            foreach ($AutopilotDevice in $AutopilotDevices) {
-                                # Skip if we already added this device through Intune
-                                if ($searchResults | Where-Object { $_.SerialNumber -eq $AutopilotDevice.serialNumber }) {
-                                    continue
-                                }
-
-                                $CombinedDevice = New-Object DeviceObject
-                                $CombinedDevice.IsSelected = $false
-                                $CombinedDevice.DeviceName = $AutopilotDevice.displayName
-                                $CombinedDevice.SerialNumber = $AutopilotDevice.serialNumber
-                                $CombinedDevice.AutopilotLastContact = $AutopilotDevice.lastContactedDateTime
-                                
-                                $searchResults.Add($CombinedDevice)
-                                $AutopilotCount++
-                            }
-                        }
-                    }
-                }
-            }
-    
-            $Window.FindName('intune_status').Text = "Intune: $IntuneCount device found"
-            $Window.FindName('intune_status').Foreground = if ($IntuneCount -gt 0) { '#4299E1' } else { '#FC8181' }
-            $Window.FindName('autopilot_status').Text = "Autopilot: $AutopilotCount device found"
-            $Window.FindName('autopilot_status').Foreground = if ($AutopilotCount -gt 0) { '#48BB78' } else { '#FC8181' }
-            $Window.FindName('aad_status').Text = "Entra ID: $AADCount device found"
-            $Window.FindName('aad_status').Foreground = if ($AADCount -gt 0) { '#ED64A6' } else { '#FC8181' }
-    
-            if ($searchResults.Count -gt 0) {
-                $SearchResultsDataGrid.ItemsSource = $searchResults
-            }
-            else {
-                $SearchResultsDataGrid.ItemsSource = $null
-                [System.Windows.MessageBox]::Show("No devices found matching the search criteria.")
+            # Trim the input and split by comma
+            $searchInput = $SearchInputText.Text.Trim()
+            $SearchTexts = $searchInput -split ', ' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+            
+            if ($SearchTexts.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("Please enter at least one device name or serial number.")
+                return
             }
             
-            # Ensure Offboard button is disabled until selection
-            $OffboardButton.IsEnabled = $false
+            Write-Log "Searching for devices: $SearchTexts"
+            $searchOption = $Dropdown.SelectedItem
+            
+            # Call the centralized search function
+            Invoke-DeviceSearch -SearchTexts $SearchTexts -SearchOption $searchOption
         }
         catch {
             Write-Log "Error occurred during search operation. Exception: $_"
@@ -3140,27 +3202,51 @@ $SearchButton.Add_Click({
     
         
 $bulk_import_button.Add_Click({
-        try {
+        if ($AuthenticateButton.IsEnabled) {
+            Write-Log "User is not connected to MS Graph. Attempted bulk import operation."
+            [System.Windows.MessageBox]::Show("You are not connected to MS Graph. Please connect first.")
+            return
+        }
 
+        try {
             $OpenFileDialog = New-Object System.Windows.Forms.OpenFileDialog
             $OpenFileDialog.filter = "CSV files (*.csv)|*.csv|TXT files (*.txt)|*.txt"
-            $OpenFileDialog.ShowDialog() | Out-Null
+            $dialogResult = $OpenFileDialog.ShowDialog()
+            
+            if ($dialogResult -eq [System.Windows.Forms.DialogResult]::OK) {
+                $filePath = $OpenFileDialog.FileName
 
-            $filePath = $OpenFileDialog.FileName
-
-            if (Test-Path $filePath) {
-
-                $devices = Get-Content -Path $filePath
-                $deviceNames = $devices
-
-                $deviceNamesString = $deviceNames -join ", "
-
-                $SearchInputText.Text = $deviceNamesString
-
+                if (Test-Path $filePath) {
+                    Write-Log "Importing devices from file: $filePath"
+                    
+                    # Read and process the file
+                    $devices = Get-Content -Path $filePath | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+                    
+                    if ($devices.Count -eq 0) {
+                        [System.Windows.MessageBox]::Show("The selected file is empty or contains only whitespace.")
+                        return
+                    }
+                    
+                    # Join device names for display
+                    $deviceNamesString = $devices -join ", "
+                    $SearchInputText.Text = $deviceNamesString
+                    
+                    Write-Log "Imported $($devices.Count) devices from file"
+                    
+                    # Get the selected search option
+                    $searchOption = $Dropdown.SelectedItem
+                    
+                    # Automatically trigger the search
+                    Write-Log "Automatically triggering search for imported devices"
+                    Invoke-DeviceSearch -SearchTexts $devices -SearchOption $searchOption
+                }
+                else {
+                    [System.Windows.MessageBox]::Show("The selected file could not be found.")
+                }
             }
         }
         catch {
-            Write-Log "Exception: $_"
+            Write-Log "Exception in bulk import: $_"
             [System.Windows.MessageBox]::Show("Error in bulk import operation. Please ensure the file is valid and try again.")
         }
     })
@@ -3535,16 +3621,33 @@ $OffboardButton.Add_Click({
                 }
 
                 # Get Autopilot Device
-                if ($script:serviceCheckboxes["Autopilot"].IsChecked -and $serialNumber) {
-                    $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$serialNumber')"
-                    $AutopilotDevice = (Invoke-MgGraphRequest -Uri $uri -Method GET).value | Select-Object -First 1
+                if ($script:serviceCheckboxes["Autopilot"].IsChecked) {
+                    $AutopilotDevice = $null
+                    
+                    # Try to find by serial number first if available
+                    if ($serialNumber) {
+                        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$serialNumber')"
+                        $AutopilotDevice = (Invoke-MgGraphRequest -Uri $uri -Method GET).value | Select-Object -First 1
+                        
+                        if (-not $AutopilotDevice) {
+                            Write-Log "Device with serial $serialNumber not found in Autopilot, trying by display name..."
+                        }
+                    }
+                    
+                    # If not found by serial number or no serial number available, try by display name
+                    if (-not $AutopilotDevice -and $deviceName) {
+                        Write-Log "Searching Autopilot by display name: $deviceName"
+                        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(displayName,'$deviceName')"
+                        $AutopilotDevice = (Invoke-MgGraphRequest -Uri $uri -Method GET).value | Select-Object -First 1
+                    }
+                    
                     if ($AutopilotDevice) {
                         $deviceResult.Autopilot.Found = $true
                         try {
                             $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities/$($AutopilotDevice.id)"
                             Invoke-MgGraphRequest -Uri $uri -Method DELETE
                             $deviceResult.Autopilot.Success = $true
-                            Write-Log "Successfully removed device $deviceName from Autopilot."
+                            Write-Log "Successfully removed device $deviceName from Autopilot (ID: $($AutopilotDevice.id))."
                         }
                         catch {
                             $deviceResult.Autopilot.Error = $_.Exception.Message
@@ -3552,11 +3655,12 @@ $OffboardButton.Add_Click({
                         }
                     }
                     else {
-                        Write-Log "Device with serial $serialNumber not found in Autopilot."
+                        $searchCriteria = if ($serialNumber) { "serial $serialNumber or name $deviceName" } else { "name $deviceName" }
+                        Write-Log "Device with $searchCriteria not found in Autopilot."
                     }
                 }
-                elseif ($serialNumber -and -not $script:serviceCheckboxes["Autopilot"].IsChecked) {
-                    Write-Log "Skipping Autopilot removal for device with serial $serialNumber (not selected)"
+                else {
+                    Write-Log "Skipping Autopilot removal for device $deviceName (not selected)"
                 }
 
                 $offboardingResults += $deviceResult
