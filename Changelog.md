@@ -1,3 +1,39 @@
+## Version 0.2.1 - 6/29/2025
+
+- **Fixed Autopilot Device Removal**: Enhanced Autopilot device removal to use displayName as fallback when serial number is unavailable (Issue #34)
+  - Added search by displayName for Autopilot devices
+  - Improved handling of pre-provisioned Autopilot devices that may not be in Intune
+  - Better error messages indicating why removal might fail
+- **Fixed CSV Bulk Import**: CSV bulk import now automatically triggers device search after import (Issue #32)
+  - Created centralized `Invoke-DeviceSearch` function for consistent search behavior
+  - Added automatic search execution after CSV file selection
+  - Improved validation for empty files and whitespace
+- **Enhanced Device Search**: Improved device search to handle Autopilot-only devices (Related to Issue #34)
+  - Devices existing only in Autopilot service are now properly displayed
+  - Serial numbers are populated from any available source (Intune or Autopilot)
+  - Fixed handling of devices that exist in Autopilot but not in Intune
+- **Input Validation**: Added trimming of newlines and whitespace from search input to prevent accidental multi-line entries (Related to Issue #34)
+- **Enhanced Bulk Import UI**: Replaced file dialog with professional modal interface for bulk device import
+  - Added visual CSV template with example device identifiers
+  - Implemented downloadable template CSV functionality
+  - Added file preview showing first 10 devices before import
+  - Improved error handling with clear visual feedback
+  - Enhanced user experience with modern, consistent styling
+- **Dynamic Version Display**: Added automatic version number display in window title
+- **Improved Changelog Display**: Enhanced markdown rendering in changelog modal
+  - Added support for **bold text** formatting
+  - Added support for `inline code` formatting
+  - Properly handles nested list indentation
+  - Mixed formatting (bold, italic, code) now renders correctly
+  - Improved visual styling with appropriate fonts and colors
+- **Fixed Date Parsing Issues**: Implemented culture-invariant date parsing across the entire application
+  - Fixed Autopilot last contact date showing 1/1/0001 12:00AM (Issue #31)
+  - Fixed Playbook_1.ps1 date parsing error with culture-specific formats (Issue #30)
+  - Fixed Dashboard date parsing errors causing multiple log entries (Issue #16)
+  - Added `ConvertTo-SafeDateTime` helper function for consistent date handling
+  - Updated all playbooks to use culture-invariant date parsing
+  - Replaced all DateTime::Parse calls with safe parsing that handles multiple formats
+
 ## Version 0.2 - 6/20/2025
 
 - **Improved Bulk Offboarding**: Removed individual device confirmation dialogs when offboarding multiple devices (Issue #28)
