@@ -375,6 +375,7 @@ function ConvertTo-SafeDateTime {
             <Setter Property="FontSize" Value="14"/>
             <Setter Property="Padding" Value="20,15"/>
             <Setter Property="Margin" Value="0,0,0,15"/>
+            <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
@@ -1612,7 +1613,8 @@ function ConvertTo-SafeDateTime {
                             Background="#DC2626"
                             Foreground="White"
                             BorderThickness="0"
-                            Margin="0,0,8,0">
+                            Margin="0,0,8,0"
+                            Cursor="Hand">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="6"/>
@@ -1651,11 +1653,13 @@ function ConvertTo-SafeDateTime {
                             Content="Export Results"
                             Grid.Column="1"
                             Height="40"
+                            MinWidth="140"
                             Padding="20,0"
                             Background="#0078D4"
                             Foreground="White"
                             BorderThickness="0"
-                            Margin="0,0,8,0">
+                            Margin="0,0,8,0"
+                            Cursor="Hand">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="6"/>
@@ -1671,7 +1675,8 @@ function ConvertTo-SafeDateTime {
                                                     BorderThickness="{TemplateBinding BorderThickness}"
                                                     CornerRadius="6">
                                                 <ContentPresenter HorizontalAlignment="Center"
-                                                                VerticalAlignment="Center"/>
+                                                                VerticalAlignment="Center"
+                                                                Margin="{TemplateBinding Padding}"/>
                                             </Border>
                                         </ControlTemplate>
                                     </Setter.Value>
