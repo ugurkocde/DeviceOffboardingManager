@@ -13,6 +13,13 @@
   - Serial numbers are populated from any available source (Intune or Autopilot)
   - Fixed handling of devices that exist in Autopilot but not in Intune
 - **Input Validation**: Added trimming of newlines and whitespace from search input to prevent accidental multi-line entries (Related to Issue #34)
+- **Fixed Date Parsing Issues**: Implemented culture-invariant date parsing across the entire application
+  - Fixed Autopilot last contact date showing 1/1/0001 12:00AM (Issue #31)
+  - Fixed Playbook_1.ps1 date parsing error with culture-specific formats (Issue #30)
+  - Fixed Dashboard date parsing errors causing multiple log entries (Issue #16)
+  - Added `ConvertTo-SafeDateTime` helper function for consistent date handling
+  - Updated all playbooks to use culture-invariant date parsing
+  - Replaced all DateTime::Parse calls with safe parsing that handles multiple formats
 
 ## Version 0.2 - 6/20/2025
 

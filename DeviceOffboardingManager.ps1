@@ -197,6 +197,61 @@ function Get-GraphPagedResults {
     return $results
 }
 
+# Helper function to safely convert date strings to DateTime objects
+function ConvertTo-SafeDateTime {
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$dateString
+    )
+    
+    if ([string]::IsNullOrWhiteSpace($dateString)) {
+        return $null
+    }
+    
+    # Define supported date formats
+    $formats = @(
+        "yyyy-MM-ddTHH:mm:ssZ",
+        "yyyy-MM-ddTHH:mm:ss.fffffffZ",
+        "yyyy-MM-ddTHH:mm:ss",
+        "MM/dd/yyyy HH:mm:ss",
+        "dd/MM/yyyy HH:mm:ss",
+        "yyyy-MM-dd HH:mm:ss",
+        "M/d/yyyy h:mm:ss tt",
+        "M/d/yyyy H:mm:ss"
+    )
+    
+    $culture = [System.Globalization.CultureInfo]::InvariantCulture
+    
+    # Try each format
+    foreach ($format in $formats) {
+        try {
+            $parsedDate = [DateTime]::ParseExact($dateString, $format, $culture, [System.Globalization.DateTimeStyles]::None)
+            # Check for DateTime.MinValue (1/1/0001)
+            if ($parsedDate -eq [DateTime]::MinValue) {
+                return $null
+            }
+            return $parsedDate
+        }
+        catch {
+            # Continue to next format
+            continue
+        }
+    }
+    
+    # Try default parse as last resort with InvariantCulture
+    try {
+        $parsedDate = [DateTime]::Parse($dateString, $culture)
+        if ($parsedDate -eq [DateTime]::MinValue) {
+            return $null
+        }
+        return $parsedDate
+    }
+    catch {
+        Write-Log "Failed to parse date: $dateString"
+        return $null
+    }
+}
+
 # Define WPF XAML
 [xml]$xaml = @"
 <Window 
@@ -2756,9 +2811,9 @@ function Invoke-DeviceSearch {
                         $CombinedDevice.SerialNumber = $matchingIntuneDevice?.serialNumber ?? $matchingAutopilotDevice?.serialNumber
                         $CombinedDevice.OperatingSystem = $AADDevice.operatingSystem
                         $CombinedDevice.PrimaryUser = $matchingIntuneDevice?.userDisplayName
-                        $CombinedDevice.AzureADLastContact = if ($AADDevice.approximateLastSignInDateTime) { [DateTime]$AADDevice.approximateLastSignInDateTime } else { $null }
-                        $CombinedDevice.IntuneLastContact = if ($matchingIntuneDevice.lastSyncDateTime) { [DateTime]$matchingIntuneDevice.lastSyncDateTime } else { $null }
-                        $CombinedDevice.AutopilotLastContact = if ($matchingAutopilotDevice.lastContactedDateTime) { [DateTime]$matchingAutopilotDevice.lastContactedDateTime } else { $null }
+                        $CombinedDevice.AzureADLastContact = ConvertTo-SafeDateTime -dateString $AADDevice.approximateLastSignInDateTime
+                        $CombinedDevice.IntuneLastContact = ConvertTo-SafeDateTime -dateString $matchingIntuneDevice.lastSyncDateTime
+                        $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $matchingAutopilotDevice.lastContactedDateTime
                         
                         $searchResults.Add($CombinedDevice)
                         $AADCount++
@@ -2790,8 +2845,8 @@ function Invoke-DeviceSearch {
                         $CombinedDevice.SerialNumber = $IntuneDevice.serialNumber ?? $matchingAutopilotDevice?.serialNumber
                         $CombinedDevice.OperatingSystem = $IntuneDevice.operatingSystem
                         $CombinedDevice.PrimaryUser = $IntuneDevice.userDisplayName
-                        $CombinedDevice.IntuneLastContact = if ($IntuneDevice.lastSyncDateTime) { [DateTime]$IntuneDevice.lastSyncDateTime } else { $null }
-                        $CombinedDevice.AutopilotLastContact = if ($matchingAutopilotDevice.lastContactedDateTime) { [DateTime]$matchingAutopilotDevice.lastContactedDateTime } else { $null }
+                        $CombinedDevice.IntuneLastContact = ConvertTo-SafeDateTime -dateString $IntuneDevice.lastSyncDateTime
+                        $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $matchingAutopilotDevice.lastContactedDateTime
                         
                         $searchResults.Add($CombinedDevice)
                         $IntuneCount++
@@ -2814,7 +2869,7 @@ function Invoke-DeviceSearch {
                         $CombinedDevice.IsSelected = $false
                         $CombinedDevice.DeviceName = $AutopilotDevice.displayName
                         $CombinedDevice.SerialNumber = $AutopilotDevice.serialNumber
-                        $CombinedDevice.AutopilotLastContact = if ($AutopilotDevice.lastContactedDateTime) { [DateTime]$AutopilotDevice.lastContactedDateTime } else { $null }
+                        $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $AutopilotDevice.lastContactedDateTime
                         
                         $searchResults.Add($CombinedDevice)
                         $AutopilotCount++
@@ -2846,9 +2901,9 @@ function Invoke-DeviceSearch {
                             $CombinedDevice.SerialNumber = $IntuneDevice.serialNumber
                             $CombinedDevice.OperatingSystem = $AADDevice?.operatingSystem ?? $IntuneDevice.operatingSystem
                             $CombinedDevice.PrimaryUser = $IntuneDevice.userDisplayName
-                            $CombinedDevice.AzureADLastContact = if ($AADDevice.approximateLastSignInDateTime) { [DateTime]$AADDevice.approximateLastSignInDateTime } else { $null }
-                            $CombinedDevice.IntuneLastContact = if ($IntuneDevice.lastSyncDateTime) { [DateTime]$IntuneDevice.lastSyncDateTime } else { $null }
-                            $CombinedDevice.AutopilotLastContact = if ($matchingAutopilotDevice.lastContactedDateTime) { [DateTime]$matchingAutopilotDevice.lastContactedDateTime } else { $null }
+                            $CombinedDevice.AzureADLastContact = ConvertTo-SafeDateTime -dateString $AADDevice.approximateLastSignInDateTime
+                            $CombinedDevice.IntuneLastContact = ConvertTo-SafeDateTime -dateString $IntuneDevice.lastSyncDateTime
+                            $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $matchingAutopilotDevice.lastContactedDateTime
                             
                             $searchResults.Add($CombinedDevice)
                             if ($AADDevice) { $AADCount++ }
@@ -2869,7 +2924,7 @@ function Invoke-DeviceSearch {
                             $CombinedDevice.IsSelected = $false
                             $CombinedDevice.DeviceName = $AutopilotDevice.displayName
                             $CombinedDevice.SerialNumber = $AutopilotDevice.serialNumber
-                            $CombinedDevice.AutopilotLastContact = if ($AutopilotDevice.lastContactedDateTime) { [DateTime]$AutopilotDevice.lastContactedDateTime } else { $null }
+                            $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $AutopilotDevice.lastContactedDateTime
                             
                             $searchResults.Add($CombinedDevice)
                             $AutopilotCount++
@@ -4426,7 +4481,8 @@ function Update-DashboardStatistics {
         $stale30 = ($intuneDevices | Where-Object { 
                 if ($_.lastSyncDateTime) {
                     try { 
-                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
+                        if (-not $lastSync) { return $false }
                         return $lastSync -lt $thirtyDaysAgo 
                     }
                     catch { 
@@ -4440,7 +4496,8 @@ function Update-DashboardStatistics {
         $stale90 = ($intuneDevices | Where-Object { 
                 if ($_.lastSyncDateTime) {
                     try { 
-                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
+                        if (-not $lastSync) { return $false }
                         return $lastSync -lt $ninetyDaysAgo 
                     }
                     catch { 
@@ -4454,7 +4511,8 @@ function Update-DashboardStatistics {
         $stale180 = ($intuneDevices | Where-Object { 
                 if ($_.lastSyncDateTime) {
                     try { 
-                        $lastSync = [DateTime]::Parse($_.lastSyncDateTime)
+                        $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
+                        if (-not $lastSync) { return $false }
                         return $lastSync -lt $onehundredEightyDaysAgo 
                     }
                     catch { 
@@ -5160,7 +5218,10 @@ $StaleDevices30Card.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.deviceName
                         SerialNumber = $device.serialNumber
-                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        LastContact = if ($device.lastSyncDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        } else { "Never" }
                         OperatingSystem = $device.operatingSystem
                         OSVersion = $device.osVersion
                         PrimaryUser = $device.userPrincipalName
@@ -5191,7 +5252,10 @@ $StaleDevices90Card.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.deviceName
                         SerialNumber = $device.serialNumber
-                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        LastContact = if ($device.lastSyncDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        } else { "Never" }
                         OperatingSystem = $device.operatingSystem
                         OSVersion = $device.osVersion
                         PrimaryUser = $device.userPrincipalName
@@ -5222,7 +5286,10 @@ $StaleDevices180Card.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.deviceName
                         SerialNumber = $device.serialNumber
-                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        LastContact = if ($device.lastSyncDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        } else { "Never" }
                         OperatingSystem = $device.operatingSystem
                         OSVersion = $device.osVersion
                         PrimaryUser = $device.userPrincipalName
@@ -5252,7 +5319,10 @@ $PersonalDevicesCard.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.deviceName
                         SerialNumber = $device.serialNumber
-                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        LastContact = if ($device.lastSyncDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        } else { "Never" }
                         OperatingSystem = $device.operatingSystem
                         OSVersion = $device.osVersion
                         PrimaryUser = $device.userPrincipalName
@@ -5282,7 +5352,10 @@ $CorporateDevicesCard.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.deviceName
                         SerialNumber = $device.serialNumber
-                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        LastContact = if ($device.lastSyncDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        } else { "Never" }
                         OperatingSystem = $device.operatingSystem
                         OSVersion = $device.osVersion
                         PrimaryUser = $device.userPrincipalName
@@ -5313,7 +5386,10 @@ $IntuneDevicesCard.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.deviceName
                         SerialNumber = $device.serialNumber
-                        LastContact = if ($device.lastSyncDateTime) { [DateTime]::Parse($device.lastSyncDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        LastContact = if ($device.lastSyncDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        } else { "Never" }
                         OperatingSystem = $device.operatingSystem
                         OSVersion = $device.osVersion
                         PrimaryUser = $device.userPrincipalName
@@ -5343,7 +5419,10 @@ $AutopilotDevicesCard.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.displayName
                         SerialNumber = $device.serialNumber
-                        LastContact = if ($device.lastContactedDateTime) { [DateTime]::Parse($device.lastContactedDateTime).ToString('yyyy-MM-dd HH:mm') } else { "N/A" }
+                        LastContact = if ($device.lastContactedDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.lastContactedDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "N/A" }
+                        } else { "N/A" }
                         OperatingSystem = "Windows"
                         OSVersion = $device.systemFamily
                         PrimaryUser = $device.userPrincipalName
@@ -5373,7 +5452,10 @@ $EntraIDDevicesCard.Add_MouseLeftButtonUp({
                     $deviceList += [PSCustomObject]@{
                         DeviceName = $device.displayName
                         SerialNumber = "N/A"
-                        LastContact = if ($device.approximateLastSignInDateTime) { [DateTime]::Parse($device.approximateLastSignInDateTime).ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        LastContact = if ($device.approximateLastSignInDateTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.approximateLastSignInDateTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        } else { "Never" }
                         OperatingSystem = $device.operatingSystem
                         OSVersion = $device.operatingSystemVersion
                         PrimaryUser = "N/A"
