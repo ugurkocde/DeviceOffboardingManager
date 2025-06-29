@@ -13,6 +13,19 @@
   - Serial numbers are populated from any available source (Intune or Autopilot)
   - Fixed handling of devices that exist in Autopilot but not in Intune
 - **Input Validation**: Added trimming of newlines and whitespace from search input to prevent accidental multi-line entries (Related to Issue #34)
+- **Enhanced Bulk Import UI**: Replaced file dialog with professional modal interface for bulk device import
+  - Added visual CSV template with example device identifiers
+  - Implemented downloadable template CSV functionality
+  - Added file preview showing first 10 devices before import
+  - Improved error handling with clear visual feedback
+  - Enhanced user experience with modern, consistent styling
+- **Dynamic Version Display**: Added automatic version number display in window title
+- **Improved Changelog Display**: Enhanced markdown rendering in changelog modal
+  - Added support for **bold text** formatting
+  - Added support for `inline code` formatting
+  - Properly handles nested list indentation
+  - Mixed formatting (bold, italic, code) now renders correctly
+  - Improved visual styling with appropriate fonts and colors
 - **Fixed Date Parsing Issues**: Implemented culture-invariant date parsing across the entire application
   - Fixed Autopilot last contact date showing 1/1/0001 12:00AM (Issue #31)
   - Fixed Playbook_1.ps1 date parsing error with culture-specific formats (Issue #30)
