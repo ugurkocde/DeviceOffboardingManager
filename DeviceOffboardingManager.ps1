@@ -148,6 +148,158 @@ function Update-VersionDisplays {
     }
 }
 
+# Settings Management Functions
+$script:SettingsPath = [System.IO.Path]::Combine([Environment]::GetFolderPath("ApplicationData"), "DeviceOffboardingManager", "settings.json")
+
+# Enum for log levels
+if (-not ([System.Management.Automation.PSTypeName]'LogLevel').Type) {
+    Add-Type -TypeDefinition @"
+    public enum LogLevel {
+        Debug = 0,
+        Info = 1,
+        Warning = 2,
+        Error = 3
+    }
+"@
+}
+
+# Default settings
+$script:DefaultSettings = @{
+    LogFilePath               = [System.IO.Path]::Combine([Environment]::GetFolderPath("ApplicationData"), "DeviceOffboardingManager", "Logs")
+    LogLevel                  = "Info"
+    EnableBitLockerKeyLogging = $false
+    LogRetentionDays          = 30
+    AppendDateToLogFileName   = $true
+}
+
+# Function to ensure settings directory exists
+function Initialize-SettingsDirectory {
+    $settingsDir = [System.IO.Path]::GetDirectoryName($script:SettingsPath)
+    if (-not (Test-Path $settingsDir)) {
+        New-Item -Path $settingsDir -ItemType Directory -Force | Out-Null
+    }
+}
+
+# Function to load settings
+function Get-AppSettings {
+    Initialize-SettingsDirectory
+    
+    if (Test-Path $script:SettingsPath) {
+        try {
+            $settings = Get-Content $script:SettingsPath -Raw | ConvertFrom-Json
+            # Merge with defaults to ensure all properties exist
+            $mergedSettings = $script:DefaultSettings.Clone()
+            foreach ($key in $settings.PSObject.Properties.Name) {
+                $mergedSettings[$key] = $settings.$key
+            }
+            return $mergedSettings
+        }
+        catch {
+            Write-Warning "Failed to load settings: $_"
+            return $script:DefaultSettings.Clone()
+        }
+    }
+    else {
+        # Create default settings file
+        Save-AppSettings $script:DefaultSettings
+        return $script:DefaultSettings.Clone()
+    }
+}
+
+# Function to save settings
+function Save-AppSettings {
+    param(
+        [hashtable]$Settings
+    )
+    
+    Initialize-SettingsDirectory
+    
+    try {
+        $Settings | ConvertTo-Json -Depth 10 | Set-Content -Path $script:SettingsPath -Force
+        return $true
+    }
+    catch {
+        Write-Warning "Failed to save settings: $_"
+        return $false
+    }
+}
+
+# Function to get current log file path based on settings
+function Get-CurrentLogFilePath {
+    $settings = Get-AppSettings
+    $logDir = $settings.LogFilePath
+    
+    if (-not (Test-Path $logDir)) {
+        New-Item -Path $logDir -ItemType Directory -Force | Out-Null
+    }
+    
+    if ($settings.AppendDateToLogFileName) {
+        $dateStr = Get-Date -Format "yyyy-MM-dd"
+        return [System.IO.Path]::Combine($logDir, "DeviceOffboarding_$dateStr.log")
+    }
+    else {
+        return [System.IO.Path]::Combine($logDir, "DeviceOffboarding.log")
+    }
+}
+
+# Function to clean up old log files
+function Remove-OldLogFiles {
+    $settings = Get-AppSettings
+    
+    if ($settings.LogRetentionDays -le 0) {
+        return
+    }
+    
+    $logDir = $settings.LogFilePath
+    if (-not (Test-Path $logDir)) {
+        return
+    }
+    
+    $cutoffDate = (Get-Date).AddDays(-$settings.LogRetentionDays)
+    
+    Get-ChildItem -Path $logDir -Filter "DeviceOffboarding_*.log" | 
+    Where-Object { $_.LastWriteTime -lt $cutoffDate } | 
+    Remove-Item -Force -ErrorAction SilentlyContinue
+}
+
+# Initialize settings on script load
+$script:CurrentSettings = Get-AppSettings
+
+# Function to get BitLocker recovery keys for a device
+function Get-DeviceBitLockerKeys {
+    param(
+        [string]$DeviceId
+    )
+    
+    try {
+        $uri = "https://graph.microsoft.com/v1.0/informationProtection/bitlocker/recoveryKeys?`$filter=deviceId eq '$DeviceId'"
+        $response = Invoke-MgGraphRequest -Uri $uri -Method GET
+        
+        if ($response.value -and $response.value.Count -gt 0) {
+            $keys = @()
+            foreach ($keyInfo in $response.value) {
+                # Get the full key details
+                $keyUri = "https://graph.microsoft.com/v1.0/informationProtection/bitlocker/recoveryKeys/$($keyInfo.id)?`$select=key"
+                $keyDetails = Invoke-MgGraphRequest -Uri $keyUri -Method GET
+                
+                $keys += @{
+                    Id              = $keyInfo.id
+                    CreatedDateTime = $keyInfo.createdDateTime
+                    VolumeType      = $keyInfo.volumeType
+                    DeviceId        = $keyInfo.deviceId
+                    Key             = $keyDetails.key
+                }
+            }
+            return $keys
+        }
+        return @()
+    }
+    catch {
+        Write-Log "Error retrieving BitLocker keys: $_" -Level Warning
+        return @()
+    }
+}
+
 # Add the DeviceObject class definition
 if (-not ([System.Management.Automation.PSTypeName]'DeviceObject').Type) {
     Add-Type -TypeDefinition @"
@@ -777,6 +929,11 @@ function ConvertTo-SafeDateTime {
 
                     <Button x:Name="changelog_button"
                             Content="Changelog"
+                            Style="{StaticResource SidebarButtonStyle}"
+                            Margin="15,5"/>
+                    
+                    <Button x:Name="settings_button"
+                            Content="Settings"
                             Style="{StaticResource SidebarButtonStyle}"
                             Margin="15,5,15,15"/>
                 </StackPanel>
@@ -3147,18 +3304,36 @@ $Window = [Windows.Markup.XamlReader]::Load($reader)
 $scriptVersion = Get-ScriptVersion
 $Window.Title = "Device Offboarding Manager (Preview) - $scriptVersion"
 
-$script:LogFilePath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "IntuneOffboardingTool_Log.txt")
+# Initialize log file path from settings
+$script:LogFilePath = Get-CurrentLogFilePath
+
+# Clean up old log files on startup
+Remove-OldLogFiles
 
 function Write-Log {
     param(
         [Parameter(Mandatory = $true)]
-        [string] $Message
+        [string] $Message,
+        
+        [Parameter(Mandatory = $false)]
+        [LogLevel] $Level = [LogLevel]::Info
     )
 
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "$timestamp - $Message"
+    # Get current settings
+    $settings = Get-AppSettings
+    $configuredLevel = [LogLevel]::$($settings.LogLevel)
+    
+    # Only log if message level is >= configured level
+    if ($Level -ge $configuredLevel) {
+        $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        $levelStr = $Level.ToString().ToUpper().PadRight(7)
+        $logMessage = "$timestamp [$levelStr] - $Message"
 
-    Add-Content -Path $script:LogFilePath -Value $logMessage
+        # Update log file path in case settings changed
+        $script:LogFilePath = Get-CurrentLogFilePath
+        
+        Add-Content -Path $script:LogFilePath -Value $logMessage
+    }
 }
 
 function Export-DeviceListToCSV {
@@ -4062,6 +4237,27 @@ $OffboardButton.Add_Click({
                     $AADDevice = (Invoke-MgGraphRequest -Uri $uri -Method GET).value | Select-Object -First 1
                     if ($AADDevice) {
                         $deviceResult.EntraID.Found = $true
+                        
+                        # Retrieve BitLocker keys if enabled
+                        if ($script:CurrentSettings.EnableBitLockerKeyLogging) {
+                            try {
+                                $bitLockerKeys = Get-DeviceBitLockerKeys -DeviceId $AADDevice.deviceId
+                                if ($bitLockerKeys.Count -gt 0) {
+                                    Write-Log "Found $($bitLockerKeys.Count) BitLocker recovery key(s) for device $deviceName" -Level Info
+                                    foreach ($keyInfo in $bitLockerKeys) {
+                                        $keyLog = "BitLocker Recovery Key for device: ${deviceName}`nDevice ID: $($keyInfo.DeviceId)`nVolume Type: $($keyInfo.VolumeType)`nCreated: $($keyInfo.CreatedDateTime)`nRecovery Key: $($keyInfo.Key)"
+                                        Write-Log $keyLog -Level Info
+                                    }
+                                }
+                                else {
+                                    Write-Log "No BitLocker recovery keys found for device $deviceName" -Level Info
+                                }
+                            }
+                            catch {
+                                Write-Log "Failed to retrieve BitLocker keys for device ${deviceName}: $_" -Level Warning
+                            }
+                        }
+                        
                         try {
                             $uri = "https://graph.microsoft.com/v1.0/devices/$($AADDevice.id)"
                             Invoke-MgGraphRequest -Uri $uri -Method DELETE
@@ -4767,12 +4963,25 @@ $PrerequisitesButton.Add_Click({
     })
 
 $logs_button.Add_Click({
-        $logFilePath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "IntuneOffboardingTool_Log.txt")
-        if (Test-Path $logFilePath) {
-            Invoke-Item $logFilePath
+        # Get current log file path from settings
+        $currentLogPath = Get-CurrentLogFilePath
+        if (Test-Path $currentLogPath) {
+            Invoke-Item $currentLogPath
         }
         else {
-            Write-Host "Log file not found."
+            # If current log doesn't exist, try to open the log directory
+            $logDir = (Get-AppSettings).LogFilePath
+            if (Test-Path $logDir) {
+                Invoke-Item $logDir
+            }
+            else {
+                [System.Windows.MessageBox]::Show(
+                    "Log file not found at: $currentLogPath",
+                    "Log File Not Found",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Information
+                )
+            }
         }
     })
         
@@ -5655,6 +5864,191 @@ function Show-ChangelogDialog {
     }
 }
 
+# Function to show Settings dialog
+function Show-SettingsDialog {
+    try {
+        Write-Log "Opening settings dialog..."
+        
+        # Create Settings Window XAML
+        [xml]$settingsModalXaml = @'
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+        Title="Settings" 
+        Height="500" 
+        Width="650" 
+        WindowStartupLocation="CenterScreen" 
+        Background="#F0F0F0">
+    <Window.Resources>
+        <Style TargetType="TextBox">
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+            <Setter Property="Padding" Value="5,0"/>
+        </Style>
+        <Style TargetType="CheckBox">
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Margin" Value="0,5"/>
+        </Style>
+        <Style x:Key="SaveButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="#0078D4"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Width" Value="100"/>
+            <Setter Property="Height" Value="35"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+        </Style>
+    </Window.Resources>
+    
+    <Border Background="White" CornerRadius="8" Margin="16">
+        <DockPanel>
+            <!-- Header -->
+            <StackPanel DockPanel.Dock="Top" Margin="24,24,24,16">
+                <TextBlock Text="Settings" FontSize="24" FontWeight="SemiBold" Foreground="#1A202C"/>
+                <TextBlock Text="Configure application preferences" Foreground="#4A5568" FontSize="14" Margin="0,8,0,0"/>
+            </StackPanel>
+            
+            <!-- Action Buttons -->
+            <Border DockPanel.Dock="Bottom" Background="#F8F9FA" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0">
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Margin="24,16">
+                    <Button x:Name="CancelButton" Content="Cancel" Width="100" Height="35" Background="#F0F0F0" Foreground="#2D3748" BorderThickness="0" Margin="0,0,12,0"/>
+                    <Button x:Name="SaveButton" Content="Save" Style="{StaticResource SaveButtonStyle}"/>
+                </StackPanel>
+            </Border>
+            
+            <!-- Main Content -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="24,0,24,16">
+                <StackPanel>
+                    <!-- Log File Path -->
+                    <GroupBox Header="Log File Location" Margin="0,0,0,16">
+                        <StackPanel Margin="10">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="LogFilePathTextBox" Grid.Column="0" IsReadOnly="True"/>
+                                <Button x:Name="BrowseLogPathButton" Grid.Column="1" Content="Browse" Width="80" Height="28" Margin="8,0,0,0"/>
+                            </Grid>
+                            <CheckBox x:Name="AppendDateCheckBox" Content="Append date to log file name (e.g., DeviceOffboarding_2024-01-01.log)" Margin="0,8,0,0"/>
+                        </StackPanel>
+                    </GroupBox>
+                    
+                    <!-- BitLocker Key Logging -->
+                    <GroupBox Header="BitLocker Recovery Keys" Margin="0,0,0,16">
+                        <StackPanel Margin="10">
+                            <CheckBox x:Name="EnableBitLockerLoggingCheckBox" Content="Log BitLocker recovery keys during device offboarding"/>
+                            <Border Background="#FEF2F2" BorderBrush="#FEE2E2" BorderThickness="1" CornerRadius="4" Padding="12" Margin="0,8,0,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M13,13H11V7H13M13,17H11V15H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" 
+                                          Fill="#DC2626" Width="16" Height="16" Stretch="Uniform" Margin="0,0,8,0"/>
+                                    <TextBlock TextWrapping="Wrap" Foreground="#DC2626" FontSize="12">
+                                        <Run Text="Warning:"/>
+                                        <Run Text="Enabling this option will log sensitive BitLocker recovery keys to the log file. Ensure proper security measures are in place to protect these logs."/>
+                                    </TextBlock>
+                                </StackPanel>
+                            </Border>
+                        </StackPanel>
+                    </GroupBox>
+                </StackPanel>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</Window>
+'@
+        
+        $reader = (New-Object System.Xml.XmlNodeReader $settingsModalXaml)
+        $settingsWindow = [Windows.Markup.XamlReader]::Load($reader)
+        
+        # Get controls
+        $logFilePathTextBox = $settingsWindow.FindName('LogFilePathTextBox')
+        $browseLogPathButton = $settingsWindow.FindName('BrowseLogPathButton')
+        $appendDateCheckBox = $settingsWindow.FindName('AppendDateCheckBox')
+        $enableBitLockerLoggingCheckBox = $settingsWindow.FindName('EnableBitLockerLoggingCheckBox')
+        $saveButton = $settingsWindow.FindName('SaveButton')
+        $cancelButton = $settingsWindow.FindName('CancelButton')
+        
+        # Load current settings
+        $currentSettings = Get-AppSettings
+        
+        # Populate fields with current settings
+        $logFilePathTextBox.Text = $currentSettings.LogFilePath
+        $appendDateCheckBox.IsChecked = $currentSettings.AppendDateToLogFileName
+        $enableBitLockerLoggingCheckBox.IsChecked = $currentSettings.EnableBitLockerKeyLogging
+        
+        # Browse button handler
+        $browseLogPathButton.Add_Click({
+                $folderBrowser = New-Object System.Windows.Forms.FolderBrowserDialog
+                $folderBrowser.Description = "Select log file location"
+                $folderBrowser.SelectedPath = $logFilePathTextBox.Text
+            
+                if ($folderBrowser.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) {
+                    $logFilePathTextBox.Text = $folderBrowser.SelectedPath
+                }
+            })
+        
+        # Save button handler
+        $saveButton.Add_Click({
+                try {
+                    # Create new settings (keep existing LogLevel and LogRetentionDays)
+                    $newSettings = @{
+                        LogFilePath               = $logFilePathTextBox.Text
+                        LogLevel                  = $currentSettings.LogLevel  # Keep existing
+                        EnableBitLockerKeyLogging = $enableBitLockerLoggingCheckBox.IsChecked
+                        LogRetentionDays          = $currentSettings.LogRetentionDays  # Keep existing
+                        AppendDateToLogFileName   = $appendDateCheckBox.IsChecked
+                    }
+                
+                    # Save settings
+                    if (Save-AppSettings $newSettings) {
+                        # Update current settings
+                        $script:CurrentSettings = $newSettings
+                    
+                        # Update log file path
+                        $script:LogFilePath = Get-CurrentLogFilePath
+                    
+                        Write-Log "Settings saved successfully" -Level Info
+                    
+                        [System.Windows.MessageBox]::Show(
+                            "Settings have been saved successfully.",
+                            "Settings Saved",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+                    
+                        $settingsWindow.Close()
+                    }
+                    else {
+                        throw "Failed to save settings"
+                    }
+                }
+                catch {
+                    Write-Log "Error saving settings: $_" -Level Error
+                    [System.Windows.MessageBox]::Show(
+                        "Error saving settings: $_",
+                        "Error",
+                        [System.Windows.MessageBoxButton]::OK,
+                        [System.Windows.MessageBoxImage]::Error
+                    )
+                }
+            })
+        
+        # Cancel button handler
+        $cancelButton.Add_Click({
+                $settingsWindow.Close()
+            })
+        
+        # Show dialog
+        $settingsWindow.ShowDialog()
+    }
+    catch {
+        Write-Log "Error showing settings dialog: $_" -Level Error
+        [System.Windows.MessageBox]::Show(
+            "Error showing settings dialog: $_",
+            "Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+    }
+}
+
 # Connect back button
 $BackToPlaybooksButton = $Window.FindName('BackToPlaybooksButton')
 $BackToPlaybooksButton.Add_Click({
@@ -5964,6 +6358,12 @@ $EntraIDDevicesCard.Add_MouseLeftButtonUp({
 $changelog_button = $Window.FindName('changelog_button')
 $changelog_button.Add_Click({
         Show-ChangelogDialog
+    })
+
+# Connect settings button
+$settings_button = $Window.FindName('settings_button')
+$settings_button.Add_Click({
+        Show-SettingsDialog
     })
 
 # Show Window

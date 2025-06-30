@@ -1,3 +1,23 @@
+## Version 0.3 - ???
+
+- **Configurable Log Location**: Added ability to set custom log file location through new Settings modal (Issue #35)
+  - Log files can now be saved to any user-specified directory
+  - Default location changed from Desktop to `%APPDATA%\DeviceOffboardingManager\Logs`
+  - Logs button now opens the correct log file based on current settings
+- **Date-based Log Files**: Added option to append date to log filenames (Issue #35)
+  - When enabled, creates daily log files (e.g., `DeviceOffboarding_2024-01-01.log`)
+  - Helps organize logs chronologically for better tracking
+  - Option available in Settings modal
+- **BitLocker Key Logging**: Added ability to log BitLocker recovery keys during device offboarding (Issue #35)
+  - New security setting to enable/disable BitLocker key logging
+  - When enabled, recovery keys are logged before device removal from Entra ID
+  - Includes security warning about sensitive data
+  - Disabled by default for security
+- **Settings Modal**: Added new Settings interface for managing application preferences
+  - Accessible via Settings button in the sidebar
+  - Clean, single-view interface for all settings
+  - Saves preferences to `%APPDATA%\DeviceOffboardingManager\settings.json`
+
 ## Version 0.2.1 - 6/29/2025
 
 - **Fixed Autopilot Device Removal**: Enhanced Autopilot device removal to use displayName as fallback when serial number is unavailable (Issue #34)
