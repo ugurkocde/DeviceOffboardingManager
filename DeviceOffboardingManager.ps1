@@ -265,6 +265,10 @@ function Remove-OldLogFiles {
 # Initialize settings on script load
 $script:CurrentSettings = Get-AppSettings
 
+# Script-level variable to store unfiltered search results
+$script:UnfilteredSearchResults = $null
+$script:CurrentFilteredResults = $null
+
 # Function to get BitLocker recovery keys for a device
 function Get-DeviceBitLockerKeys {
     param(
@@ -1635,6 +1639,87 @@ function ConvertTo-SafeDateTime {
                             Grid.Column="3" 
                             Content="Search"/>
                 </Grid>
+
+                <!-- Filter Controls -->
+                <Border Grid.Row="2" Background="#1B2A47" Margin="0,0,0,10" CornerRadius="6" Padding="12">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        
+                        <!-- OS Filter -->
+                        <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
+                            <TextBlock Text="OS:" Foreground="#A0AEC0" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="OSFilter" Width="120" SelectedIndex="0">
+                                <ComboBoxItem Content="All" Tag="All"/>
+                                <ComboBoxItem Content="Windows" Tag="Windows"/>
+                                <ComboBoxItem Content="macOS" Tag="MacMDM"/>
+                                <ComboBoxItem Content="iOS" Tag="iOS"/>
+                                <ComboBoxItem Content="Android" Tag="Android"/>
+                            </ComboBox>
+                        </StackPanel>
+                        
+                        <!-- Service Filter -->
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
+                            <TextBlock Text="Service:" Foreground="#A0AEC0" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="ServiceFilter" Width="150" SelectedIndex="0">
+                                <ComboBoxItem Content="All" Tag="All"/>
+                                <ComboBoxItem Content="Autopilot Only" Tag="AutopilotOnly"/>
+                                <ComboBoxItem Content="Intune Only" Tag="IntuneOnly"/>
+                                <ComboBoxItem Content="Not in Intune" Tag="NotInIntune"/>
+                                <ComboBoxItem Content="Not in Autopilot" Tag="NotInAutopilot"/>
+                            </ComboBox>
+                        </StackPanel>
+                        
+                        <!-- Last Sync Filter -->
+                        <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="0,0,16,0" VerticalAlignment="Center">
+                            <TextBlock Text="Last Sync:" Foreground="#A0AEC0" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <ComboBox x:Name="LastSyncFilter" Width="120" SelectedIndex="0">
+                                <ComboBoxItem Content="All" Tag="0"/>
+                                <ComboBoxItem Content="30+ days" Tag="30"/>
+                                <ComboBoxItem Content="60+ days" Tag="60"/>
+                                <ComboBoxItem Content="90+ days" Tag="90"/>
+                            </ComboBox>
+                        </StackPanel>
+                        
+                        <!-- Filter Buttons -->
+                        <Button x:Name="ApplyFiltersButton" 
+                                Grid.Column="4" 
+                                Content="Apply Filters" 
+                                Height="32"
+                                Padding="16,0"
+                                Background="#0078D4"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Margin="0,0,8,0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                        
+                        <Button x:Name="ClearFiltersButton" 
+                                Grid.Column="5" 
+                                Content="Clear" 
+                                Height="32"
+                                Padding="16,0"
+                                Background="#F0F0F0"
+                                Foreground="#2D3748"
+                                BorderThickness="0">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="4"/>
+                                </Style>
+                            </Button.Resources>
+                        </Button>
+                    </Grid>
+                </Border>
 
                 <!-- Results Grid -->
                 <DataGrid x:Name="SearchResultsDataGrid" 
@@ -3384,6 +3469,100 @@ function Export-DeviceListToCSV {
     }
 }
 
+# Function to apply filters to device list
+function Apply-DeviceFilters {
+    param(
+        [Parameter(Mandatory = $true)]
+        [System.Collections.Generic.List[DeviceObject]]$Devices,
+        [Parameter(Mandatory = $false)]
+        [string]$OSFilter = "All",
+        [Parameter(Mandatory = $false)]
+        [string]$ServiceFilter = "All",
+        [Parameter(Mandatory = $false)]
+        [int]$LastSyncDays = 0
+    )
+    
+    Write-Log "Applying filters - OS: $OSFilter, Service: $ServiceFilter, LastSync: $LastSyncDays days"
+    
+    # Convert to array for filtering
+    $filtered = @($Devices)
+    
+    # Apply OS Filter
+    if ($OSFilter -ne "All" -and $OSFilter) {
+        $filtered = @($filtered | Where-Object { 
+            $_.OperatingSystem -and $_.OperatingSystem -like "*$OSFilter*" 
+        })
+    }
+    
+    # Apply Service Filter
+    switch ($ServiceFilter) {
+        "AutopilotOnly" {
+            $filtered = @($filtered | Where-Object { 
+                $_.AutopilotLastContact -and 
+                -not $_.IntuneLastContact -and 
+                -not $_.AzureADLastContact 
+            })
+        }
+        "IntuneOnly" {
+            $filtered = @($filtered | Where-Object { 
+                $_.IntuneLastContact -and 
+                -not $_.AutopilotLastContact -and 
+                -not $_.AzureADLastContact 
+            })
+        }
+        "NotInIntune" {
+            $filtered = @($filtered | Where-Object { -not $_.IntuneLastContact })
+        }
+        "NotInAutopilot" {
+            $filtered = @($filtered | Where-Object { -not $_.AutopilotLastContact })
+        }
+    }
+    
+    # Apply Last Sync Filter
+    if ($LastSyncDays -gt 0) {
+        $cutoffDate = (Get-Date).AddDays(-$LastSyncDays)
+        Write-Log "Filtering devices with last sync before: $cutoffDate"
+        
+        $filtered = @($filtered | Where-Object {
+            $hasOldSync = $false
+            
+            # Check each last contact date
+            if ($_.IntuneLastContact -and $_.IntuneLastContact -lt $cutoffDate) {
+                $hasOldSync = $true
+            }
+            if ($_.AutopilotLastContact -and $_.AutopilotLastContact -lt $cutoffDate) {
+                $hasOldSync = $true
+            }
+            if ($_.AzureADLastContact -and $_.AzureADLastContact -lt $cutoffDate) {
+                $hasOldSync = $true
+            }
+            
+            # Return true if any service has old sync
+            $hasOldSync
+        })
+    }
+    
+    # Ensure we have a valid array
+    if ($null -eq $filtered) {
+        $filtered = @()
+    }
+    
+    Write-Log "Filter results: $($filtered.Count) devices after filtering from $($Devices.Count) total"
+    
+    # Convert back to List
+    $resultList = New-Object 'System.Collections.Generic.List[DeviceObject]'
+    
+    # Add each item individually to ensure proper type
+    foreach ($device in $filtered) {
+        if ($device -is [DeviceObject]) {
+            $resultList.Add($device)
+        }
+    }
+    
+    # Return with comma operator to prevent PowerShell from unwrapping single-item collections
+    return ,$resultList
+}
+
 function Invoke-DeviceSearch {
     param(
         [Parameter(Mandatory = $true)]
@@ -3415,8 +3594,10 @@ function Invoke-DeviceSearch {
                 $IntuneDevices = Get-GraphPagedResults -Uri $uri
                 
                 # Search Autopilot devices by displayName
-                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(displayName,'$SearchText')"
-                $AutopilotDevices = Get-GraphPagedResults -Uri $uri
+                # Since contains filter is not supported on displayName, fetch all and filter locally
+                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+                $allAutopilotDevices = Get-GraphPagedResults -Uri $uri
+                $AutopilotDevices = $allAutopilotDevices | Where-Object { $_.displayName -eq $SearchText }
 
                 # Process Entra ID devices
                 if ($AADDevices) {
@@ -3567,12 +3748,20 @@ function Invoke-DeviceSearch {
         $Window.FindName('aad_status').Text = "Entra ID: $AADCount device found"
         $Window.FindName('aad_status').Foreground = if ($AADCount -gt 0) { '#ED64A6' } else { '#FC8181' }
 
+        # Store unfiltered results
+        $script:UnfilteredSearchResults = $searchResults
+        $script:CurrentFilteredResults = $searchResults
+        
         if ($searchResults.Count -gt 0) {
             $SearchResultsDataGrid.ItemsSource = $searchResults
+            # Update selection count
+            Update-SelectionCount
         }
         else {
             $SearchResultsDataGrid.ItemsSource = $null
             [System.Windows.MessageBox]::Show("No devices found matching the search criteria.")
+            # Update selection count
+            Update-SelectionCount
         }
         
         # Ensure Offboard button is disabled until selection
@@ -3596,9 +3785,112 @@ $logs_button = $Window.FindName('logs_button')
 $PrerequisitesButton = $Window.FindName('PrerequisitesButton')
 $FeedbackLink = $Window.FindName('FeedbackLink')
 
+# Filter controls
+$OSFilter = $Window.FindName('OSFilter')
+$ServiceFilter = $Window.FindName('ServiceFilter')
+$LastSyncFilter = $Window.FindName('LastSyncFilter')
+$ApplyFiltersButton = $Window.FindName('ApplyFiltersButton')
+$ClearFiltersButton = $Window.FindName('ClearFiltersButton')
+
 # Add feedback link handler
 $FeedbackLink.Add_Click({
         Start-Process "https://github.com/ugurkocde/DeviceOffboardingManager/issues"
+    })
+
+# Add filter button handlers
+$ApplyFiltersButton.Add_Click({
+        if (-not $script:UnfilteredSearchResults -or $script:UnfilteredSearchResults.Count -eq 0) {
+            [System.Windows.MessageBox]::Show("Please perform a search first before applying filters.")
+            return
+        }
+        
+        try {
+            # Get filter values
+            $osFilterValue = if ($OSFilter.SelectedItem) { $OSFilter.SelectedItem.Tag } else { "All" }
+            $serviceFilterValue = if ($ServiceFilter.SelectedItem) { $ServiceFilter.SelectedItem.Tag } else { "All" }
+            $lastSyncDays = if ($LastSyncFilter.SelectedItem -and $LastSyncFilter.SelectedItem.Tag -ne "0") { 
+                [int]$LastSyncFilter.SelectedItem.Tag 
+            } else { 0 }
+            
+            Write-Log "Applying filters - OS: $osFilterValue, Service: $serviceFilterValue, LastSync: $lastSyncDays"
+            
+            # Apply filters
+            $filteredResults = Apply-DeviceFilters -Devices $script:UnfilteredSearchResults `
+                                                   -OSFilter $osFilterValue `
+                                                   -ServiceFilter $serviceFilterValue `
+                                                   -LastSyncDays $lastSyncDays
+            
+            # Ensure we have a list (PowerShell might unwrap single-item collections)
+            if ($filteredResults -is [DeviceObject]) {
+                # Single item returned, wrap it in a list
+                $tempList = New-Object 'System.Collections.Generic.List[DeviceObject]'
+                $tempList.Add($filteredResults)
+                $filteredResults = $tempList
+            }
+            
+            # Update the DataGrid
+            $script:CurrentFilteredResults = $filteredResults
+            $SearchResultsDataGrid.ItemsSource = $filteredResults
+            
+            # Update selection count
+            Update-SelectionCount
+            
+            # Update status bars with filtered counts
+            $filteredIntuneCount = ($filteredResults | Where-Object { $_.IntuneLastContact }).Count
+            $filteredAutopilotCount = ($filteredResults | Where-Object { $_.AutopilotLastContact }).Count
+            $filteredAADCount = ($filteredResults | Where-Object { $_.AzureADLastContact }).Count
+            
+            $totalIntuneCount = ($script:UnfilteredSearchResults | Where-Object { $_.IntuneLastContact }).Count
+            $totalAutopilotCount = ($script:UnfilteredSearchResults | Where-Object { $_.AutopilotLastContact }).Count
+            $totalAADCount = ($script:UnfilteredSearchResults | Where-Object { $_.AzureADLastContact }).Count
+            
+            # Update UI status with filtered/total counts
+            $Window.FindName('intune_status').Text = "Intune: $filteredIntuneCount shown ($totalIntuneCount total)"
+            $Window.FindName('intune_status').Foreground = if ($filteredIntuneCount -gt 0) { '#4299E1' } else { '#FC8181' }
+            $Window.FindName('autopilot_status').Text = "Autopilot: $filteredAutopilotCount shown ($totalAutopilotCount total)"
+            $Window.FindName('autopilot_status').Foreground = if ($filteredAutopilotCount -gt 0) { '#48BB78' } else { '#FC8181' }
+            $Window.FindName('aad_status').Text = "Entra ID: $filteredAADCount shown ($totalAADCount total)"
+            $Window.FindName('aad_status').Foreground = if ($filteredAADCount -gt 0) { '#ED64A6' } else { '#FC8181' }
+            
+            # Reset selection
+            $OffboardButton.IsEnabled = $false
+            
+            if ($filteredResults.Count -eq 0) {
+                [System.Windows.MessageBox]::Show("No devices match the selected filters.")
+            }
+        }
+        catch {
+            Write-Log "Error applying filters: $_"
+            [System.Windows.MessageBox]::Show("Error applying filters: $_")
+        }
+    })
+
+$ClearFiltersButton.Add_Click({
+        # Reset filter dropdowns
+        $OSFilter.SelectedIndex = 0
+        $ServiceFilter.SelectedIndex = 0
+        $LastSyncFilter.SelectedIndex = 0
+        
+        # Restore unfiltered results
+        if ($script:UnfilteredSearchResults -and $script:UnfilteredSearchResults.Count -gt 0) {
+            $script:CurrentFilteredResults = $script:UnfilteredSearchResults
+            $SearchResultsDataGrid.ItemsSource = $script:UnfilteredSearchResults
+            
+            # Update selection count
+            Update-SelectionCount
+            
+            # Restore original status counts
+            $IntuneCount = ($script:UnfilteredSearchResults | Where-Object { $_.IntuneLastContact }).Count
+            $AutopilotCount = ($script:UnfilteredSearchResults | Where-Object { $_.AutopilotLastContact }).Count
+            $AADCount = ($script:UnfilteredSearchResults | Where-Object { $_.AzureADLastContact }).Count
+            
+            $Window.FindName('intune_status').Text = "Intune: $IntuneCount device found"
+            $Window.FindName('intune_status').Foreground = if ($IntuneCount -gt 0) { '#4299E1' } else { '#FC8181' }
+            $Window.FindName('autopilot_status').Text = "Autopilot: $AutopilotCount device found"
+            $Window.FindName('autopilot_status').Foreground = if ($AutopilotCount -gt 0) { '#48BB78' } else { '#FC8181' }
+            $Window.FindName('aad_status').Text = "Entra ID: $AADCount device found"
+            $Window.FindName('aad_status').Foreground = if ($AADCount -gt 0) { '#ED64A6' } else { '#FC8181' }
+        }
     })
 
 $SearchInputText.Add_GotFocus({
@@ -4324,9 +4616,11 @@ $OffboardButton.Add_Click({
                     
                     # If not found by serial number or no serial number available, try by display name
                     if (-not $AutopilotDevice -and $deviceName) {
-                        Write-Log "Searching Autopilot by display name: $deviceName"
-                        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(displayName,'$deviceName')"
-                        $AutopilotDevice = (Invoke-MgGraphRequest -Uri $uri -Method GET).value | Select-Object -First 1
+                        Write-Log "Searching Autopilot by fetching all devices and filtering locally..."
+                        # Since contains filter is not supported on displayName, fetch all and filter locally
+                        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+                        $allAutopilotDevices = Get-GraphPagedResults -Uri $uri
+                        $AutopilotDevice = $allAutopilotDevices | Where-Object { $_.displayName -like "*$deviceName*" } | Select-Object -First 1
                     }
                     
                     if ($AutopilotDevice) {
@@ -5406,10 +5700,53 @@ foreach ($button in $PlaybookButtons) {
 $SearchResultsDataGrid = $Window.FindName('SearchResultsDataGrid')
 $OffboardButton = $Window.FindName('OffboardButton')
 
+# Create header panel for selection controls
+$headerPanel = New-Object System.Windows.Controls.StackPanel
+$headerPanel.Orientation = [System.Windows.Controls.Orientation]::Vertical
+$headerPanel.Margin = "2"
+
+# Create buttons panel
+$buttonsPanel = New-Object System.Windows.Controls.StackPanel
+$buttonsPanel.Orientation = [System.Windows.Controls.Orientation]::Horizontal
+
 # Create and configure Select All checkbox
 $SelectAllCheckBox = New-Object System.Windows.Controls.CheckBox
-$SelectAllCheckBox.Content = "Select All"
-($SearchResultsDataGrid.Columns[0]).Header = $SelectAllCheckBox
+$SelectAllCheckBox.Content = "All"
+$SelectAllCheckBox.Margin = "0,0,5,0"
+$buttonsPanel.Children.Add($SelectAllCheckBox) | Out-Null
+
+# Create Select Visible button
+$SelectVisibleButton = New-Object System.Windows.Controls.Button
+$SelectVisibleButton.Content = "Visible"
+$SelectVisibleButton.Padding = "5,2"
+$SelectVisibleButton.Margin = "0,0,5,0"
+$SelectVisibleButton.FontSize = 10
+$buttonsPanel.Children.Add($SelectVisibleButton) | Out-Null
+
+# Add buttons panel to header
+$headerPanel.Children.Add($buttonsPanel) | Out-Null
+
+# Create selection count label
+$SelectionCountLabel = New-Object System.Windows.Controls.TextBlock
+$SelectionCountLabel.Text = "0 selected"
+$SelectionCountLabel.FontSize = 9
+$SelectionCountLabel.Foreground = "#666666"
+$SelectionCountLabel.Margin = "0,2,0,0"
+$headerPanel.Children.Add($SelectionCountLabel) | Out-Null
+
+# Set the header
+($SearchResultsDataGrid.Columns[0]).Header = $headerPanel
+
+# Function to update selection count
+function Update-SelectionCount {
+    if ($SearchResultsDataGrid.ItemsSource) {
+        $selectedCount = ($SearchResultsDataGrid.ItemsSource | Where-Object { $_.IsSelected }).Count
+        $totalCount = $SearchResultsDataGrid.ItemsSource.Count
+        $SelectionCountLabel.Text = "$selectedCount of $totalCount"
+    } else {
+        $SelectionCountLabel.Text = "0 selected"
+    }
+}
 
 # Add Select All checkbox click handler
 $SelectAllCheckBox.Add_Click({
@@ -5418,6 +5755,18 @@ $SelectAllCheckBox.Add_Click({
             foreach ($device in $SearchResultsDataGrid.ItemsSource) {
                 $device.IsSelected = $allChecked
             }
+            Update-SelectionCount
+        }
+    })
+
+# Add Select Visible button click handler
+$SelectVisibleButton.Add_Click({
+        if ($SearchResultsDataGrid.ItemsSource) {
+            foreach ($device in $SearchResultsDataGrid.ItemsSource) {
+                $device.IsSelected = $true
+            }
+            $SelectAllCheckBox.IsChecked = $true
+            Update-SelectionCount
         }
     })
 
@@ -5449,6 +5798,9 @@ $SearchResultsDataGrid.Add_LoadingRow({
                         # Update Offboard button state
                         $selectedDevices = $SearchResultsDataGrid.ItemsSource | Where-Object { $_.IsSelected }
                         $OffboardButton.IsEnabled = ($null -ne $selectedDevices -and $selectedDevices.Count -gt 0)
+                        
+                        # Update selection count
+                        Update-SelectionCount
                     }
                 })
         }

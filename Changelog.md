@@ -17,6 +17,20 @@
   - Accessible via Settings button in the sidebar
   - Clean, single-view interface for all settings
   - Saves preferences to `%APPDATA%\DeviceOffboardingManager\settings.json`
+- **Fixed Autopilot Search Filter**: Fixed API error when searching for Autopilot devices by display name
+- **Advanced Device Filtering**: Added comprehensive filtering capabilities for device management (Issue #33)
+  - **OS Filter**: Filter devices by operating system (Windows, macOS, iOS, Android)
+  - **Service Filter**: Filter by service presence (Autopilot Only, Intune Only, Not in Intune, Not in Autopilot)
+  - **Last Sync Filter**: Filter devices that haven't synced in 30, 60, or 90 days
+  - Filters work on already-retrieved data for instant results
+  - Added Apply and Clear buttons for filter control
+- **Enhanced Multi-Selection**: Improved device selection functionality (Issue #33)
+  - Added "Select Visible" button alongside existing "Select All"
+  - Added selection count display showing "X of Y selected"
+  - Both controls are conveniently located in the checkbox column header
+- **Improved Status Displays**: Status bars now show filtered vs total counts (Issue #33)
+  - Example: "Intune: 5 shown (20 total)" when filters are active
+  - Helps users understand the impact of applied filters
 
 ## Version 0.2.1 - 6/29/2025
 
