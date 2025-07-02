@@ -1,4 +1,4 @@
-## Version 0.3 - ???
+## Version 0.3 - maybe someday somewhere
 
 - **Configurable Log Location**: Added ability to set custom log file location through new Settings modal (Issue #35)
   - Log files can now be saved to any user-specified directory
