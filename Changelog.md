@@ -1,3 +1,29 @@
+## Version 0.2.2 - 7/26/2025
+
+- **Fixed Autopilot Device Removal by Serial Number**: Enhanced offboarding process to properly retrieve and use serial numbers for Autopilot device removal (Issue #45)
+  - Captures serial number from Intune device data during offboarding
+  - Extracts serial number from Entra ID device physicalIds when available
+  - Ensures devices searched by name can be properly removed from Autopilot
+  - Fixes "BadRequest" API error when searching Autopilot devices by displayName
+- **Fixed Critical Error with Duplicate Entra ID Devices**: Enhanced offboarding to handle duplicate device records in Entra ID (Issue #44)
+  - Processes all duplicate devices instead of just the first one
+  - Validates serial numbers to avoid deleting wrong duplicates
+  - Provides detailed logging for each duplicate device processed
+  - Reports partial success when some duplicates fail to delete
+  - Prevents critical errors when multiple devices share the same name
+- **Export Selected Devices to CSV**: Added new feature to export only selected device names to CSV (Issue #43)
+  - Added "Export Selected" button next to existing "Export Results" button
+  - Exports device names along with all metadata (serial number, OS, user, service status)
+  - Button is enabled/disabled based on device selection
+  - Allows easy transfer of device information to other systems for cleanup
+  - Maintains consistent export format with existing export functionality
+- **Enhanced Dialog Error Handling**: Added comprehensive error handling for all dialog windows (Issue #42)
+  - Added null checks before calling ShowDialog() on all windows
+  - Wrapped all ShowDialog() calls in try-catch blocks
+  - Added error handling for window creation with XamlReader.Load()
+  - Provides user-friendly error messages when dialogs fail to load
+  - Prevents "null-valued expression" errors during offboarding
+
 ## Version 0.2.1 - 6/29/2025
 
 - **Fixed Autopilot Device Removal**: Enhanced Autopilot device removal to use displayName as fallback when serial number is unavailable (Issue #34)

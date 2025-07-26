@@ -1,6 +1,6 @@
 <#PSScriptInfo
 
-.VERSION 0.2.1
+.VERSION 0.2.2
 
 .GUID a686724d-588d-472e-b927-c4840c32eed1
 
@@ -46,8 +46,18 @@ Param()
 # Guide and documentation available at https://github.com/ugurkocde/DeviceOffboardingManager
 # Feedback and contributions are welcome!
 
-Add-Type -AssemblyName PresentationFramework
-Add-Type -AssemblyName System.Windows.Forms
+# Load required assemblies with error handling
+try {
+    Add-Type -AssemblyName PresentationFramework -ErrorAction Stop
+    Add-Type -AssemblyName System.Windows.Forms -ErrorAction Stop
+    Add-Type -AssemblyName PresentationCore -ErrorAction Stop
+    Add-Type -AssemblyName WindowsBase -ErrorAction Stop
+}
+catch {
+    Write-Host "Failed to load required .NET assemblies: $_" -ForegroundColor Red
+    Write-Host "Please ensure .NET Framework is properly installed." -ForegroundColor Red
+    exit 1
+}
 
 # Function to get installed version
 function Get-InstalledVersion {
@@ -1035,9 +1045,9 @@ function ConvertTo-SafeDateTime {
                     <RowDefinition Height="Auto"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
-
+                
                 <!-- Top Row Statistics -->
-                <UniformGrid Grid.Row="0" Rows="1" Margin="20,20,20,10">
+                <UniformGrid Grid.Row="0" Rows="1" Margin="20,10,20,10">
                     <Border x:Name="IntuneDevicesCard" Background="#1B2A47" Margin="0,0,10,0" CornerRadius="8" Cursor="Hand">
                         <Border.Style>
                             <Style TargetType="Border">
@@ -1616,6 +1626,7 @@ function ConvertTo-SafeDateTime {
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
@@ -1693,6 +1704,52 @@ function ConvertTo-SafeDateTime {
                                                                 VerticalAlignment="Center"
                                                                 Margin="{TemplateBinding Padding}"/>
                                             </Border>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    
+                    <!-- Export Selected Button -->
+                    <Button x:Name="ExportSelectedButton"
+                            Content="Export Selected"
+                            Grid.Column="2"
+                            Height="40"
+                            MinWidth="140"
+                            Padding="20,0"
+                            Background="#059669"
+                            Foreground="White"
+                            BorderThickness="0"
+                            Margin="0,0,8,0"
+                            Cursor="Hand"
+                            IsEnabled="False">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="6"/>
+                            </Style>
+                        </Button.Resources>
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="6">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                VerticalAlignment="Center"
+                                                                Margin="{TemplateBinding Padding}"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#047857"/>
+                                                </Trigger>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Background" Value="#A7F3D0"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
                                         </ControlTemplate>
                                     </Setter.Value>
                                 </Setter>
@@ -2702,8 +2759,24 @@ $script:requiredPermissions = @(
 )
 
 function Show-AuthenticationDialog {
-    $reader = (New-Object System.Xml.XmlNodeReader $authModalXaml)
-    $authWindow = [Windows.Markup.XamlReader]::Load($reader)
+    try {
+        $reader = (New-Object System.Xml.XmlNodeReader $authModalXaml)
+        $authWindow = [Windows.Markup.XamlReader]::Load($reader)
+        
+        if ($null -eq $authWindow) {
+            throw "Failed to create authentication window. XamlReader returned null."
+        }
+    }
+    catch {
+        Write-Log "Error creating authentication window: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to create the authentication dialog. Error: $_",
+            "Dialog Creation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return $null
+    }
 
     # Get controls
     $interactiveAuth = $authWindow.FindName('InteractiveAuth')
@@ -2843,7 +2916,22 @@ function Show-AuthenticationDialog {
         })
 
     # Show dialog and return result
-    $result = $authWindow.ShowDialog()
+    try {
+        if ($null -eq $authWindow) {
+            throw "Authentication window is null. Cannot show dialog."
+        }
+        $result = $authWindow.ShowDialog()
+    }
+    catch {
+        Write-Log "Error showing authentication dialog: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to show the authentication dialog. Error: $_",
+            "Dialog Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return $null
+    }
     
     if ($result) {
         # Return authentication details based on selected method
@@ -2873,8 +2961,24 @@ function Show-AuthenticationDialog {
 }
 
 function Show-BulkImportDialog {
-    $reader = (New-Object System.Xml.XmlNodeReader $bulkImportModalXaml)
-    $bulkImportWindow = [Windows.Markup.XamlReader]::Load($reader)
+    try {
+        $reader = (New-Object System.Xml.XmlNodeReader $bulkImportModalXaml)
+        $bulkImportWindow = [Windows.Markup.XamlReader]::Load($reader)
+        
+        if ($null -eq $bulkImportWindow) {
+            throw "Failed to create bulk import window. XamlReader returned null."
+        }
+    }
+    catch {
+        Write-Log "Error creating bulk import window: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to create the bulk import dialog. Error: $_",
+            "Dialog Creation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return $null
+    }
     
     # Get controls
     $downloadTemplateButton = $bulkImportWindow.FindName('DownloadTemplateButton')
@@ -3005,7 +3109,22 @@ LAPTOP-XYZ789
         })
     
     # Show dialog and return result
-    $result = $bulkImportWindow.ShowDialog()
+    try {
+        if ($null -eq $bulkImportWindow) {
+            throw "Bulk import window is null. Cannot show dialog."
+        }
+        $result = $bulkImportWindow.ShowDialog()
+    }
+    catch {
+        Write-Log "Error showing bulk import dialog: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to show the bulk import dialog. Error: $_",
+            "Dialog Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return $null
+    }
     
     if ($result -eq $true -and $script:parsedDevices.Count -gt 0) {
         return $script:parsedDevices
@@ -3140,8 +3259,24 @@ function Connect-ToGraph {
 }
 
 # Parse XAML
-$reader = (New-Object System.Xml.XmlNodeReader $xaml)
-$Window = [Windows.Markup.XamlReader]::Load($reader)
+try {
+    $reader = (New-Object System.Xml.XmlNodeReader $xaml)
+    $Window = [Windows.Markup.XamlReader]::Load($reader)
+    
+    if ($null -eq $Window) {
+        throw "Failed to create main window. XamlReader returned null."
+    }
+}
+catch {
+    Write-Log "Error creating main window: $_"
+    [System.Windows.MessageBox]::Show(
+        "Failed to create the main application window. Error: $_",
+        "Application Startup Error",
+        [System.Windows.MessageBoxButton]::OK,
+        [System.Windows.MessageBoxImage]::Error
+    )
+    exit 1
+}
 
 # Set window title with version
 $scriptVersion = Get-ScriptVersion
@@ -3239,9 +3374,23 @@ function Invoke-DeviceSearch {
                 $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=deviceName eq '$SearchText'"
                 $IntuneDevices = Get-GraphPagedResults -Uri $uri
                 
-                # Search Autopilot devices by displayName
-                $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(displayName,'$SearchText')"
-                $AutopilotDevices = Get-GraphPagedResults -Uri $uri
+                # Search Autopilot devices by displayName (using client-side filtering)
+                try {
+                    # Get all Autopilot devices and filter client-side since API doesn't support displayName filtering
+                    $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+                    $allAutopilotDevices = Get-GraphPagedResults -Uri $uri
+                    
+                    # Filter by display name (case-insensitive partial match)
+                    $AutopilotDevices = $allAutopilotDevices | Where-Object { 
+                        $_.displayName -and $_.displayName -like "*$SearchText*" 
+                    }
+                    
+                    Write-Log "Found $($AutopilotDevices.Count) Autopilot devices matching display name: $SearchText"
+                }
+                catch {
+                    Write-Log "Error searching Autopilot devices by display name: $_"
+                    $AutopilotDevices = @()
+                }
 
                 # Process Entra ID devices
                 if ($AADDevices) {
@@ -3258,7 +3407,19 @@ function Invoke-DeviceSearch {
                         $CombinedDevice = New-Object DeviceObject
                         $CombinedDevice.IsSelected = $false
                         $CombinedDevice.DeviceName = $AADDevice.displayName
+                        
+                        # Try to get serial number from multiple sources
                         $CombinedDevice.SerialNumber = $matchingIntuneDevice?.serialNumber ?? $matchingAutopilotDevice?.serialNumber
+                        
+                        # If still no serial number, try to extract from Entra ID physicalIds
+                        if (-not $CombinedDevice.SerialNumber -and $AADDevice.physicalIds) {
+                            foreach ($physicalId in $AADDevice.physicalIds) {
+                                if ($physicalId -match '\[SerialNumber\]:(.+)') {
+                                    $CombinedDevice.SerialNumber = $matches[1].Trim()
+                                    break
+                                }
+                            }
+                        }
                         $CombinedDevice.OperatingSystem = $AADDevice.operatingSystem
                         $CombinedDevice.PrimaryUser = $matchingIntuneDevice?.userDisplayName
                         $CombinedDevice.AzureADLastContact = ConvertTo-SafeDateTime -dateString $AADDevice.approximateLastSignInDateTime
@@ -3400,8 +3561,9 @@ function Invoke-DeviceSearch {
             [System.Windows.MessageBox]::Show("No devices found matching the search criteria.")
         }
         
-        # Ensure Offboard button is disabled until selection
+        # Ensure Offboard button and Export Selected button are disabled until selection
         $OffboardButton.IsEnabled = $false
+        $ExportSelectedButton.IsEnabled = $false
     }
     catch {
         Write-Log "Error occurred during search operation. Exception: $_"
@@ -3412,6 +3574,7 @@ function Invoke-DeviceSearch {
 # Connect to Controls
 $SearchButton = $Window.FindName("SearchButton")
 $OffboardButton = $Window.FindName("OffboardButton")
+$ExportSelectedButton = $Window.FindName("ExportSelectedButton")
 $AuthenticateButton = $Window.FindName("AuthenticateButton")
 $SearchInputText = $Window.FindName("SearchInputText")
 $bulk_import_button = $Window.FindName('bulk_import_button')
@@ -3825,8 +3988,24 @@ $OffboardButton.Add_Click({
 </Window>
 '@
         
-        $reader = (New-Object System.Xml.XmlNodeReader $confirmationModalXaml)
-        $confirmationWindow = [Windows.Markup.XamlReader]::Load($reader)
+        try {
+            $reader = (New-Object System.Xml.XmlNodeReader $confirmationModalXaml)
+            $confirmationWindow = [Windows.Markup.XamlReader]::Load($reader)
+            
+            if ($null -eq $confirmationWindow) {
+                throw "Failed to create confirmation window. XamlReader returned null."
+            }
+        }
+        catch {
+            Write-Log "Error creating confirmation window: $_"
+            [System.Windows.MessageBox]::Show(
+                "Failed to create the confirmation dialog. Error: $_",
+                "Dialog Creation Error",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            )
+            return
+        }
         
         # Get controls
         $servicesList = $confirmationWindow.FindName('ServicesList')
@@ -4033,7 +4212,22 @@ $OffboardButton.Add_Click({
             })
         
         # Show dialog
-        $confirmationResult = $confirmationWindow.ShowDialog()
+        try {
+            if ($null -eq $confirmationWindow) {
+                throw "Confirmation window is null. Cannot show dialog."
+            }
+            $confirmationResult = $confirmationWindow.ShowDialog()
+        }
+        catch {
+            Write-Log "Error showing confirmation dialog: $_"
+            [System.Windows.MessageBox]::Show(
+                "Failed to show the confirmation dialog. Error: $_",
+                "Dialog Error",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            )
+            return
+        }
         if (-not $confirmationResult) {
             Write-Log "User canceled offboarding operation."
             return
@@ -4056,21 +4250,79 @@ $OffboardButton.Add_Click({
 
                 Write-Log "Starting offboarding for device: $deviceName (Serial: $serialNumber)"
 
-                # Get Entra ID Device
+                # Get Entra ID Device(s) - Handle potential duplicates
                 if ($script:serviceCheckboxes["Entra ID"].IsChecked -and $deviceName) {
                     $uri = "https://graph.microsoft.com/v1.0/devices?`$filter=displayName eq '$deviceName'"
-                    $AADDevice = (Invoke-MgGraphRequest -Uri $uri -Method GET).value | Select-Object -First 1
-                    if ($AADDevice) {
+                    $AADDevices = (Invoke-MgGraphRequest -Uri $uri -Method GET).value
+                    
+                    if ($AADDevices -and $AADDevices.Count -gt 0) {
                         $deviceResult.EntraID.Found = $true
-                        try {
-                            $uri = "https://graph.microsoft.com/v1.0/devices/$($AADDevice.id)"
-                            Invoke-MgGraphRequest -Uri $uri -Method DELETE
-                            $deviceResult.EntraID.Success = $true
-                            Write-Log "Successfully removed device $deviceName from Entra ID."
+                        
+                        # Log if we found duplicates
+                        if ($AADDevices.Count -gt 1) {
+                            Write-Log "Found $($AADDevices.Count) devices with name '$deviceName' in Entra ID. Will process all duplicates."
                         }
-                        catch {
-                            $deviceResult.EntraID.Error = $_.Exception.Message
-                            Write-Log "Error removing device $deviceName from Entra ID: $_"
+                        
+                        $deletedCount = 0
+                        $failedCount = 0
+                        $allErrors = @()
+                        
+                        foreach ($AADDevice in $AADDevices) {
+                            # Try to extract serial number from physicalIds if we don't have it (only from first device)
+                            if (-not $serialNumber -and $AADDevice.physicalIds -and $deletedCount -eq 0) {
+                                foreach ($physicalId in $AADDevice.physicalIds) {
+                                    if ($physicalId -match '\[SerialNumber\]:(.+)') {
+                                        $serialNumber = $matches[1].Trim()
+                                        Write-Log "Retrieved serial number from Entra ID device: $serialNumber"
+                                        break
+                                    }
+                                }
+                            }
+                            
+                            # Check if this device matches our serial number (if we have one)
+                            $deviceSerial = $null
+                            if ($AADDevice.physicalIds) {
+                                foreach ($physicalId in $AADDevice.physicalIds) {
+                                    if ($physicalId -match '\[SerialNumber\]:(.+)') {
+                                        $deviceSerial = $matches[1].Trim()
+                                        break
+                                    }
+                                }
+                            }
+                            
+                            # If we have a serial number to match, skip devices that don't match
+                            if ($serialNumber -and $deviceSerial -and $deviceSerial -ne $serialNumber) {
+                                Write-Log "Skipping Entra ID device with ID $($AADDevice.id) - serial number mismatch (Device: $deviceSerial, Expected: $serialNumber)"
+                                continue
+                            }
+                            
+                            try {
+                                $uri = "https://graph.microsoft.com/v1.0/devices/$($AADDevice.id)"
+                                Invoke-MgGraphRequest -Uri $uri -Method DELETE
+                                $deletedCount++
+                                Write-Log "Successfully removed device $deviceName (ID: $($AADDevice.id), Serial: $deviceSerial) from Entra ID."
+                            }
+                            catch {
+                                $failedCount++
+                                $allErrors += $_.Exception.Message
+                                Write-Log "Error removing device $deviceName (ID: $($AADDevice.id)) from Entra ID: $_"
+                            }
+                        }
+                        
+                        # Set overall success/failure status
+                        if ($deletedCount -gt 0 -and $failedCount -eq 0) {
+                            $deviceResult.EntraID.Success = $true
+                            if ($deletedCount -gt 1) {
+                                Write-Log "Successfully removed all $deletedCount duplicate devices named '$deviceName' from Entra ID."
+                            }
+                        }
+                        elseif ($deletedCount -gt 0 -and $failedCount -gt 0) {
+                            $deviceResult.EntraID.Success = $false
+                            $deviceResult.EntraID.Error = "Partial success: Deleted $deletedCount device(s), failed to delete $failedCount device(s). Errors: " + ($allErrors -join "; ")
+                        }
+                        else {
+                            $deviceResult.EntraID.Success = $false
+                            $deviceResult.EntraID.Error = "Failed to delete any devices. Errors: " + ($allErrors -join "; ")
                         }
                     }
                     else {
@@ -4093,6 +4345,13 @@ $OffboardButton.Add_Click({
                     }
                     if ($IntuneDevice) {
                         $deviceResult.Intune.Found = $true
+                        
+                        # Capture the serial number from Intune device if we don't have it
+                        if (-not $serialNumber -and $IntuneDevice.serialNumber) {
+                            $serialNumber = $IntuneDevice.serialNumber
+                            Write-Log "Retrieved serial number from Intune device: $serialNumber"
+                        }
+                        
                         try {
                             $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices/$($IntuneDevice.id)"
                             Invoke-MgGraphRequest -Uri $uri -Method DELETE
@@ -4128,9 +4387,24 @@ $OffboardButton.Add_Click({
                     
                     # If not found by serial number or no serial number available, try by display name
                     if (-not $AutopilotDevice -and $deviceName) {
-                        Write-Log "Searching Autopilot by display name: $deviceName"
-                        $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(displayName,'$deviceName')"
-                        $AutopilotDevice = (Invoke-MgGraphRequest -Uri $uri -Method GET).value | Select-Object -First 1
+                        Write-Log "Searching Autopilot by display name: $deviceName (using client-side filtering)"
+                        try {
+                            # Get all Autopilot devices and filter client-side since API doesn't support displayName filtering
+                            $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
+                            $allAutopilotDevices = Get-GraphPagedResults -Uri $uri
+                            
+                            # Filter by display name (case-insensitive partial match)
+                            $AutopilotDevice = $allAutopilotDevices | Where-Object { 
+                                $_.displayName -and $_.displayName -like "*$deviceName*" 
+                            } | Select-Object -First 1
+                            
+                            if ($AutopilotDevice) {
+                                Write-Log "Found Autopilot device matching display name: $($AutopilotDevice.displayName)"
+                            }
+                        }
+                        catch {
+                            Write-Log "Error searching Autopilot devices by display name: $_"
+                        }
                     }
                     
                     if ($AutopilotDevice) {
@@ -4216,6 +4490,42 @@ $ExportSearchResultsButton.Add_Click({
             [System.Windows.MessageBox]::Show(
                 "No search results to export.",
                 "Export",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Information
+            )
+        }
+    })
+
+# Export selected devices button
+$ExportSelectedButton = $Window.FindName('ExportSelectedButton')
+$ExportSelectedButton.Add_Click({
+        $selectedDevices = $SearchResultsDataGrid.ItemsSource | Where-Object { $_.IsSelected }
+        if ($selectedDevices -and $selectedDevices.Count -gt 0) {
+            $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
+            $fileName = "Selected_Devices_${timestamp}.csv"
+            
+            # Create a clean export list with device names and relevant metadata
+            $exportData = @()
+            foreach ($device in $selectedDevices) {
+                $exportData += [PSCustomObject]@{
+                    DeviceName      = $device.DeviceName
+                    SerialNumber    = $device.SerialNumber
+                    LastContact     = $device.LastContact
+                    OperatingSystem = $device.OperatingSystem
+                    OSVersion       = $device.OSVersion
+                    PrimaryUser     = $device.PrimaryUser
+                    IntuneStatus    = $device.IntuneStatus
+                    AutopilotStatus = $device.AutopilotStatus
+                    EntraIDStatus   = $device.EntraIDStatus
+                }
+            }
+            
+            Export-DeviceListToCSV -DeviceList $exportData -DefaultFileName $fileName
+        }
+        else {
+            [System.Windows.MessageBox]::Show(
+                "No devices selected to export.",
+                "Export Selected",
                 [System.Windows.MessageBoxButton]::OK,
                 [System.Windows.MessageBoxImage]::Information
             )
@@ -4340,8 +4650,24 @@ function Show-OffboardingSummary {
 </Window>
 '@
     
-    $reader = (New-Object System.Xml.XmlNodeReader $summaryModalXaml)
-    $summaryWindow = [Windows.Markup.XamlReader]::Load($reader)
+    try {
+        $reader = (New-Object System.Xml.XmlNodeReader $summaryModalXaml)
+        $summaryWindow = [Windows.Markup.XamlReader]::Load($reader)
+        
+        if ($null -eq $summaryWindow) {
+            throw "Failed to create summary window. XamlReader returned null."
+        }
+    }
+    catch {
+        Write-Log "Error creating summary window: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to create the summary dialog. Error: $_",
+            "Dialog Creation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return
+    }
     
     # Get controls
     $closeButton = $summaryWindow.FindName('CloseButton')
@@ -4462,15 +4788,29 @@ function Show-OffboardingSummary {
         })
     
     # Show dialog
-    $summaryWindow.ShowDialog() | Out-Null
+    try {
+        if ($null -eq $summaryWindow) {
+            throw "Summary window is null. Cannot show dialog."
+        }
+        $summaryWindow.ShowDialog() | Out-Null
+    }
+    catch {
+        Write-Log "Error showing summary dialog: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to show the summary dialog. Error: $_",
+            "Dialog Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+    }
 }
 
 function Show-DashboardCardResults {
     param(
         [Parameter(Mandatory = $true)]
         [string]$Title,
-        [Parameter(Mandatory = $true)]
-        [array]$DeviceList
+        [Parameter(Mandatory = $false)]
+        [array]$DeviceList = @()
     )
     
     [xml]$dashboardResultsXaml = @'
@@ -4535,8 +4875,24 @@ function Show-DashboardCardResults {
 </Window>
 '@
     
-    $reader = (New-Object System.Xml.XmlNodeReader $dashboardResultsXaml)
-    $dashboardWindow = [Windows.Markup.XamlReader]::Load($reader)
+    try {
+        $reader = (New-Object System.Xml.XmlNodeReader $dashboardResultsXaml)
+        $dashboardWindow = [Windows.Markup.XamlReader]::Load($reader)
+        
+        if ($null -eq $dashboardWindow) {
+            throw "Failed to create dashboard window. XamlReader returned null."
+        }
+    }
+    catch {
+        Write-Log "Error creating dashboard window: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to create the dashboard dialog. Error: $_",
+            "Dialog Creation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return
+    }
     
     # Get controls
     $titleText = $dashboardWindow.FindName('TitleText')
@@ -4544,6 +4900,14 @@ function Show-DashboardCardResults {
     $resultsDataGrid = $dashboardWindow.FindName('ResultsDataGrid')
     $exportButton = $dashboardWindow.FindName('ExportButton')
     $closeButton = $dashboardWindow.FindName('CloseButton')
+    
+    # Ensure DeviceList is an array
+    if ($null -eq $DeviceList) {
+        $DeviceList = @()
+    }
+    elseif ($DeviceList -isnot [array]) {
+        $DeviceList = @($DeviceList)
+    }
     
     # Set title and count
     $titleText.Text = $Title
@@ -4567,12 +4931,42 @@ function Show-DashboardCardResults {
         })
     
     # Show dialog
-    $dashboardWindow.ShowDialog() | Out-Null
+    try {
+        if ($null -eq $dashboardWindow) {
+            throw "Dashboard window is null. Cannot show dialog."
+        }
+        $dashboardWindow.ShowDialog() | Out-Null
+    }
+    catch {
+        Write-Log "Error showing dashboard dialog: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to show the dashboard dialog. Error: $_",
+            "Dialog Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+    }
 }
 
 function Show-PrerequisitesDialog {
-    $reader = (New-Object System.Xml.XmlNodeReader $prerequisitesModalXaml)
-    $prereqWindow = [Windows.Markup.XamlReader]::Load($reader)
+    try {
+        $reader = (New-Object System.Xml.XmlNodeReader $prerequisitesModalXaml)
+        $prereqWindow = [Windows.Markup.XamlReader]::Load($reader)
+        
+        if ($null -eq $prereqWindow) {
+            throw "Failed to create prerequisites window. XamlReader returned null."
+        }
+    }
+    catch {
+        Write-Log "Error creating prerequisites window: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to create the prerequisites dialog. Error: $_",
+            "Dialog Creation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return
+    }
 
     # Get controls
     $permissionsPanel = $prereqWindow.FindName('PermissionsPanel')
@@ -4759,7 +5153,21 @@ function Show-PrerequisitesDialog {
         })
 
     # Show dialog
-    $prereqWindow.ShowDialog()
+    try {
+        if ($null -eq $prereqWindow) {
+            throw "Prerequisites window is null. Cannot show dialog."
+        }
+        $prereqWindow.ShowDialog()
+    }
+    catch {
+        Write-Log "Error showing prerequisites dialog: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to show the prerequisites dialog. Error: $_",
+            "Dialog Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+    }
 }
 
 $PrerequisitesButton.Add_Click({
@@ -4787,6 +5195,7 @@ $DeviceManagementPage = $Window.FindName('DeviceManagementPage')
 $PlaybooksPage = $Window.FindName('PlaybooksPage')
 $PlaybookResultsGrid = $Window.FindName('PlaybookResultsGrid')
 $PlaybookResultsDataGrid = $Window.FindName('PlaybookResultsDataGrid')
+
 
 # Set initial page visibility
 $Window.Add_Loaded({
@@ -4837,6 +5246,8 @@ $MenuPlaybooks.Add_Checked({
         $Window.FindName('PlaybooksScrollViewer').Visibility = 'Visible'
     })
 
+
+
 function Update-DashboardStatistics {
     try {
         Write-Log "Updating dashboard statistics..."
@@ -4860,7 +5271,9 @@ function Update-DashboardStatistics {
             }
             # Pull Intune devices
             $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices"
-            return Get-GraphPagedResults -Uri $uri
+            $devices = Get-GraphPagedResults -Uri $uri
+            # Ensure we return an array
+            return @($devices)
         }
         
         Write-Log "Starting Autopilot devices job..."
@@ -4879,7 +5292,9 @@ function Update-DashboardStatistics {
             }
             # Pull Autopilot devices
             $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities"
-            return Get-GraphPagedResults -Uri $uri
+            $devices = Get-GraphPagedResults -Uri $uri
+            # Ensure we return an array
+            return @($devices)
         }
         
         Write-Log "Starting Entra ID devices job..."
@@ -4898,25 +5313,82 @@ function Update-DashboardStatistics {
             }
             # Pull Entra ID devices
             $uri = "https://graph.microsoft.com/v1.0/devices"
-            return Get-GraphPagedResults -Uri $uri
+            $devices = Get-GraphPagedResults -Uri $uri
+            # Ensure we return an array
+            return @($devices)
         }
         
         # Wait for jobs to finish and grab results with timing
         Write-Log "Waiting for all jobs to complete..."
         Wait-Job -Job $intuneJob, $autopilotJob, $entraJob | Out-Null
         
-        $intuneDevices = Receive-Job -Job $intuneJob
+        # Check for job errors and get results
+        $intuneJobResult = try {
+            Receive-Job -Job $intuneJob -ErrorAction Stop
+        } catch {
+            Write-Log "Error receiving Intune devices job: $_"
+            $null
+        }
         $intuneJobDuration = (Get-Date) - $intuneJobStart
         Write-Log "Intune devices job completed in $($intuneJobDuration.TotalSeconds) seconds"
         
-        $autopilotDevices = Receive-Job -Job $autopilotJob
+        $autopilotJobResult = try {
+            Receive-Job -Job $autopilotJob -ErrorAction Stop
+        } catch {
+            Write-Log "Error receiving Autopilot devices job: $_"
+            $null
+        }
         $autopilotJobDuration = (Get-Date) - $autopilotJobStart
         Write-Log "Autopilot devices job completed in $($autopilotJobDuration.TotalSeconds) seconds"
         
-        $entraDevices = Receive-Job -Job $entraJob
+        $entraJobResult = try {
+            Receive-Job -Job $entraJob -ErrorAction Stop
+        } catch {
+            Write-Log "Error receiving Entra ID devices job: $_"
+            $null
+        }
         $entraJobDuration = (Get-Date) - $entraJobStart
         Write-Log "Entra ID devices job completed in $($entraJobDuration.TotalSeconds) seconds"
-    
+        
+        # Convert results to arrays, handling various return types
+        $intuneDevices = if ($null -eq $intuneJobResult) {
+            @()
+        } elseif ($intuneJobResult -is [System.Collections.Hashtable]) {
+            Write-Log "WARNING: Intune job returned a hashtable instead of array. Converting..."
+            @($intuneJobResult.value)
+        } elseif ($intuneJobResult -is [System.Array]) {
+            $intuneJobResult
+        } else {
+            @($intuneJobResult)
+        }
+        
+        $autopilotDevices = if ($null -eq $autopilotJobResult) {
+            @()
+        } elseif ($autopilotJobResult -is [System.Collections.Hashtable]) {
+            Write-Log "WARNING: Autopilot job returned a hashtable instead of array. Converting..."
+            @($autopilotJobResult.value)
+        } elseif ($autopilotJobResult -is [System.Array]) {
+            $autopilotJobResult
+        } else {
+            @($autopilotJobResult)
+        }
+        
+        $entraDevices = if ($null -eq $entraJobResult) {
+            @()
+        } elseif ($entraJobResult -is [System.Collections.Hashtable]) {
+            Write-Log "WARNING: Entra job returned a hashtable instead of array. Converting..."
+            @($entraJobResult.value)
+        } elseif ($entraJobResult -is [System.Array]) {
+            $entraJobResult
+        } else {
+            @($entraJobResult)
+        }
+        
+        # Clean up jobs
+        Remove-Job -Job $intuneJob, $autopilotJob, $entraJob -Force
+        
+        Write-Log "Total devices - Intune: $($intuneDevices.Count), Autopilot: $($autopilotDevices.Count), Entra: $($entraDevices.Count)"
+        
         # Update top row counts
         $Window.FindName('IntuneDevicesCount').Text = $intuneDevices.Count
         $Window.FindName('AutopilotDevicesCount').Text = $autopilotDevices.Count
@@ -4926,13 +5398,15 @@ function Update-DashboardStatistics {
         $thirtyDaysAgo = (Get-Date).AddDays(-30)
         $ninetyDaysAgo = (Get-Date).AddDays(-90)
         $onehundredEightyDaysAgo = (Get-Date).AddDays(-180)
+        
+        Write-Log "Total Intune devices to check: $($intuneDevices.Count)"
     
         $stale30 = ($intuneDevices | Where-Object { 
                 if ($_.lastSyncDateTime) {
                     try { 
                         $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
                         if (-not $lastSync) { return $false }
-                        return $lastSync -lt $thirtyDaysAgo 
+                        return $lastSync -lt $thirtyDaysAgo
                     }
                     catch { 
                         Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
@@ -4942,36 +5416,46 @@ function Update-DashboardStatistics {
                 else { return $false }
             }).Count
         
-        $stale90 = ($intuneDevices | Where-Object { 
-                if ($_.lastSyncDateTime) {
-                    try { 
-                        $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
-                        if (-not $lastSync) { return $false }
-                        return $lastSync -lt $ninetyDaysAgo 
-                    }
-                    catch { 
-                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
-                        return $false 
+        # Calculate 90-day stale devices
+        Write-Log "Calculating 90-day stale devices from $($intuneDevices.Count) Intune devices"
+        $stale90Count = 0
+        foreach ($device in $intuneDevices) {
+            if ($device.lastSyncDateTime) {
+                try {
+                    $lastSync = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                    if ($lastSync -and ($lastSync -lt $ninetyDaysAgo)) {
+                        Write-Log "90-day stale device found: $($device.deviceName), LastSync: $lastSync"
+                        $stale90Count++
                     }
                 }
-                else { return $false }
-            }).Count
+                catch {
+                    Write-Log "Error parsing date for device $($device.deviceName): $_"
+                }
+            }
+        }
+        $stale90 = $stale90Count
+        Write-Log "90-day stale devices found: $stale90"
         
-        $stale180 = ($intuneDevices | Where-Object { 
-                if ($_.lastSyncDateTime) {
-                    try { 
-                        $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
-                        if (-not $lastSync) { return $false }
-                        return $lastSync -lt $onehundredEightyDaysAgo 
-                    }
-                    catch { 
-                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
-                        return $false 
+        # Calculate 180-day stale devices
+        Write-Log "Calculating 180-day stale devices from $($intuneDevices.Count) Intune devices"
+        $stale180Count = 0
+        foreach ($device in $intuneDevices) {
+            if ($device.lastSyncDateTime) {
+                try {
+                    $lastSync = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                    if ($lastSync -and ($lastSync -lt $onehundredEightyDaysAgo)) {
+                        Write-Log "180-day stale device found: $($device.deviceName), LastSync: $lastSync"
+                        $stale180Count++
                     }
                 }
-                else { return $false }
-            }).Count
+                catch {
+                    Write-Log "Error parsing date for device $($device.deviceName): $_"
+                }
+            }
+        }
+        $stale180 = $stale180Count
     
+        Write-Log "Stale device counts - 30 days: $stale30, 90 days: $stale90, 180 days: $stale180"
         $Window.FindName('StaleDevices30Count').Text = $stale30
         $Window.FindName('StaleDevices90Count').Text = $stale90
         $Window.FindName('StaleDevices180Count').Text = $stale180
@@ -5196,6 +5680,7 @@ foreach ($button in $PlaybookButtons) {
 # Results Grid
 $SearchResultsDataGrid = $Window.FindName('SearchResultsDataGrid')
 $OffboardButton = $Window.FindName('OffboardButton')
+$ExportSelectedButton = $Window.FindName('ExportSelectedButton')
 
 # Create and configure Select All checkbox
 $SelectAllCheckBox = New-Object System.Windows.Controls.CheckBox
@@ -5209,17 +5694,23 @@ $SelectAllCheckBox.Add_Click({
             foreach ($device in $SearchResultsDataGrid.ItemsSource) {
                 $device.IsSelected = $allChecked
             }
+            # Update button states
+            $OffboardButton.IsEnabled = $allChecked
+            $ExportSelectedButton.IsEnabled = $allChecked
         }
     })
 
-# Initially disable the Offboard button
+# Initially disable the Offboard button and Export Selected button
 $OffboardButton.IsEnabled = $false
+$ExportSelectedButton.IsEnabled = $false
 
 # Add selection changed event handler for the DataGrid
 $SearchResultsDataGrid.Add_SelectionChanged({
         # Update the Offboard button state based on selected devices
         $selectedDevices = $SearchResultsDataGrid.ItemsSource | Where-Object { $_.IsSelected }
-        $OffboardButton.IsEnabled = ($null -ne $selectedDevices -and $selectedDevices.Count -gt 0)
+        $hasSelection = ($null -ne $selectedDevices -and $selectedDevices.Count -gt 0)
+        $OffboardButton.IsEnabled = $hasSelection
+        $ExportSelectedButton.IsEnabled = $hasSelection
     })
 
 # Add handler for checkbox selection changes
@@ -5239,7 +5730,9 @@ $SearchResultsDataGrid.Add_LoadingRow({
                         
                         # Update Offboard button state
                         $selectedDevices = $SearchResultsDataGrid.ItemsSource | Where-Object { $_.IsSelected }
-                        $OffboardButton.IsEnabled = ($null -ne $selectedDevices -and $selectedDevices.Count -gt 0)
+                        $hasSelection = ($null -ne $selectedDevices -and $selectedDevices.Count -gt 0)
+                        $OffboardButton.IsEnabled = $hasSelection
+                        $ExportSelectedButton.IsEnabled = $hasSelection
                     }
                 })
         }
@@ -5326,8 +5819,24 @@ function Show-PlaybookProgressModal {
     </Border>
 </Window>
 "@
-    $reader = (New-Object System.Xml.XmlNodeReader ([xml]$progressModalXaml))
-    $progressWindow = [Windows.Markup.XamlReader]::Load($reader)
+    try {
+        $reader = (New-Object System.Xml.XmlNodeReader ([xml]$progressModalXaml))
+        $progressWindow = [Windows.Markup.XamlReader]::Load($reader)
+        
+        if ($null -eq $progressWindow) {
+            throw "Failed to create progress window. XamlReader returned null."
+        }
+    }
+    catch {
+        Write-Log "Error creating progress window: $_"
+        [System.Windows.MessageBox]::Show(
+            "Failed to create the progress dialog. Error: $_",
+            "Dialog Creation Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+        return $null
+    }
     
     # Get controls
     $title = $progressWindow.FindName('PlaybookTitle')
@@ -5507,7 +6016,23 @@ function Show-ChangelogDialog {
         Write-Log "Opening changelog dialog..."
         
         $reader = (New-Object System.Xml.XmlNodeReader $changelogModalXaml)
-        $changelogWindow = [Windows.Markup.XamlReader]::Load($reader)
+        try {
+            $changelogWindow = [Windows.Markup.XamlReader]::Load($reader)
+            
+            if ($null -eq $changelogWindow) {
+                throw "Failed to create changelog window. XamlReader returned null."
+            }
+        }
+        catch {
+            Write-Log "Error loading changelog window: $_"
+            [System.Windows.MessageBox]::Show(
+                "Failed to create the changelog dialog. Error: $_",
+                "Dialog Creation Error",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            )
+            return
+        }
         
         # Get controls
         $closeButton = $changelogWindow.FindName('CloseChangelogButton')
@@ -5642,7 +6167,21 @@ function Show-ChangelogDialog {
         }
         
         # Show dialog
-        $changelogWindow.ShowDialog()
+        try {
+            if ($null -eq $changelogWindow) {
+                throw "Changelog window is null. Cannot show dialog."
+            }
+            $changelogWindow.ShowDialog()
+        }
+        catch {
+            Write-Log "Error showing changelog dialog: $_"
+            [System.Windows.MessageBox]::Show(
+                "Failed to show the changelog dialog. Error: $_",
+                "Dialog Error",
+                [System.Windows.MessageBoxButton]::OK,
+                [System.Windows.MessageBoxImage]::Error
+            )
+        }
     }
     catch {
         Write-Log "Error showing changelog dialog: $_"
@@ -5693,6 +6232,10 @@ $StaleDevices30Card.Add_MouseLeftButtonUp({
                 $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($thirtyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
                 $staleDevices = Get-GraphPagedResults -Uri $uri
                 
+                # Ensure we have a valid array
+                if ($null -eq $staleDevices) { $staleDevices = @() }
+                
+                
                 $deviceList = @()
                 foreach ($device in $staleDevices) {
                     $deviceList += [PSCustomObject]@{
@@ -5710,7 +6253,9 @@ $StaleDevices30Card.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "30 Day Stale Devices" -DeviceList $deviceList
+                $title = "30 Day Stale Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching stale devices: $_"
@@ -5728,6 +6273,7 @@ $StaleDevices90Card.Add_MouseLeftButtonUp({
                 $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($ninetyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
                 $staleDevices = Get-GraphPagedResults -Uri $uri
                 
+                
                 $deviceList = @()
                 foreach ($device in $staleDevices) {
                     $deviceList += [PSCustomObject]@{
@@ -5745,7 +6291,9 @@ $StaleDevices90Card.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "90 Day Stale Devices" -DeviceList $deviceList
+                $title = "90 Day Stale Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching stale devices: $_"
@@ -5763,6 +6311,7 @@ $StaleDevices180Card.Add_MouseLeftButtonUp({
                 $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($hundredEightyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))"
                 $staleDevices = Get-GraphPagedResults -Uri $uri
                 
+                
                 $deviceList = @()
                 foreach ($device in $staleDevices) {
                     $deviceList += [PSCustomObject]@{
@@ -5780,7 +6329,9 @@ $StaleDevices180Card.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "180 Day Stale Devices" -DeviceList $deviceList
+                $title = "180 Day Stale Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching stale devices: $_"
@@ -5814,7 +6365,9 @@ $PersonalDevicesCard.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "Personal Devices" -DeviceList $deviceList
+                $title = "Personal Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching personal devices: $_"
@@ -5848,7 +6401,9 @@ $CorporateDevicesCard.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "Corporate Devices" -DeviceList $deviceList
+                $title = "Corporate Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching corporate devices: $_"
@@ -5883,7 +6438,9 @@ $IntuneDevicesCard.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "All Intune Devices" -DeviceList $deviceList
+                $title = "All Intune Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching Intune devices: $_"
@@ -5917,7 +6474,9 @@ $AutopilotDevicesCard.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "All Autopilot Devices" -DeviceList $deviceList
+                $title = "All Autopilot Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching Autopilot devices: $_"
@@ -5951,7 +6510,9 @@ $EntraIDDevicesCard.Add_MouseLeftButtonUp({
                     }
                 }
                 
-                Show-DashboardCardResults -Title "All Entra ID Devices" -DeviceList $deviceList
+                $title = "All Entra ID Devices"
+                
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
                 Write-Log "Error fetching Entra ID devices: $_"
@@ -5967,4 +6528,19 @@ $changelog_button.Add_Click({
     })
 
 # Show Window
-$Window.ShowDialog() | Out-Null
+try {
+    if ($null -eq $Window) {
+        throw "Main window is null. Cannot start application."
+    }
+    $Window.ShowDialog() | Out-Null
+}
+catch {
+    Write-Log "Error showing main window: $_"
+    [System.Windows.MessageBox]::Show(
+        "Failed to start the application. Error: $_",
+        "Application Error",
+        [System.Windows.MessageBoxButton]::OK,
+        [System.Windows.MessageBoxImage]::Error
+    )
+    exit 1
+}
