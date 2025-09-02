@@ -59,6 +59,42 @@ catch {
     exit 1
 }
 
+
+$script:LogFilePath = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Log.txt")
+
+# Ensure DeviceOffBoardingManager folder exists
+Write-Host "Ensuring DeviceOffBoardingManager folder exists"
+$settingsFolder = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager")
+if (-not (Test-Path $settingsFolder)) {
+    Write-Host "DeviceOffBoardingManager folder does not exist."
+    Write-Host "Creating DeviceOffBoardingManager folder at $settingsFolder"
+    New-Item -Path $settingsFolder -ItemType Directory | Out-Null
+}
+
+# Create default settings.json file
+$settingsPath = [System.IO.Path]::Combine($settingsFolder, "settings.json")
+if (-not (Test-Path $settingsPath)) {
+    Write-Log -Message "Creating default settings.json file at $settingsPath"
+    $defaultSettings = @{
+        RememberCertAuthentication = $false
+        RememberSecretAuthentication = $false
+        QuerySCCM = $true
+    }
+    $defaultSettings | ConvertTo-Json | Set-Content -Path $settingsPath
+}
+
+function Write-Log {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $Message
+    )
+
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "$timestamp - $Message"
+
+    Add-Content -Path $script:LogFilePath -Value $logMessage
+}
+
 # Function to get installed version
 function Get-InstalledVersion {
     try {
@@ -69,7 +105,7 @@ function Get-InstalledVersion {
         return $script:PSScriptRoot.VERSION
     }
     catch {
-        Write-Log "Error getting installed version: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error getting installed version: $_"
         return "Unknown"
     }
 }
@@ -81,7 +117,7 @@ function Get-LatestVersion {
         return $module.Version
     }
     catch {
-        Write-Log "Error getting latest version: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error getting latest version: $_"
         return "Unknown"
     }
 }
@@ -184,6 +220,7 @@ if (-not ([System.Management.Automation.PSTypeName]'DeviceObject').Type) {
         public DateTime? AzureADLastContact { get; set; }
         public DateTime? IntuneLastContact { get; set; }
         public DateTime? AutopilotLastContact { get; set; }
+        public DateTime? SCCMLastContact { get; set; }
 
         public event PropertyChangedEventHandler PropertyChanged;
 
@@ -272,7 +309,7 @@ function ConvertTo-SafeDateTime {
         return $parsedDate
     }
     catch {
-        Write-Log "Failed to parse date: $dateString"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Failed to parse date: $dateString"
         return $null
     }
 }
@@ -282,10 +319,10 @@ function ConvertTo-SafeDateTime {
 <Window 
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Device Offboarding Manager (Preview)" Height="700" Width="1200" 
+    Title="Device Offboarding Manager (Preview)" Height="750" Width="1400" 
     Background="#F0F0F0"
     WindowStartupLocation="CenterScreen" 
-    ResizeMode="NoResize">
+    ResizeMode="CanResize">
     
     <Window.Resources>
         <!-- Drop Shadow Effect -->
@@ -788,6 +825,11 @@ function ConvertTo-SafeDateTime {
                     <Button x:Name="changelog_button"
                             Content="Changelog"
                             Style="{StaticResource SidebarButtonStyle}"
+                            Margin="15,5"/>
+
+                    <Button x:Name="settings_button"
+                            Content="Settings"
+                            Style="{StaticResource SidebarButtonStyle}"
                             Margin="15,5,15,15"/>
                 </StackPanel>
                 
@@ -995,7 +1037,7 @@ function ConvertTo-SafeDateTime {
                                              FontSize="14"
                                              Foreground="#A0AEC0"
                                              Margin="0,0,0,8"/>
-                                    <TextBlock Text="• Soon: Defender for Endpoint"
+                                    <TextBlock Text="• SCCM"
                                              FontSize="14"
                                              Foreground="#A0AEC0"
                                              Margin="0,0,0,8"/>
@@ -1126,7 +1168,7 @@ function ConvertTo-SafeDateTime {
                         </Grid>
                     </Border>
 
-                    <Border x:Name="EntraIDDevicesCard" Background="#1B2A47" Margin="10,0,0,0" CornerRadius="8" Cursor="Hand">
+                    <Border x:Name="EntraIDDevicesCard" Background="#1B2A47" Margin="10,0" CornerRadius="8" Cursor="Hand">
                         <Border.Style>
                             <Style TargetType="Border">
                                 <Style.Triggers>
@@ -1143,7 +1185,7 @@ function ConvertTo-SafeDateTime {
                                 <RowDefinition Height="Auto"/>
                             </Grid.RowDefinitions>
                             <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
-                                <Path Data="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"
+                                <Path Data="M13.05,4.24L6.56,18.05L2,18L7.09,9.24L13.05,4.24M13.75,5.33L22,19.76H6.74L16.04,18.1L11.17,12.31L13.75,5.33Z"
                                       Fill="#ED64A6" Width="24" Height="24" Stretch="Uniform"/>
                                 <TextBlock Text="EntraID Devices"
                                          Foreground="#A0AEC0"
@@ -1160,6 +1202,45 @@ function ConvertTo-SafeDateTime {
                                      Margin="0,0,0,8"/>
                             <TextBlock Grid.Row="2"
                                      Text="Total Entra ID Devices"
+                                     Foreground="#718096"
+                                     FontSize="12"/>
+                        </Grid>
+                    </Border>
+
+                    <Border x:Name="SCCMDevicesCard" Background="#1B2A47" Margin="10,0,0,0" CornerRadius="8" Cursor="Hand">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Style.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="#243447"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <Grid Margin="20">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,12">
+                                <Path Data="m124.326-8.588 0 9.63c.964 58.745.001 43.336.28 73.96-.01 2.13-1.11 4.33-2.02 6.35-2.46 5.41-5.99 10.5-7.47 16.14-3.37 12.84-.25 24.68 7.68 35.31 3.81 5.11 2.96 7.64-2.7 10.1-3.03 1.32-5.93 3.01-8.69 4.83-23.23 15.29-24.92 60.96 1.44 77.85-33.02 0-66.04 0-89.156.326-.27-59.84.564-155.244-.963-234.014M44.16 85.04c6.86 0 13.72 0 20.65 0 0-6.72 0-13.56 0-20.45-7.07 0-13.8 0-20.9 0 0 6.68 0 13.11.25 20.45m50.94.53c.54-6.9 1.08-13.8 1.64-20.93-7.83 0-14.7 0-21.56 0 0 7.05 0 13.79 0 21 6.47 0 12.72 0 19.92-.07m-51.2 64c0 4.25 0 8.49 0 12.85 7.34 0 14.07 0 21.02 0 0-6.95 0-13.68 0-20.54-7.02 0-13.89 0-21.02 0 0 2.44 0 4.58 0 7.69m40.65-7.99c-3.11 0-6.22 0-9.31 0 0 7.24 0 13.97 0 20.85 7 0 13.73 0 20.72 0 0-6.94 0-13.66 0-20.85-3.53 0-6.99 0-11.41 0m-40.64-22.17c0 1.44 0 2.87 0 4.34 7.34 0 14.19 0 20.98 0 0-7.03 0-13.75 0-20.5-7.09 0-13.95 0-20.98 0 0 5.26 0 10.22 0 16.16m31.07-2.96c0 2.43 0 4.86 0 7.29 7.36 0 14.22 0 20.98 0 0-7.03 0-13.76 0-20.48-7.1 0-13.96 0-20.98 0 0 4.28 0 8.25 0 13.19zM127.47 226c-1.29-.79-1.97-1.88-2.94-2.32-13.82-6.29-21.43-16.87-22.52-32.09-1.27-17.82 3.31-32.84 20.54-41.28 4.35-2.13 9.4-2.83 14.06-4.17 5.25 14.73 10.75 18.98 22.61 18.18 10.2-.69 15.52-5.73 18.09-17.12 14.16-.87 29.37 9.33 33.28 23.68 4.17 15.28 4.37 30.67-7.23 43.24-4.33 4.69-10.61 7.58-15.67 11.58-19.7.29-39.72.29-60.21.29zM165.71 73.03c18.8 5.11 27.42 21.88 27.16 35.06-.31 15.41-11.84 29.97-27.09 33.78-14.91 3.72-31.78-3.51-38.92-16.68-8.28-15.27-5.92-32.22 6.19-43.35 9.2-8.46 19.94-11.61 32.67-8.81z"
+                                      Fill="#8C57B9" Width="24" Height="24" Stretch="Uniform"/>
+                                <TextBlock Text="SCCM Devices"
+                                         Foreground="#A0AEC0"
+                                         FontSize="14"
+                                         Margin="12,0,0,0"
+                                         VerticalAlignment="Center"/>
+                            </StackPanel>
+                            <TextBlock Grid.Row="1"
+                                     x:Name="SCCMDevicesCount"
+                                     Text="0"
+                                     Foreground="White"
+                                     FontSize="36"
+                                     FontWeight="Bold"
+                                     Margin="0,0,0,8"/>
+                            <TextBlock Grid.Row="2"
+                                     Text="Total SCCM Devices"
                                      Foreground="#718096"
                                      FontSize="12"/>
                         </Grid>
@@ -1535,6 +1616,10 @@ function ConvertTo-SafeDateTime {
                                                   Header="Autopilot Last Contact" 
                                                   Width="*"
                                                   IsReadOnly="True"/>
+                        <DataGridTextColumn Binding="{Binding SCCMLastContact}" 
+                                                  Header="SCCM Last Contact" 
+                                                  Width="*"
+                                                  IsReadOnly="True"/>
                     </DataGrid.Columns>
                 </DataGrid>
 
@@ -1604,7 +1689,7 @@ function ConvertTo-SafeDateTime {
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <Path Data="M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"
+                            <Path Data="M13.05,4.24L6.56,18.05L2,18L7.09,9.24L13.05,4.24M13.75,5.33L22,19.76H6.74L16.04,18.1L11.17,12.31L13.75,5.33Z"
                                   Fill="#ED64A6"
                                   Width="20"
                                   Height="20"
@@ -1615,6 +1700,32 @@ function ConvertTo-SafeDateTime {
                                      Margin="8,0,0,0"
                                      FontSize="13"
                                      Text="Entra ID"
+                                     Foreground="White"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- SCCM Status -->
+                    <Border Background="#1B2A47"
+                            Margin="17,0,0,0"
+                            CornerRadius="6"
+                            Effect="{StaticResource CardShadow}">
+                        <Grid Margin="12,8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Path Data="m124.326-8.588 0 9.63c.964 58.745.001 43.336.28 73.96-.01 2.13-1.11 4.33-2.02 6.35-2.46 5.41-5.99 10.5-7.47 16.14-3.37 12.84-.25 24.68 7.68 35.31 3.81 5.11 2.96 7.64-2.7 10.1-3.03 1.32-5.93 3.01-8.69 4.83-23.23 15.29-24.92 60.96 1.44 77.85-33.02 0-66.04 0-89.156.326-.27-59.84.564-155.244-.963-234.014M44.16 85.04c6.86 0 13.72 0 20.65 0 0-6.72 0-13.56 0-20.45-7.07 0-13.8 0-20.9 0 0 6.68 0 13.11.25 20.45m50.94.53c.54-6.9 1.08-13.8 1.64-20.93-7.83 0-14.7 0-21.56 0 0 7.05 0 13.79 0 21 6.47 0 12.72 0 19.92-.07m-51.2 64c0 4.25 0 8.49 0 12.85 7.34 0 14.07 0 21.02 0 0-6.95 0-13.68 0-20.54-7.02 0-13.89 0-21.02 0 0 2.44 0 4.58 0 7.69m40.65-7.99c-3.11 0-6.22 0-9.31 0 0 7.24 0 13.97 0 20.85 7 0 13.73 0 20.72 0 0-6.94 0-13.66 0-20.85-3.53 0-6.99 0-11.41 0m-40.64-22.17c0 1.44 0 2.87 0 4.34 7.34 0 14.19 0 20.98 0 0-7.03 0-13.75 0-20.5-7.09 0-13.95 0-20.98 0 0 5.26 0 10.22 0 16.16m31.07-2.96c0 2.43 0 4.86 0 7.29 7.36 0 14.22 0 20.98 0 0-7.03 0-13.76 0-20.48-7.1 0-13.96 0-20.98 0 0 4.28 0 8.25 0 13.19zM127.47 226c-1.29-.79-1.97-1.88-2.94-2.32-13.82-6.29-21.43-16.87-22.52-32.09-1.27-17.82 3.31-32.84 20.54-41.28 4.35-2.13 9.4-2.83 14.06-4.17 5.25 14.73 10.75 18.98 22.61 18.18 10.2-.69 15.52-5.73 18.09-17.12 14.16-.87 29.37 9.33 33.28 23.68 4.17 15.28 4.37 30.67-7.23 43.24-4.33 4.69-10.61 7.58-15.67 11.58-19.7.29-39.72.29-60.21.29zM165.71 73.03c18.8 5.11 27.42 21.88 27.16 35.06-.31 15.41-11.84 29.97-27.09 33.78-14.91 3.72-31.78-3.51-38.92-16.68-8.28-15.27-5.92-32.22 6.19-43.35 9.2-8.46 19.94-11.61 32.67-8.81z"
+                                  Fill="#8C57B9"
+                                  Width="20"
+                                  Height="20"
+                                  Stretch="Uniform"
+                                  VerticalAlignment="Center"/>
+                            <TextBlock x:Name="sccm_status"
+                                     Grid.Column="1"
+                                     Margin="8,0,0,0"
+                                     FontSize="13"
+                                     Text="SCCM"
                                      Foreground="White"
                                      VerticalAlignment="Center"/>
                         </Grid>
@@ -2106,7 +2217,7 @@ function ConvertTo-SafeDateTime {
 <Window 
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    Title="Authentication" Height="500" Width="650"
+    Title="Authentication" Height="690" Width="650"
     WindowStartupLocation="CenterScreen"
     Background="#F8F9FA">
     
@@ -2423,6 +2534,16 @@ function ConvertTo-SafeDateTime {
                                 Height="32"
                                 Width="120"
                                 Margin="0,12,0,0"/>
+
+                        <RadioButton x:Name="UseSecretFromJsonRadio"
+                                     Grid.Row="3"
+                                     Grid.Column="0"
+                                     Grid.ColumnSpan="2"
+                                     Content="Remember Secret"
+                                     Style="{StaticResource AuthRadioButtonStyle}"
+                                     VerticalAlignment="Center"
+                                     HorizontalAlignment="Left"
+                                     Width="Auto"/>
 
                         <!-- Help Text -->
                         <TextBlock Grid.Row="4" 
@@ -2768,7 +2889,7 @@ function Show-AuthenticationDialog {
         }
     }
     catch {
-        Write-Log "Error creating authentication window: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error creating authentication window: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to create the authentication dialog. Error: $_",
             "Dialog Creation Error",
@@ -2908,6 +3029,56 @@ function Show-AuthenticationDialog {
                     )
                     return
                 }
+
+                # Check if "Remember Secret" is checked and encrypt/save the JSON
+                $useSecretRadio = $authWindow.FindName('UseSecretFromJsonRadio')
+                if ($useSecretRadio -and $useSecretRadio.IsChecked) {
+                    try {
+                        $appId = $authWindow.FindName('SecretAppId').Text
+                        $tenantId = $authWindow.FindName('SecretTenantId').Text
+                        $clientSecret = $authWindow.FindName('ClientSecret').Password
+
+                        $jsonObj = @{
+                            AppId        = $appId
+                            TenantId     = $tenantId
+                            ClientSecret = $clientSecret
+                        }
+                        $json = $jsonObj | ConvertTo-Json
+
+                        # Save encrypted secret to %localappdata%\DeviceOffBoardingManager
+                        $folderPath = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager")
+                        if (-not (Test-Path $folderPath)) {
+                            New-Item -Path $folderPath -ItemType Directory | Out-Null
+                        }
+                        $secure = ConvertTo-SecureString $json -AsPlainText -Force
+                        $encrypted = ConvertFrom-SecureString $secure
+                        $secretFilePath = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Secret.json")
+                        Set-Content -Path $secretFilePath -Value $encrypted
+                        [System.Windows.MessageBox]::Show(
+                            "Encrypted secret saved successfully.`nFile: $secretFilePath",
+                            "Saved",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Information
+                        )
+
+                        # Update settings.json to enable RememberSecretAuthentication
+                        if (Test-Path $settingsPath) {
+                            try {
+                                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                                $settings.RememberSecretAuthentication = $true
+                                $settings | ConvertTo-Json | Set-Content -Path $settingsPath
+                            } catch { Write-Log "Error updating settings.json: $_" }
+                        }
+                    }
+                    catch {
+                        [System.Windows.MessageBox]::Show(
+                            "Failed to save encrypted secret: $_",
+                            "Encryption Error",
+                            [System.Windows.MessageBoxButton]::OK,
+                            [System.Windows.MessageBoxImage]::Error
+                        )
+                    }
+                }
             }
 
             $script:authCancelled = $false
@@ -2923,7 +3094,7 @@ function Show-AuthenticationDialog {
         $result = $authWindow.ShowDialog()
     }
     catch {
-        Write-Log "Error showing authentication dialog: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error showing authentication dialog: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to show the authentication dialog. Error: $_",
             "Dialog Error",
@@ -2970,7 +3141,7 @@ function Show-BulkImportDialog {
         }
     }
     catch {
-        Write-Log "Error creating bulk import window: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error creating bulk import window: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to create the bulk import dialog. Error: $_",
             "Dialog Creation Error",
@@ -3116,7 +3287,7 @@ LAPTOP-XYZ789
         $result = $bulkImportWindow.ShowDialog()
     }
     catch {
-        Write-Log "Error showing bulk import dialog: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error showing bulk import dialog: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to show the bulk import dialog. Error: $_",
             "Dialog Error",
@@ -3143,14 +3314,16 @@ function Connect-ToGraph {
         Write-Log "Attempting to connect to Microsoft Graph using $($AuthDetails.Method) authentication..."
         
         # Get required permissions
-        $permissionsList = ($script:requiredPermissions | ForEach-Object { $_.Permission })
+        $permissionsList = ($script:requiredPermissions | ForEach-Object { $_.Permission })    
 
         # Connect based on authentication method
         switch ($AuthDetails.Method) {
             'Interactive' {
+                Write-Log -Message "Connecting interactively..."
                 $connectionResult = Connect-MgGraph -Scopes $permissionsList -NoWelcome -ErrorAction Stop
             }
             'Certificate' {
+                Write-Log -Message "Connecting with certificate authentication..."
                 # Validate certificate credentials before attempting connection
                 if ([string]::IsNullOrWhiteSpace($AuthDetails.AppId)) {
                     throw "App ID is required for certificate authentication"
@@ -3163,11 +3336,14 @@ function Connect-ToGraph {
                 }
                 
                 # Disconnect any existing connections first
+                Write-Log -Message "Disconnecting any existing Microsoft Graph connections..."
                 Disconnect-MgGraph -ErrorAction SilentlyContinue
                 
                 $connectionResult = Connect-MgGraph -ClientId $AuthDetails.AppId -TenantId $AuthDetails.TenantId -CertificateThumbprint $AuthDetails.Thumbprint -NoWelcome -ErrorAction Stop
             }
             'Secret' {
+                Write-Log -Message "Connecting with client secret authentication..."
+
                 # Validate client secret credentials before attempting connection
                 if ([string]::IsNullOrWhiteSpace($AuthDetails.AppId)) {
                     throw "App ID is required for client secret authentication"
@@ -3185,6 +3361,7 @@ function Connect-ToGraph {
                 $connectionResult = Connect-MgGraph -TenantId $AuthDetails.TenantId -ClientSecretCredential $ClientSecretCredential -NoWelcome -ErrorAction Stop
             }
             default {
+                Write-Log -Message "Invalid authentication method specified"
                 throw "Invalid authentication method specified"
             }
         }
@@ -3222,6 +3399,7 @@ function Connect-ToGraph {
         $missingPermissions = @()
 
         foreach ($permissionInfo in $script:requiredPermissions) {
+            Write-Log -Message "Checking for required permission: $($permissionInfo.Permission)"
             $permission = $permissionInfo.Permission
             if (-not ($currentPermissions -contains $permission -or
                     $currentPermissions -contains $permission.Replace(".Read", ".ReadWrite"))) {
@@ -3244,7 +3422,7 @@ function Connect-ToGraph {
         return $true
     }
     catch {
-        Write-Log "Failed to connect to Microsoft Graph: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Failed to connect to Microsoft Graph: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to connect to Microsoft Graph: $_",
             "Connection Error",
@@ -3253,6 +3431,7 @@ function Connect-ToGraph {
         )
         
         # Reset UI state on connection failure
+        Write-Log -Message "Resetting UI state due to connection failure"
         $script:connectionFailed = $true  # Add this flag to track connection failure
         return $false
     }
@@ -3282,18 +3461,13 @@ catch {
 $scriptVersion = Get-ScriptVersion
 $Window.Title = "Device Offboarding Manager (Preview) - $scriptVersion"
 
-$script:LogFilePath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "IntuneOffboardingTool_Log.txt")
-
-function Write-Log {
-    param(
-        [Parameter(Mandatory = $true)]
-        [string] $Message
-    )
-
-    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
-    $logMessage = "$timestamp - $Message"
-
-    Add-Content -Path $script:LogFilePath -Value $logMessage
+# Helper to get the current line number for error logging
+function Get-CurrentLineNumber {
+    $stack = Get-PSCallStack
+    if ($stack.Count -gt 1) {
+        return $stack[1].ScriptLineNumber
+    }
+    return $MyInvocation.ScriptLineNumber
 }
 
 function Export-DeviceListToCSV {
@@ -3333,7 +3507,7 @@ function Export-DeviceListToCSV {
         return $false
     }
     catch {
-        Write-Log "Error exporting device list: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error exporting device list: $_"
         [System.Windows.MessageBox]::Show(
             "Error exporting device list: $_",
             "Export Error",
@@ -3342,6 +3516,15 @@ function Export-DeviceListToCSV {
         )
         return $false
     }
+}
+
+Function ConnectSCCM {
+
+    ##Load the Configuration Manager Module
+    import-module ($Env:SMS_ADMIN_UI_PATH.Substring(0, $Env:SMS_ADMIN_UI_PATH.Length - 5) + '\ConfigurationManager.psd1')
+    $Drive = Get-PSDrive -PSProvider CMSite
+    Set-Location "$($Drive):"
+
 }
 
 function Invoke-DeviceSearch {
@@ -3357,6 +3540,18 @@ function Invoke-DeviceSearch {
         $AADCount = 0
         $IntuneCount = 0
         $AutopilotCount = 0
+        $SCCMCount = 0
+
+        # Load QuerySCCM setting from settings.json
+        if (Test-Path $settingsPath) {
+            try {
+                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                $QuerySCCM = $settings.QuerySCCM
+            } catch {
+                Write-Log "Error loading QuerySCCM from settings.json: $_"
+                $QuerySCCM = $false
+            }
+        }
 
         foreach ($SearchText in $SearchTexts) {
             # Trim whitespace and newlines
@@ -3373,6 +3568,22 @@ function Invoke-DeviceSearch {
                 
                 $uri = "https://graph.microsoft.com/v1.0/deviceManagement/managedDevices?`$filter=deviceName eq '$SearchText'"
                 $IntuneDevices = Get-GraphPagedResults -Uri $uri
+                
+                write-host $querysccm
+
+                If ($QuerySCCM -eq $True) {
+                    Write-Log -Message "Attempting to search in SCCM."
+                    $originaldrive = Get-Location
+                    ConnectSCCM
+                
+                    $SCCMDevices = get-cmdevice -Name $SearchText -fast | Where-Object { $_.IsClient -eq $true -and $_.IsActive -eq $true }
+                    set-location $originaldrive
+                }
+                Else {
+                    $SCCMDevices = $Null
+                }
+                #Write-Host 'SearchText-'$SearchText 
+                #Write-Host 'SCCM-'$SCCMDevices
                 
                 # Search Autopilot devices by displayName (using client-side filtering)
                 try {
@@ -3397,6 +3608,9 @@ function Invoke-DeviceSearch {
                     foreach ($AADDevice in $AADDevices) {
                         $matchingIntuneDevice = $IntuneDevices | Where-Object { $_.deviceName -eq $AADDevice.displayName } | Select-Object -First 1
                         $matchingAutopilotDevice = $AutopilotDevices | Where-Object { $_.displayName -eq $AADDevice.displayName } | Select-Object -First 1
+                        $matchingSCCMDevice = $SCCMDevices | Where-Object { $_.Name -eq $AADDevice.displayName } | Select-Object -First 1
+                        # write-host "Matchingsccmdevice" $matchingSCCMDevice.name
+                        # write-host "AADDeviceName" $AADDevice.displayName
                         
                         # If no Autopilot match by displayName and we have Intune device with serial, try serial number
                         if (-not $matchingAutopilotDevice -and $matchingIntuneDevice -and $matchingIntuneDevice.serialNumber) {
@@ -3409,8 +3623,21 @@ function Invoke-DeviceSearch {
                         $CombinedDevice.DeviceName = $AADDevice.displayName
                         
                         # Try to get serial number from multiple sources
-                        $CombinedDevice.SerialNumber = $matchingIntuneDevice?.serialNumber ?? $matchingAutopilotDevice?.serialNumber
-                        
+                        if ($null -ne $matchingIntuneDevice -and $matchingIntuneDevice.serialNumber) {
+                            $CombinedDevice.SerialNumber = $matchingIntuneDevice.serialNumber
+                        }
+                        elseif ($null -ne $matchingAutopilotDevice -and $matchingAutopilotDevice.serialNumber) {
+                            $CombinedDevice.SerialNumber = $matchingAutopilotDevice.serialNumber
+                        }
+                        elseif ($null -ne $matchingSCCMDevice -and $matchingSCCMDevice.serialNumber) {
+                            $CombinedDevice.SerialNumber = $matchingSCCMDevice.serialNumber
+                        }
+                        else {
+                            $CombinedDevice.SerialNumber = $null
+                        }
+                        # write-host "Combined Serial Line3463" $CombinedDevice.serialNumber
+                        # write-host "MatchingSCCMSerial Line 3464" $matchingSCCMDevice.serialNumber
+
                         # If still no serial number, try to extract from Entra ID physicalIds
                         if (-not $CombinedDevice.SerialNumber -and $AADDevice.physicalIds) {
                             foreach ($physicalId in $AADDevice.physicalIds) {
@@ -3420,16 +3647,33 @@ function Invoke-DeviceSearch {
                                 }
                             }
                         }
+
                         $CombinedDevice.OperatingSystem = $AADDevice.operatingSystem
-                        $CombinedDevice.PrimaryUser = $matchingIntuneDevice?.userDisplayName
+                        #$CombinedDevice.PrimaryUser = $matchingIntuneDevice?.userDisplayName
                         $CombinedDevice.AzureADLastContact = ConvertTo-SafeDateTime -dateString $AADDevice.approximateLastSignInDateTime
                         $CombinedDevice.IntuneLastContact = ConvertTo-SafeDateTime -dateString $matchingIntuneDevice.lastSyncDateTime
                         $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $matchingAutopilotDevice.lastContactedDateTime
-                        
+                        $CombinedDevice.SCCMLastContact = ConvertTo-SafeDateTime -dateString $matchingSCCMDevice.LastActiveTime
+
+                        # Try and get PrimaryUser from multiple locations
+                        if ($null -ne $matchingIntuneDevice -and $matchingIntuneDevice.userDisplayName) {
+                            $CombinedDevice.PrimaryUser = $matchingIntuneDevice.userDisplayName
+                        }
+                        elseif ($null -ne $matchingAutopilotDevice -and $matchingAutopilotDevice.userDisplayName) {
+                            $CombinedDevice.PrimaryUser = $matchingAutopilotDevice.userDisplayName
+                        }
+                        elseif ($null -ne $matchingSCCMDevice -and $matchingSCCMDevice.userDisplayName) {
+                            $CombinedDevice.PrimaryUser = $matchingSCCMDevice.userDisplayName
+                        }
+                        else {
+                            $CombinedDevice.PrimaryUser = $null
+                        }
+
                         $searchResults.Add($CombinedDevice)
                         $AADCount++
                         if ($matchingIntuneDevice) { $IntuneCount++ }
                         if ($matchingAutopilotDevice) { $AutopilotCount++ }
+                        if ($matchingSCCMDevice) { $SCCMCount++ }
                     }
                 }
                 
@@ -3458,6 +3702,7 @@ function Invoke-DeviceSearch {
                         $CombinedDevice.PrimaryUser = $IntuneDevice.userDisplayName
                         $CombinedDevice.IntuneLastContact = ConvertTo-SafeDateTime -dateString $IntuneDevice.lastSyncDateTime
                         $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $matchingAutopilotDevice.lastContactedDateTime
+                        $CombinedDevice.SCCMLastContact = ConvertTo-SafeDateTime -dateString $matchingSCCMDevice.LastActiveTime
                         
                         $searchResults.Add($CombinedDevice)
                         $IntuneCount++
@@ -3471,7 +3716,7 @@ function Invoke-DeviceSearch {
                         # Skip if we already added this device
                         if ($searchResults | Where-Object { 
                                 $_.DeviceName -eq $AutopilotDevice.displayName -or 
-                            ($_.SerialNumber -and $_.SerialNumber -eq $AutopilotDevice.serialNumber)
+                                ($_.SerialNumber -and $_.SerialNumber -eq $AutopilotDevice.serialNumber)
                             }) {
                             continue
                         }
@@ -3486,6 +3731,37 @@ function Invoke-DeviceSearch {
                         $AutopilotCount++
                     }
                 }
+
+                # Process SCCM devices
+                If ($QuerySCCM -eq $True) {
+                    If ($SCCMDevices) {
+                    foreach ($SCCMDevice in $SCCMDevices) {
+                        # Skip if we already added this device through Entra ID, Intune, or Autopilot
+                        # write-host "SCCM Name Line 3550" $SCCMDevice.Name
+                        # write-host "SCCM Serial Line 3551" $SCCMDevice.SerialNumber
+                        if ($searchResults | Where-Object { 
+                                $_.DeviceName -eq $SCCMDevice.Name -or 
+                                ($_.SerialNumber -and $_.SerialNumber -eq $SCCMDevice.SerialNumber)
+                            }
+                        ) {
+                            continue
+                        }
+
+                        $CombinedDevice = New-Object DeviceObject
+                        $CombinedDevice.IsSelected = $false
+                        $CombinedDevice.DeviceName = $SCCMDevice.Name
+                        $CombinedDevice.SerialNumber = $SCCMDevice.SerialNumber
+                        $CombinedDevice.OperatingSystem = ($SCCMDevice.DeviceOS).Replace(" NT Workstation", "")
+                        $CombinedDevice.PrimaryUser = $SCCMDevice.PrimaryUser
+                        $CombinedDevice.SCCMLastContact = ConvertTo-SafeDateTime -dateString $SCCMDevice.LastActiveTime
+                        
+                        write-host $CombinedDevice.SCCMLastContact 
+
+                        $searchResults.Add($CombinedDevice)
+                        $SCCMCount++
+                    }
+                }
+                }
             }
             elseif ($SearchOption -eq "Serialnumber") {
                 # Get devices from all services independently
@@ -3494,6 +3770,11 @@ function Invoke-DeviceSearch {
                 
                 $uri = "https://graph.microsoft.com/v1.0/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$SearchText')"
                 $AutopilotDevices = Get-GraphPagedResults -Uri $uri
+                
+                $originaldrive = Get-Location
+                ConnectSCCM
+                $SCCMDevices = get-cmdevice -fast | Where-Object { $_.serialnumber -eq $SearchText }
+                Set-Location $originaldrive
 
                 if ($IntuneDevices -or $AutopilotDevices) {
                     # If device is in Intune
@@ -3505,6 +3786,7 @@ function Invoke-DeviceSearch {
                             
                             # Get Autopilot Device
                             $matchingAutopilotDevice = $AutopilotDevices | Where-Object { $_.serialNumber -eq $IntuneDevice.serialNumber } | Select-Object -First 1
+                            $matchingSCCMDevice = $SCCMDevices | Where-Object { $_.serialnumber -eq $IntuneDevice.serialNumber } | Select-Object -First 1
 
                             $CombinedDevice = New-Object DeviceObject
                             $CombinedDevice.IsSelected = $false
@@ -3515,11 +3797,13 @@ function Invoke-DeviceSearch {
                             $CombinedDevice.AzureADLastContact = ConvertTo-SafeDateTime -dateString $AADDevice.approximateLastSignInDateTime
                             $CombinedDevice.IntuneLastContact = ConvertTo-SafeDateTime -dateString $IntuneDevice.lastSyncDateTime
                             $CombinedDevice.AutopilotLastContact = ConvertTo-SafeDateTime -dateString $matchingAutopilotDevice.lastContactedDateTime
+                            $CombinedDevice.SCCMLastContact = ConvertTo-SafeDateTime -dateString $matchingSCCMDevice.LastActiveTime
                             
                             $searchResults.Add($CombinedDevice)
                             if ($AADDevice) { $AADCount++ }
                             $IntuneCount++
                             if ($matchingAutopilotDevice) { $AutopilotCount++ }
+                            if ($matchingSCCMDevice) { $SCCMCount++ }
                         }
                     }
                     
@@ -3541,6 +3825,28 @@ function Invoke-DeviceSearch {
                             $AutopilotCount++
                         }
                     }
+
+                    # If device is in SCCM
+                    if ($SCCMDevices) {
+                        foreach ($SCCMDevice in $SCCMDevices) {
+                            # Skip if we already added this device through Intune or Autopilot
+                            write-host "SCCM Serial = "$SCCMDevice.SerialNumber
+                            if ($searchResults | Where-Object { $_.SerialNumber -eq $SCCMDevice.SerialNumber }) {
+                                continue
+                            }
+                                                        
+                            $CombinedDevice = New-Object DeviceObject
+                            $CombinedDevice.IsSelected = $false
+                            $CombinedDevice.DeviceName = $SCCMDevice.Name
+                            $CombinedDevice.SerialNumber = $SCCMDevice.SerialNumber
+                            $CombinedDevice.OperatingSystem = ($SCCMDevice.DeviceOS).Replace(" NT Workstation", "")
+                            $CombinedDevice.PrimaryUser = $SCCMDevice.UserName
+                            $CombinedDevice.SCCMLastContact = ConvertTo-SafeDateTime -dateString $SCCMDevice.LastActiveTime
+                            
+                            $searchResults.Add($CombinedDevice)
+                            $SCCMCount++
+                        }
+                    }
                 }
             }
         }
@@ -3552,6 +3858,8 @@ function Invoke-DeviceSearch {
         $Window.FindName('autopilot_status').Foreground = if ($AutopilotCount -gt 0) { '#48BB78' } else { '#FC8181' }
         $Window.FindName('aad_status').Text = "Entra ID: $AADCount device found"
         $Window.FindName('aad_status').Foreground = if ($AADCount -gt 0) { '#ED64A6' } else { '#FC8181' }
+        $Window.FindName('sccm_status').Text = "SCCM: $SCCMCount device found"
+        $Window.FindName('sccm_status').Foreground = if ($SCCMCount -gt 0) { '#ED64A6' } else { '#FC8181' }
 
         if ($searchResults.Count -gt 0) {
             $SearchResultsDataGrid.ItemsSource = $searchResults
@@ -3566,6 +3874,7 @@ function Invoke-DeviceSearch {
         $ExportSelectedButton.IsEnabled = $false
     }
     catch {
+        Write-Error $Error[0]
         Write-Log "Error occurred during search operation. Exception: $_"
         [System.Windows.MessageBox]::Show("Error in search operation. Please ensure the Serialnumber or Devicename is valid.")
     }
@@ -3747,72 +4056,140 @@ $Disconnect.Add_Click({
     })
     
 $AuthenticateButton.Add_Click({
-        try {
-            # Check if already connected
-            $context = Get-MgContext
-            if ($context) {
-                Write-Log "Already connected to MS Graph, skipping authentication dialog"
-                return
-            }
-            
-            Write-Log "Authentication button clicked, showing authentication dialog..."
-            
-            # Reset the connection failed flag
-            $script:connectionFailed = $false
+    Write-Log "AuthenticateButton clicked."
+    try {
+        # Check if already connected
+        $context = Get-MgContext
+        if ($context) {
+            Write-Log "Already connected to MS Graph, skipping authentication dialog"
+            return
+        }
         
-            # Show authentication dialog
-            $authDetails = Show-AuthenticationDialog
-            if (-not $authDetails) {
-                Write-Log "Authentication cancelled by user"
-                # Reset button state if cancelled
-                $AuthenticateButton.Content = "Connect to MS Graph"
-                $AuthenticateButton.IsEnabled = $true
-                return
-            }
+        Write-Log "Authentication button clicked, showing authentication dialog..."
+        
+        # Load current setting
+        Write-Log "Loading authentication settings from settings.json"
+        if (Test-Path $settingsPath) {
+            try {
+                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                $rememberCertAuth = $settings.RememberCertAuthentication
+                $rememberSecretAuth = $settings.RememberSecretAuthentication
 
-            # Set button to "Connecting..." state
-            $AuthenticateButton.Content = "Connecting..."
-            $AuthenticateButton.IsEnabled = $false
-
-            # Attempt to connect
-            $connected = Connect-ToGraph -AuthDetails $authDetails
-            
-            # Check connection status and update UI accordingly
-            if ($connected -and -not $script:connectionFailed) {
-                Write-Log "Authentication Successful"
-                $AuthenticateButton.Content = "Connected to MS Graph"
-                $AuthenticateButton.IsEnabled = $false
-                $Disconnect.Content = "Disconnect"
-                $Disconnect.IsEnabled = $true
-
-                # Enable navigation menus
-                $MenuDashboard.IsEnabled = $true
-                $MenuDeviceManagement.IsEnabled = $true
-                $MenuPlaybooks.IsEnabled = $true
-            }
-            else {
-                # Reset button state on failed connection
-                Write-Log "Authentication Failed"
-                $AuthenticateButton.Content = "Connect to MS Graph"
-                $AuthenticateButton.IsEnabled = $true
-                $Disconnect.Content = "Disconnected"
-                $Disconnect.IsEnabled = $false
-                
-                # Disable navigation menus
-                $MenuDashboard.IsEnabled = $false
-                $MenuDeviceManagement.IsEnabled = $false
-                $MenuPlaybooks.IsEnabled = $false
-                
-                # Hide tenant info
-                $Window.FindName('TenantInfoSection').Visibility = 'Collapsed'
-                $Window.FindName('TenantDisplayName').Text = ""
-                $Window.FindName('TenantId').Text = ""
-                $Window.FindName('TenantDomain').Text = ""
+                If ($rememberCertAuth -or $rememberSecretAuth) {
+                    Write-Log "Auto authentication is enabled."
+                    $autoAuthCheck.IsChecked = $true
+                }
+                else {
+                    Write-Log "Auto authentication is disabled."
+                    $autoAuthCheck.IsChecked = $false
+                }
+            } catch {
+                Write-Log "Error loading authentication settings: $_"
             }
         }
-        catch {
-            Write-Log "Error occurred during authentication. Exception: $_"
-            # Reset button state on error
+        
+        # Reset the connection failed flag
+        $script:connectionFailed = $false
+    
+        # Show authentication dialog
+        # Check for saved encrypted secret file before showing authentication dialog
+        Write-Log "Check for saved encrypted secret file before showing authentication dialog"
+        $secretFilePath = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Secret.json")
+        $certFilePath = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Certificate.pfx")
+
+        $authDetails = $null
+
+        if ($rememberCertAuth -eq $true -and (Test-Path $certFilePath)) {
+            Write-Log "Found saved certificate authentication file. Attempting to load."
+            try {
+                $encrypted = Get-Content $certFilePath -Encoding Byte
+                $secure = ConvertTo-SecureString -String $encrypted -AsPlainText -Force
+                $json = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+                $config = ConvertFrom-Json $json -AsHashtable
+                if ($config.AppId -and $config.TenantId -and $config.CertificatePath -and $config.CertificatePassword) {
+                    Write-Log "Loaded certificate authentication details from file."
+                    $authDetails = @{
+                        Method             = 'Certificate'
+                        AppId              = $config.AppId
+                        TenantId           = $config.TenantId
+                        CertificatePath    = $config.CertificatePath
+                        CertificatePassword= $config.CertificatePassword
+                    }
+                }
+                else {
+                    Write-Log "Certificate file missing required fields, falling back to authentication dialog."
+                    $authDetails = Show-AuthenticationDialog
+                }
+            }
+            catch {
+                Write-Log "Failed to decode saved certificate: $_"
+                $authDetails = Show-AuthenticationDialog
+            }
+        }
+        elseif ($rememberSecretAuth -eq $true -and (Test-Path $secretFilePath)) {
+            Write-Log "Found saved secret authentication file. Attempting to load."
+            try {
+                $encrypted = Get-Content $secretFilePath
+                $secure = $encrypted | ConvertTo-SecureString
+                Write-Log "Loaded encrypted secret from file."
+                $json = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure))
+                $config = ConvertFrom-Json $json -AsHashtable
+                if ($config.AppId -and $config.TenantId -and $config.ClientSecret) {
+                    Write-Log "Loaded secret authentication details from file."
+                    $authDetails = @{
+                        Method   = 'Secret'
+                        AppId    = $config.AppId
+                        TenantId = $config.TenantId
+                        Secret   = $config.ClientSecret
+                    }
+                }
+                else {
+                    Write-Log "Secret file missing required fields, falling back to authentication dialog."
+                    $authDetails = Show-AuthenticationDialog
+                }
+            }
+            catch {
+                Write-Log "Failed to decode saved secret: $_"
+                $authDetails = Show-AuthenticationDialog
+            }
+        }
+        else {
+            Write-Log "No saved authentication found, showing authentication dialog."
+            $authDetails = Show-AuthenticationDialog
+        }
+
+        if (-not $authDetails) {
+            Write-Log "Authentication cancelled by user"
+            # Reset button state if cancelled
+            $AuthenticateButton.Content = "Connect to MS Graph"
+            $AuthenticateButton.IsEnabled = $true
+            return
+        }
+
+        # Set button to "Connecting..." state
+        Write-Log "Attempting to connect to Microsoft Graph..."
+        $AuthenticateButton.Content = "Connecting..."
+        $AuthenticateButton.IsEnabled = $false
+
+        # Attempt to connect
+        $connected = Connect-ToGraph -AuthDetails $authDetails
+        
+        # Check connection status and update UI accordingly
+        if ($connected -and -not $script:connectionFailed) {
+            Write-Log "Authentication Successful"
+            $AuthenticateButton.Content = "Connected to MS Graph"
+            $AuthenticateButton.IsEnabled = $false
+            $Disconnect.Content = "Disconnect"
+            $Disconnect.IsEnabled = $true
+
+            # Enable navigation menus
+            $MenuDashboard.IsEnabled = $true
+            $MenuDeviceManagement.IsEnabled = $true
+            $MenuPlaybooks.IsEnabled = $true
+        }
+        else {
+            # Reset button state on failed connection
+            Write-Log "Authentication Failed"
             $AuthenticateButton.Content = "Connect to MS Graph"
             $AuthenticateButton.IsEnabled = $true
             $Disconnect.Content = "Disconnected"
@@ -3828,44 +4205,75 @@ $AuthenticateButton.Add_Click({
             $Window.FindName('TenantDisplayName').Text = ""
             $Window.FindName('TenantId').Text = ""
             $Window.FindName('TenantDomain').Text = ""
-            
-            [System.Windows.MessageBox]::Show(
-                "Authentication failed: $_",
-                "Error",
-                [System.Windows.MessageBoxButton]::OK,
-                [System.Windows.MessageBoxImage]::Error
-            )
         }
-    })
+    }
+    catch {
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error occurred during authentication. Exception: $_"
+        # Reset button state on error
+        $AuthenticateButton.Content = "Connect to MS Graph"
+        $AuthenticateButton.IsEnabled = $true
+        $Disconnect.Content = "Disconnected"
+        $Disconnect.IsEnabled = $false
+        
+        # Disable navigation menus
+        $MenuDashboard.IsEnabled = $false
+        $MenuDeviceManagement.IsEnabled = $false
+        $MenuPlaybooks.IsEnabled = $false
+        
+        # Hide tenant info
+        $Window.FindName('TenantInfoSection').Visibility = 'Collapsed'
+        $Window.FindName('TenantDisplayName').Text = ""
+        $Window.FindName('TenantId').Text = ""
+        $Window.FindName('TenantDomain').Text = ""
+        
+        [System.Windows.MessageBox]::Show(
+            "Authentication failed: $_",
+            "Error",
+            [System.Windows.MessageBoxButton]::OK,
+            [System.Windows.MessageBoxImage]::Error
+        )
+    }
+})
+
     
 
 $SearchButton.Add_Click({
-        if ($AuthenticateButton.IsEnabled) {
-            Write-Log "User is not connected to MS Graph. Attempted search operation."
-            [System.Windows.MessageBox]::Show("You are not connected to MS Graph. Please connect first.")
-            return
-        }
+    if ($AuthenticateButton.IsEnabled) {
+        Write-Log "User is not connected to MS Graph. Attempted search operation."
+        [System.Windows.MessageBox]::Show("You are not connected to MS Graph. Please connect first.")
+        return
+    }
 
-        try {
-            # Trim the input and split by comma
-            $searchInput = $SearchInputText.Text.Trim()
-            $SearchTexts = $searchInput -split ', ' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
-            
-            if ($SearchTexts.Count -eq 0) {
-                [System.Windows.MessageBox]::Show("Please enter at least one device name or serial number.")
-                return
-            }
-            
-            Write-Log "Searching for devices: $SearchTexts"
-            $searchOption = $Dropdown.SelectedItem
-            
-            # Call the centralized search function
-            Invoke-DeviceSearch -SearchTexts $SearchTexts -SearchOption $searchOption
+    try {
+        # Trim the input and split by comma
+        $searchInput = $SearchInputText.Text.Trim()
+        $SearchTexts = $searchInput -split ', ' | ForEach-Object { $_.Trim() } | Where-Object { -not [string]::IsNullOrWhiteSpace($_) }
+        
+        if ($SearchTexts.Count -eq 0) {
+        [System.Windows.MessageBox]::Show("Please enter at least one device name or serial number.")
+        return
         }
-        catch {
-            Write-Log "Error occurred during search operation. Exception: $_"
-            [System.Windows.MessageBox]::Show("Error in search operation. Please ensure the Serialnumber or Devicename is valid.")
+        
+        Write-Log "Searching for devices: $SearchTexts"
+        $searchOption = $Dropdown.SelectedItem
+
+        # Show loading dialog
+        $script:currentLoadingWindow = Show-LoadingDialog -Title 'Searching devices' -Message 'Looking up devices across services...'
+        if ($script:currentLoadingWindow) { $script:currentLoadingWindow.Show() }
+        
+        # Call the centralized search function
+        Invoke-DeviceSearch -SearchTexts $SearchTexts -SearchOption $searchOption
+    }
+    catch {
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error occurred during search operation. Exception: $_"
+        [System.Windows.MessageBox]::Show("Error in search operation. Please ensure the Serialnumber or Devicename is valid.")
+    }
+    finally {
+        if ($script:currentLoadingWindow) {
+        try { $script:currentLoadingWindow.Close() } catch {}
+        $script:currentLoadingWindow = $null
         }
+    }
     })
     
         
@@ -3894,7 +4302,18 @@ $bulk_import_button.Add_Click({
                 
                 # Automatically trigger the search
                 Write-Log "Automatically triggering search for imported devices"
-                Invoke-DeviceSearch -SearchTexts $devices -SearchOption $searchOption
+                # Show loading dialog
+                $script:currentLoadingWindow = Show-LoadingDialog -Title 'Bulk Import Search' -Message 'Looking up imported devices across services...'
+                if ($script:currentLoadingWindow) { $script:currentLoadingWindow.Show() }
+                try {
+                    Invoke-DeviceSearch -SearchTexts $devices -SearchOption $searchOption
+                }
+                finally {
+                    if ($script:currentLoadingWindow) {
+                        try { $script:currentLoadingWindow.Close() } catch {}
+                        $script:currentLoadingWindow = $null
+                    }
+                }
             }
             else {
                 Write-Log "Bulk import cancelled or no devices imported"
@@ -4132,6 +4551,7 @@ $OffboardButton.Add_Click({
             @{ Name = "Entra ID"; Icon = "M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z" },
             @{ Name = "Intune"; Icon = "M21,14V4H3V14H21M21,2A2,2 0 0,1 23,4V16A2,2 0 0,1 21,18H14L16,21V22H8V21L10,18H3C1.89,18 1,17.1 1,16V4C1,2.89 1.89,2 3,2H21M4,5H20V13H4V5Z" },
             @{ Name = "Autopilot"; Icon = "M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z" }
+            @{ Name = "SCCM"; Icon = "m124.326-8.588 0 9.63c.964 58.745.001 43.336.28 73.96-.01 2.13-1.11 4.33-2.02 6.35-2.46 5.41-5.99 10.5-7.47 16.14-3.37 12.84-.25 24.68 7.68 35.31 3.81 5.11 2.96 7.64-2.7 10.1-3.03 1.32-5.93 3.01-8.69 4.83-23.23 15.29-24.92 60.96 1.44 77.85-33.02 0-66.04 0-89.156.326-.27-59.84.564-155.244-.963-234.014M44.16 85.04c6.86 0 13.72 0 20.65 0 0-6.72 0-13.56 0-20.45-7.07 0-13.8 0-20.9 0 0 6.68 0 13.11.25 20.45m50.94.53c.54-6.9 1.08-13.8 1.64-20.93-7.83 0-14.7 0-21.56 0 0 7.05 0 13.79 0 21 6.47 0 12.72 0 19.92-.07m-51.2 64c0 4.25 0 8.49 0 12.85 7.34 0 14.07 0 21.02 0 0-6.95 0-13.68 0-20.54-7.02 0-13.89 0-21.02 0 0 2.44 0 4.58 0 7.69m40.65-7.99c-3.11 0-6.22 0-9.31 0 0 7.24 0 13.97 0 20.85 7 0 13.73 0 20.72 0 0-6.94 0-13.66 0-20.85-3.53 0-6.99 0-11.41 0m-40.64-22.17c0 1.44 0 2.87 0 4.34 7.34 0 14.19 0 20.98 0 0-7.03 0-13.75 0-20.5-7.09 0-13.95 0-20.98 0 0 5.26 0 10.22 0 16.16m31.07-2.96c0 2.43 0 4.86 0 7.29 7.36 0 14.22 0 20.98 0 0-7.03 0-13.76 0-20.48-7.1 0-13.96 0-20.98 0 0 4.28 0 8.25 0 13.19zM127.47 226c-1.29-.79-1.97-1.88-2.94-2.32-13.82-6.29-21.43-16.87-22.52-32.09-1.27-17.82 3.31-32.84 20.54-41.28 4.35-2.13 9.4-2.83 14.06-4.17 5.25 14.73 10.75 18.98 22.61 18.18 10.2-.69 15.52-5.73 18.09-17.12 14.16-.87 29.37 9.33 33.28 23.68 4.17 15.28 4.37 30.67-7.23 43.24-4.33 4.69-10.61 7.58-15.67 11.58-19.7.29-39.72.29-60.21.29zM165.71 73.03c18.8 5.11 27.42 21.88 27.16 35.06-.31 15.41-11.84 29.97-27.09 33.78-14.91 3.72-31.78-3.51-38.92-16.68-8.28-15.27-5.92-32.22 6.19-43.35 9.2-8.46 19.94-11.61 32.67-8.81z" }
         )
         
         # Create hashtable to store checkbox references
@@ -4246,6 +4666,7 @@ $OffboardButton.Add_Click({
                     EntraID      = @{ Found = $false; Success = $false; Error = $null }
                     Intune       = @{ Found = $false; Success = $false; Error = $null }
                     Autopilot    = @{ Found = $false; Success = $false; Error = $null }
+                    SCCM         = @{ Found = $false; Success = $false; Error = $null }
                 }
 
                 Write-Log "Starting offboarding for device: $deviceName (Serial: $serialNumber)"
@@ -4429,6 +4850,41 @@ $OffboardButton.Add_Click({
                     Write-Log "Skipping Autopilot removal for device $deviceName (not selected)"
                 }
 
+                # Get SCCM Device
+                if ($script:serviceCheckboxes["SCCM"].IsChecked) {
+                    # --- SCCM Offboarding Section ---
+                    # Notes:
+                    # - This section attempts to remove the device from SCCM using Remove-CMDevice.
+                    # - It first connects to SCCM, then tries to remove the device by name.
+                    # - Results are tracked in $deviceResult.SCCM.
+                    # - Any errors are logged.
+                    # - The original PowerShell location is restored at the end.
+
+                    ConnectSCCM
+                    try {
+                        $removeResult = Remove-CMDevice -Name $deviceName -Force -ErrorAction Stop
+                        if ($?) {
+                            $deviceResult.SCCM.Found = $true
+                            $deviceResult.SCCM.Success = $true
+                            Write-Log "Successfully removed device $deviceName from SCCM."
+                        }
+                        else {
+                            $deviceResult.SCCM.Found = $true
+                            $deviceResult.SCCM.Success = $false
+                            $deviceResult.SCCM.Error = "Remove-CMDevice did not complete successfully."
+                            Write-Log "Remove-CMDevice did not complete successfully for $deviceName."
+                        }
+
+                    }
+                    catch {
+                        Write-Log "Error during SCCM offboarding for device $deviceName : $_"
+                    }
+                    Set-Location $originaldrive
+                }
+                else {
+                    Write-Log "Skipping SCCM removal for device $deviceName (not selected)"
+                }
+
                 $offboardingResults += $deviceResult
                 Write-Log "Completed offboarding attempt for device: $deviceName"
             }
@@ -4440,7 +4896,8 @@ $OffboardButton.Add_Click({
             $allEntraSuccess = $offboardingResults | Where-Object { $_.EntraID.Found -and $_.EntraID.Success } | Measure-Object | Select-Object -ExpandProperty Count
             $allIntuneSuccess = $offboardingResults | Where-Object { $_.Intune.Found -and $_.Intune.Success } | Measure-Object | Select-Object -ExpandProperty Count
             $allAutopilotSuccess = $offboardingResults | Where-Object { $_.Autopilot.Found -and $_.Autopilot.Success } | Measure-Object | Select-Object -ExpandProperty Count
-            
+            $allSCCMSuccess = $offboardingResults | Where-Object { $_.SCCM.Found -and $_.SCCM.Success } | Measure-Object | Select-Object -ExpandProperty Count
+
             if ($allEntraSuccess -gt 0) {
                 $Window.FindName('aad_status').Text = "Entra ID: Devices Removed"
                 $Window.FindName('aad_status').Foreground = "#FC8181"
@@ -4453,6 +4910,10 @@ $OffboardButton.Add_Click({
                 $Window.FindName('autopilot_status').Text = "Autopilot: Devices Removed"
                 $Window.FindName('autopilot_status').Foreground = "#FC8181"
             }
+            if ($allSCCMSuccess -gt 0) {
+                $Window.FindName('sccm_status').Text = "SCCM: Devices Removed"
+                $Window.FindName('sccm_status').Foreground = "#FC8181"
+            }   
         }
         catch {
             Write-Log "Critical error in offboarding operation. Exception: $_"
@@ -4615,6 +5076,7 @@ function Show-OffboardingSummary {
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="*"/>
                                                 <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="*"/>
                                             </Grid.ColumnDefinitions>
                                             
                                             <!-- Entra ID Result -->
@@ -4636,6 +5098,12 @@ function Show-OffboardingSummary {
                                                 <TextBlock Text="Autopilot" FontWeight="Medium" FontSize="12" Margin="0,0,0,4"/>
                                                 <TextBlock x:Name="AutopilotStatus" Text="{Binding AutopilotStatus}" FontSize="11" Foreground="{Binding AutopilotColor}"/>
                                                 <TextBlock Text="{Binding AutopilotError}" FontSize="10" Foreground="#F56565" TextWrapping="Wrap" Visibility="{Binding AutopilotErrorVisibility}"/>
+                                            </StackPanel>
+
+                                            <StackPanel Grid.Column="3">
+                                                <TextBlock Text="SCCM" FontWeight="Medium" FontSize="12" Margin="0,0,0,4"/>
+                                                <TextBlock x:Name="SCCMStatus" Text="{Binding SCCMStatus}" FontSize="11" Foreground="{Binding SCCMColor}"/>
+                                                <TextBlock Text="{Binding SCCMError}" FontSize="10" Foreground="#F56565" TextWrapping="Wrap" Visibility="{Binding SCCMErrorVisibility}"/>
                                             </StackPanel>
                                         </Grid>
                                     </Grid>
@@ -4659,7 +5127,7 @@ function Show-OffboardingSummary {
         }
     }
     catch {
-        Write-Log "Error creating summary window: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error creating summary window: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to create the summary dialog. Error: $_",
             "Dialog Creation Error",
@@ -4739,6 +5207,21 @@ function Show-OffboardingSummary {
             elseif (!$result.Autopilot.Found) { "#718096" } elseif ($result.Autopilot.Success) { "#48BB78" } else { "#F56565" }
             AutopilotError           = $result.Autopilot.Error
             AutopilotErrorVisibility = if ($result.Autopilot.Error) { "Visible" } else { "Collapsed" }
+
+            # SCCM
+            SCCMStatus               = if ($script:serviceCheckboxes -and $script:serviceCheckboxes["SCCM"] -and -not $script:serviceCheckboxes["SCCM"].IsChecked) {
+                "Skipped"
+            }
+            elseif ($result.SCCM.Found) {
+                if ($result.SCCM.Success) { "✓ Removed"; $deviceSuccess++ } else { "✗ Failed" }
+            }
+            else { "Not Found" }
+            SCCMColor                = if ($script:serviceCheckboxes -and $script:serviceCheckboxes["SCCM"] -and -not $script:serviceCheckboxes["SCCM"].IsChecked) {
+                "#A0AEC0"
+            }
+            elseif (!$result.SCCM.Found) { "#718096" } elseif ($result.SCCM.Success) { "#48BB78" } else { "#F56565" }
+            SCCMError                = $result.SCCM.Error
+            SCCMErrorVisibility      = if ($result.SCCM.Error) { "Visible" } else { "Collapsed" }
         }
         
         # Count total services device was found in (only for selected services)
@@ -4751,7 +5234,10 @@ function Show-OffboardingSummary {
         if ($script:serviceCheckboxes -and $script:serviceCheckboxes["Autopilot"] -and $script:serviceCheckboxes["Autopilot"].IsChecked -and $result.Autopilot.Found) { 
             $deviceTotal++ 
         }
-        
+        if ($script:serviceCheckboxes -and $script:serviceCheckboxes["SCCM"] -and $script:serviceCheckboxes["SCCM"].IsChecked -and $result.SCCM.Found) {
+            $deviceTotal++
+        }
+
         # Categorize device result
         if ($deviceTotal -eq 0) {
             # Device not found in any selected service
@@ -4795,7 +5281,7 @@ function Show-OffboardingSummary {
         $summaryWindow.ShowDialog() | Out-Null
     }
     catch {
-        Write-Log "Error showing summary dialog: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error showing summary dialog: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to show the summary dialog. Error: $_",
             "Dialog Error",
@@ -4884,7 +5370,7 @@ function Show-DashboardCardResults {
         }
     }
     catch {
-        Write-Log "Error creating dashboard window: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error creating dashboard window: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to create the dashboard dialog. Error: $_",
             "Dialog Creation Error",
@@ -4938,7 +5424,7 @@ function Show-DashboardCardResults {
         $dashboardWindow.ShowDialog() | Out-Null
     }
     catch {
-        Write-Log "Error showing dashboard dialog: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error showing dashboard dialog: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to show the dashboard dialog. Error: $_",
             "Dialog Error",
@@ -4958,7 +5444,7 @@ function Show-PrerequisitesDialog {
         }
     }
     catch {
-        Write-Log "Error creating prerequisites window: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error creating prerequisites window: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to create the prerequisites dialog. Error: $_",
             "Dialog Creation Error",
@@ -5160,7 +5646,7 @@ function Show-PrerequisitesDialog {
         $prereqWindow.ShowDialog()
     }
     catch {
-        Write-Log "Error showing prerequisites dialog: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error showing prerequisites dialog: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to show the prerequisites dialog. Error: $_",
             "Dialog Error",
@@ -5175,7 +5661,7 @@ $PrerequisitesButton.Add_Click({
     })
 
 $logs_button.Add_Click({
-        $logFilePath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "IntuneOffboardingTool_Log.txt")
+       # $logFilePath = [System.IO.Path]::Combine([Environment]::GetFolderPath("Desktop"), "IntuneOffboardingTool_Log.txt")
         if (Test-Path $logFilePath) {
             Invoke-Item $logFilePath
         }
@@ -5183,6 +5669,74 @@ $logs_button.Add_Click({
             Write-Host "Log file not found."
         }
     })
+    
+# Lightweight loading dialog shown during long-running UI actions
+function Show-LoadingDialog {
+    param(
+        [string]$Title = 'Loading',
+        [string]$Message = 'Please wait...'
+    )
+
+    try {
+        [xml]$loadingXaml = @"
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Loading" Height="180" Width="420"
+    WindowStartupLocation="CenterOwner"
+    WindowStyle="None"
+    ResizeMode="NoResize"
+    Background="#00000000"
+    AllowsTransparency="True"
+    ShowInTaskbar="False"
+    Topmost="True">
+    <Border Background="#FFFFFFFF" CornerRadius="8" Margin="12">
+        <Border.Effect>
+            <DropShadowEffect ShadowDepth="2" Direction="315" Color="#000000" Opacity="0.25" BlurRadius="4"/>
+        </Border.Effect>
+        <StackPanel Margin="20">
+            <TextBlock x:Name="TitleText"
+                       Text="Loading"
+                       FontSize="20"
+                       FontWeight="SemiBold"
+                       Foreground="#1A202C"
+                       Margin="0,0,0,6"/>
+            <TextBlock x:Name="MessageText"
+                       Text="Please wait..."
+                       Foreground="#4A5568"
+                       FontSize="13"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,14"/>
+            <ProgressBar IsIndeterminate="True"
+                         Height="6"
+                         Background="#EDF2F7"
+                         Foreground="#0078D4"/>
+        </StackPanel>
+    </Border>
+</Window>
+"@
+        $reader = New-Object System.Xml.XmlNodeReader $loadingXaml
+        $loadingWindow = [Windows.Markup.XamlReader]::Load($reader)
+
+        if ($null -eq $loadingWindow) { throw "Failed to create loading window" }
+
+    # Set owner to main window if available so it centers correctly
+    if ($Window) { $loadingWindow.Owner = $Window }
+
+        # Populate title/message labels
+        $titleBlock = $loadingWindow.FindName('TitleText')
+        $msgBlock = $loadingWindow.FindName('MessageText')
+        if ($titleBlock) { $titleBlock.Text = $Title }
+        if ($msgBlock) { $msgBlock.Text = $Message }
+        $loadingWindow.Title = $Title
+
+        return $loadingWindow
+    }
+    catch {
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error creating loading dialog: $_"
+        return $null
+    }
+}
         
 # Add new control connections
 $MenuHome = $Window.FindName('MenuHome')
@@ -5225,9 +5779,20 @@ $MenuDashboard.Add_Checked({
         
         # Update dashboard statistics if connected
         if (-not $AuthenticateButton.IsEnabled) {
-            Update-DashboardStatistics
+            # Show a loading dialog while the dashboard populates
+            $script:currentLoadingWindow = Show-LoadingDialog -Title 'Loading Dashboard' -Message 'Fetching device statistics and charts...'
+            if ($script:currentLoadingWindow) { $script:currentLoadingWindow.Show() }
+            try {
+                # Run the update and keep UI responsive
+                $Window.Dispatcher.Invoke([Action]{ Update-DashboardStatistics }, 'Background')
+            }
+            catch {
+                if ($script:currentLoadingWindow) { try { $script:currentLoadingWindow.Close() } catch {} ; $script:currentLoadingWindow = $null }
+                throw
+            }
         }
     })
+
 
 $MenuDeviceManagement.Add_Checked({
         $HomePage.Visibility = 'Collapsed'
@@ -5245,8 +5810,6 @@ $MenuPlaybooks.Add_Checked({
         $PlaybookResultsGrid.Visibility = 'Collapsed'
         $Window.FindName('PlaybooksScrollViewer').Visibility = 'Visible'
     })
-
-
 
 function Update-DashboardStatistics {
     try {
@@ -5317,299 +5880,258 @@ function Update-DashboardStatistics {
             # Ensure we return an array
             return @($devices)
         }
-        
-        # Wait for jobs to finish and grab results with timing
-        Write-Log "Waiting for all jobs to complete..."
-        Wait-Job -Job $intuneJob, $autopilotJob, $entraJob | Out-Null
-        
-        # Check for job errors and get results
-        $intuneJobResult = try {
-            Receive-Job -Job $intuneJob -ErrorAction Stop
-        } catch {
-            Write-Log "Error receiving Intune devices job: $_"
-            $null
-        }
-        $intuneJobDuration = (Get-Date) - $intuneJobStart
-        Write-Log "Intune devices job completed in $($intuneJobDuration.TotalSeconds) seconds"
-        
-        $autopilotJobResult = try {
-            Receive-Job -Job $autopilotJob -ErrorAction Stop
-        } catch {
-            Write-Log "Error receiving Autopilot devices job: $_"
-            $null
-        }
-        $autopilotJobDuration = (Get-Date) - $autopilotJobStart
-        Write-Log "Autopilot devices job completed in $($autopilotJobDuration.TotalSeconds) seconds"
-        
-        $entraJobResult = try {
-            Receive-Job -Job $entraJob -ErrorAction Stop
-        } catch {
-            Write-Log "Error receiving Entra ID devices job: $_"
-            $null
-        }
-        $entraJobDuration = (Get-Date) - $entraJobStart
-        Write-Log "Entra ID devices job completed in $($entraJobDuration.TotalSeconds) seconds"
-        
-        # Convert results to arrays, handling various return types
-        $intuneDevices = if ($null -eq $intuneJobResult) {
-            @()
-        } elseif ($intuneJobResult -is [System.Collections.Hashtable]) {
-            Write-Log "WARNING: Intune job returned a hashtable instead of array. Converting..."
-            @($intuneJobResult.value)
-        } elseif ($intuneJobResult -is [System.Array]) {
-            $intuneJobResult
-        } else {
-            @($intuneJobResult)
+
+        Write-Log "Starting SCCM devices job..."
+        $sccmJobStart = Get-Date
+        $sccmJob = Start-ThreadJob -ScriptBlock {
+            ##Load the Configuration Manager Module
+            import-module ($Env:SMS_ADMIN_UI_PATH.Substring(0, $Env:SMS_ADMIN_UI_PATH.Length - 5) + '\ConfigurationManager.psd1')
+            $Drive = Get-PSDrive -PSProvider CMSite
+            Set-Location "$($Drive):"
+
+            $devices = get-cmdevice -CollectionID 'SMSDM003' -fast | Where-Object { $_.IsClient -eq $true -and $_.IsActive -eq $true }
+
+            # Ensure we return an array
+            return @($devices)
         }
         
-        $autopilotDevices = if ($null -eq $autopilotJobResult) {
-            @()
-        } elseif ($autopilotJobResult -is [System.Collections.Hashtable]) {
-            Write-Log "WARNING: Autopilot job returned a hashtable instead of array. Converting..."
-            @($autopilotJobResult.value)
-        } elseif ($autopilotJobResult -is [System.Array]) {
-            $autopilotJobResult
-        } else {
-            @($autopilotJobResult)
+        # Use a DispatcherTimer so the UI remains responsive (allows loading bar to animate)
+        if ($script:dashboardUpdateTimer) { $script:dashboardUpdateTimer.Stop(); $script:dashboardUpdateTimer = $null }
+        $script:dashboardUpdateContext = [pscustomobject]@{
+            IntuneJob        = $intuneJob
+            AutopilotJob     = $autopilotJob
+            EntraJob         = $entraJob
+            SccmJob          = $sccmJob
+            IntuneJobStart   = $intuneJobStart
+            AutopilotJobStart= $autopilotJobStart
+            EntraJobStart    = $entraJobStart
+            SccmJobStart     = $sccmJobStart
         }
-        
-        $entraDevices = if ($null -eq $entraJobResult) {
-            @()
-        } elseif ($entraJobResult -is [System.Collections.Hashtable]) {
-            Write-Log "WARNING: Entra job returned a hashtable instead of array. Converting..."
-            @($entraJobResult.value)
-        } elseif ($entraJobResult -is [System.Array]) {
-            $entraJobResult
-        } else {
-            @($entraJobResult)
-        }
-        
-        # Clean up jobs
-        Remove-Job -Job $intuneJob, $autopilotJob, $entraJob -Force
-        
-        Write-Log "Total devices - Intune: $($intuneDevices.Count), Autopilot: $($autopilotDevices.Count), Entra: $($entraDevices.Count)"
-        
-        # Update top row counts
-        $Window.FindName('IntuneDevicesCount').Text = $intuneDevices.Count
-        $Window.FindName('AutopilotDevicesCount').Text = $autopilotDevices.Count
-        $Window.FindName('EntraIDDevicesCount').Text = $entraDevices.Count
-    
-        # Calculate stale devices
-        $thirtyDaysAgo = (Get-Date).AddDays(-30)
-        $ninetyDaysAgo = (Get-Date).AddDays(-90)
-        $onehundredEightyDaysAgo = (Get-Date).AddDays(-180)
-        
-        Write-Log "Total Intune devices to check: $($intuneDevices.Count)"
-    
-        $stale30 = ($intuneDevices | Where-Object { 
-                if ($_.lastSyncDateTime) {
-                    try { 
-                        $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
-                        if (-not $lastSync) { return $false }
-                        return $lastSync -lt $thirtyDaysAgo
-                    }
-                    catch { 
-                        Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
-                        return $false 
-                    }
+
+        $script:dashboardUpdateTimer = New-Object System.Windows.Threading.DispatcherTimer
+        $script:dashboardUpdateTimer.Interval = [TimeSpan]::FromMilliseconds(250)
+        $script:dashboardUpdateTimer.Add_Tick({
+                $ctx = $script:dashboardUpdateContext
+                if (-not $ctx) { return }
+
+                $jobs = @($ctx.IntuneJob, $ctx.AutopilotJob, $ctx.EntraJob, $ctx.SccmJob)
+                $allDone = $true
+                foreach ($j in $jobs) {
+                    if ($null -eq $j -or ($j.State -notin 'Completed','Failed','Stopped')) { $allDone = $false; break }
                 }
-                else { return $false }
-            }).Count
-        
-        # Calculate 90-day stale devices
-        Write-Log "Calculating 90-day stale devices from $($intuneDevices.Count) Intune devices"
-        $stale90Count = 0
-        foreach ($device in $intuneDevices) {
-            if ($device.lastSyncDateTime) {
-                try {
-                    $lastSync = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
-                    if ($lastSync -and ($lastSync -lt $ninetyDaysAgo)) {
-                        Write-Log "90-day stale device found: $($device.deviceName), LastSync: $lastSync"
-                        $stale90Count++
-                    }
-                }
-                catch {
-                    Write-Log "Error parsing date for device $($device.deviceName): $_"
-                }
-            }
-        }
-        $stale90 = $stale90Count
-        Write-Log "90-day stale devices found: $stale90"
-        
-        # Calculate 180-day stale devices
-        Write-Log "Calculating 180-day stale devices from $($intuneDevices.Count) Intune devices"
-        $stale180Count = 0
-        foreach ($device in $intuneDevices) {
-            if ($device.lastSyncDateTime) {
-                try {
-                    $lastSync = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
-                    if ($lastSync -and ($lastSync -lt $onehundredEightyDaysAgo)) {
-                        Write-Log "180-day stale device found: $($device.deviceName), LastSync: $lastSync"
-                        $stale180Count++
+                if (-not $allDone) { return }
+
+                # Stop timer
+                $script:dashboardUpdateTimer.Stop()
+                $script:dashboardUpdateTimer = $null
+
+                # Receive results with timing logs
+                $intuneJobResult = try { Receive-Job -Job $ctx.IntuneJob -ErrorAction Stop } catch { Write-Log "Error receiving Intune devices job: $_"; $null }
+                $intuneJobDuration = (Get-Date) - $ctx.IntuneJobStart
+                Write-Log "Intune devices job completed in $($intuneJobDuration.TotalSeconds) seconds"
+
+                $autopilotJobResult = try { Receive-Job -Job $ctx.AutopilotJob -ErrorAction Stop } catch { Write-Log "Error receiving Autopilot devices job: $_"; $null }
+                $autopilotJobDuration = (Get-Date) - $ctx.AutopilotJobStart
+                Write-Log "Autopilot devices job completed in $($autopilotJobDuration.TotalSeconds) seconds"
+
+                $entraJobResult = try { Receive-Job -Job $ctx.EntraJob -ErrorAction Stop } catch { Write-Log "Error receiving Entra ID devices job: $_"; $null }
+                $entraJobDuration = (Get-Date) - $ctx.EntraJobStart
+                Write-Log "Entra ID devices job completed in $($entraJobDuration.TotalSeconds) seconds"
+
+                $SCCMJobResult = try { Receive-Job -Job $ctx.SccmJob -ErrorAction Stop } catch { Write-Log "Error receiving SCCM devices job: $_"; $null }
+                $sccmJobDuration = (Get-Date) - $ctx.SccmJobStart
+                Write-Log "SCCM devices job completed in $($sccmJobDuration.TotalSeconds) seconds"
+
+                # Clean up jobs
+                try { Remove-Job -Job $jobs -Force -ErrorAction SilentlyContinue } catch {}
+
+                # Convert results to arrays, handling various return types
+                $intuneDevices = if ($null -eq $intuneJobResult) { @() } elseif ($intuneJobResult -is [System.Collections.Hashtable]) { Write-Log "WARNING: Intune job returned a hashtable instead of array. Converting..."; @($intuneJobResult.value) } elseif ($intuneJobResult -is [System.Array]) { $intuneJobResult } else { @($intuneJobResult) }
+                $autopilotDevices = if ($null -eq $autopilotJobResult) { @() } elseif ($autopilotJobResult -is [System.Collections.Hashtable]) { Write-Log "WARNING: Autopilot job returned a hashtable instead of array. Converting..."; @($autopilotJobResult.value) } elseif ($autopilotJobResult -is [System.Array]) { $autopilotJobResult } else { @($autopilotJobResult) }
+                $entraDevices = if ($null -eq $entraJobResult) { @() } elseif ($entraJobResult -is [System.Collections.Hashtable]) { Write-Log "WARNING: Entra job returned a hashtable instead of array. Converting..."; @($entraJobResult.value) } elseif ($entraJobResult -is [System.Array]) { $entraJobResult } else { @($entraJobResult) }
+                $sccmDevices = if ($null -eq $SCCMJobResult) { @() } elseif ($SCCMJobResult -is [System.Collections.Hashtable]) { Write-Log "WARNING: SCCM job returned a hashtable instead of array. Converting..."; @($SCCMJobResult.value) } elseif ($SCCMJobResult -is [System.Array]) { $SCCMJobResult } else { @($SCCMJobResult) }
+
+                Write-Log "Total devices - Intune: $($intuneDevices.Count), Autopilot: $($autopilotDevices.Count), Entra: $($entraDevices.Count), SCCM: $($sccmDevices.Count)"
+
+                # Update top row counts
+                $Window.FindName('IntuneDevicesCount').Text = $intuneDevices.Count
+                $Window.FindName('AutopilotDevicesCount').Text = $autopilotDevices.Count
+                $Window.FindName('EntraIDDevicesCount').Text = $entraDevices.Count
+                $Window.FindName('SCCMDevicesCount').Text = $sccmDevices.Count
+
+                # Calculate stale devices
+                $thirtyDaysAgo = (Get-Date).AddDays(-30)
+                $ninetyDaysAgo = (Get-Date).AddDays(-90)
+                $onehundredEightyDaysAgo = (Get-Date).AddDays(-180)
+
+                Write-Log "Total Intune devices to check: $($intuneDevices.Count)"
+
+                $stale30 = ($intuneDevices | Where-Object {
+                        if ($_.lastSyncDateTime) {
+                            try {
+                                $lastSync = ConvertTo-SafeDateTime -dateString $_.lastSyncDateTime
+                                if (-not $lastSync) { return $false }
+                                return $lastSync -lt $thirtyDaysAgo
+                            }
+                            catch {
+                                Write-Log "Error parsing date: $($_.lastSyncDateTime). Error: $_"
+                                return $false
+                            }
+                        }
+                        else { return $false }
+                    }).Count
+
+                # Calculate 90-day stale devices
+                Write-Log "Calculating 90-day stale devices from $($intuneDevices.Count) Intune devices"
+                $stale90Count = 0
+                foreach ($device in $intuneDevices) {
+                    if ($device.lastSyncDateTime) {
+                        try {
+                            $lastSync = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($lastSync -and ($lastSync -lt $ninetyDaysAgo)) {
+                                Write-Log "90-day stale device found: $($device.deviceName), LastSync: $lastSync"
+                                $stale90Count++
+                            }
+                        }
+                        catch {
+                            Write-Log "Error parsing date for device $($device.deviceName): $_"
+                        }
                     }
                 }
-                catch {
-                    Write-Log "Error parsing date for device $($device.deviceName): $_"
+                $stale90 = $stale90Count
+                Write-Log "90-day stale devices found: $stale90"
+
+                # Calculate 180-day stale devices
+                Write-Log "Calculating 180-day stale devices from $($intuneDevices.Count) Intune devices"
+                $stale180Count = 0
+                foreach ($device in $intuneDevices) {
+                    if ($device.lastSyncDateTime) {
+                        try {
+                            $lastSync = ConvertTo-SafeDateTime -dateString $device.lastSyncDateTime
+                            if ($lastSync -and ($lastSync -lt $onehundredEightyDaysAgo)) {
+                                Write-Log "180-day stale device found: $($device.deviceName), LastSync: $lastSync"
+                                $stale180Count++
+                            }
+                        }
+                        catch {
+                            Write-Log "Error parsing date for device $($device.deviceName): $_"
+                        }
+                    }
                 }
-            }
-        }
-        $stale180 = $stale180Count
-    
-        Write-Log "Stale device counts - 30 days: $stale30, 90 days: $stale90, 180 days: $stale180"
-        $Window.FindName('StaleDevices30Count').Text = $stale30
-        $Window.FindName('StaleDevices90Count').Text = $stale90
-        $Window.FindName('StaleDevices180Count').Text = $stale180
-    
-        # Update personal/corporate counts and progress bars
-        $personalDevices = ($intuneDevices | Where-Object { $_.managedDeviceOwnerType -eq 'personal' }).Count
-        $corporateDevices = ($intuneDevices | Where-Object { $_.managedDeviceOwnerType -eq 'company' }).Count
-        $totalDevices = if ($intuneDevices) { $intuneDevices.Count } else { 0 }
-    
-        # Update counts
-        $Window.FindName('PersonalDevicesCount').Text = $personalDevices
-        $Window.FindName('CorporateDevicesCount').Text = $corporateDevices
-    
-        # Update progress bars
-        if ($totalDevices -gt 0) {
-            $personalProgress = [Math]::Round(($personalDevices / $totalDevices) * 100)
-            $corporateProgress = [Math]::Round(($corporateDevices / $totalDevices) * 100)
-                
-            $Window.FindName('PersonalDevicesProgress').Value = $personalProgress
-            $Window.FindName('CorporateDevicesProgress').Value = $corporateProgress
-        }
-    
-        # Group platform distribution
-        $platformGroups = $intuneDevices | Group-Object -Property {
-            $os = $_.operatingSystem
-            if ([string]::IsNullOrWhiteSpace($os)) { return "Unknown" }
-                
-            switch -Regex ($os.ToLower()) {
-                'windows' { "Windows" }
-                'macos|mac os' { "macOS" }
-                'linux' { "Linux" }
-                'ios' { "iOS" }
-                'android' { "Android" }
-                default { "Other" }
-            }
-        } | Sort-Object Count -Descending
+                $stale180 = $stale180Count
 
-        # Define platform colors
-        $platformColors = @{
-            'Windows' = '#0078D4'  # Microsoft Blue
-            'iOS'     = '#48BB78'  # Green
-            'Android' = '#9F7AEA'  # Purple
-            'macOS'   = '#F6AD55'  # Orange
-            'Linux'   = '#FC8181'  # Red
-            'Other'   = '#718096'  # Gray
-            'Unknown' = '#718096'  # Gray
-        }
+                Write-Log "Stale device counts - 30 days: $stale30, 90 days: $stale90, 180 days: $stale180"
+                $Window.FindName('StaleDevices30Count').Text = $stale30
+                $Window.FindName('StaleDevices90Count').Text = $stale90
+                $Window.FindName('StaleDevices180Count').Text = $stale180
 
-        # Get the canvas and legend panel
-        $canvas = $Window.FindName('PlatformDistributionCanvas')
-        $legendPanel = $Window.FindName('PlatformDistributionLegend')
+                # Update personal/corporate counts and progress bars
+                $personalDevices = ($intuneDevices | Where-Object { $_.managedDeviceOwnerType -eq 'personal' }).Count
+                $corporateDevices = ($intuneDevices | Where-Object { $_.managedDeviceOwnerType -eq 'company' }).Count
+                $totalDevices = if ($intuneDevices) { $intuneDevices.Count } else { 0 }
 
-        # Clear existing content
-        $canvas.Children.Clear()
-        $legendPanel.Children.Clear()
+                # Update counts
+                $Window.FindName('PersonalDevicesCount').Text = $personalDevices
+                $Window.FindName('CorporateDevicesCount').Text = $corporateDevices
 
-        # Calculate total for percentages
-        $total = ($platformGroups | Measure-Object Count -Sum).Sum
-        if ($total -eq 0) { return }
+                # Update progress bars
+                if ($totalDevices -gt 0) {
+                    $personalProgress = [Math]::Round(($personalDevices / $totalDevices) * 100)
+                    $corporateProgress = [Math]::Round(($corporateDevices / $totalDevices) * 100)
+                    $Window.FindName('PersonalDevicesProgress').Value = $personalProgress
+                    $Window.FindName('CorporateDevicesProgress').Value = $corporateProgress
+                }
 
-        # Initialize variables for pie chart
-        $centerX = 100
-        $centerY = 100
-        $radius = 80
-        $startAngle = 0
+                # Group platform distribution
+                $platformGroups = $intuneDevices | Group-Object -Property {
+                    $os = $_.operatingSystem
+                    if ([string]::IsNullOrWhiteSpace($os)) { return 'Unknown' }
+                    switch -Regex ($os.ToLower()) {
+                        'windows' { 'Windows' }
+                        'macos|mac os' { 'macOS' }
+                        'linux' { 'Linux' }
+                        'ios' { 'iOS' }
+                        'android' { 'Android' }
+                        default { 'Other' }
+                    }
+                } | Sort-Object Count -Descending
 
-        # Draw each platform segment
-        foreach ($platform in $platformGroups) {
-            $percentage = $platform.Count / $total
-            $sweepAngle = 360 * $percentage
-            
-            # Convert angles to radians for calculation
-            $startRad = $startAngle * [Math]::PI / 180
-            $endRad = ($startAngle + $sweepAngle) * [Math]::PI / 180
-            
-            # Calculate arc points
-            $startX = $centerX + $radius * [Math]::Cos($startRad)
-            $startY = $centerY + $radius * [Math]::Sin($startRad)
-            $endX = $centerX + $radius * [Math]::Cos($endRad)
-            $endY = $centerY + $radius * [Math]::Sin($endRad)
-            
-            # Create path geometry
-            $path = New-Object System.Windows.Shapes.Path
-            $pathGeometry = New-Object System.Windows.Media.PathGeometry
-            $pathFigure = New-Object System.Windows.Media.PathFigure
-            
-            # Start at center
-            $pathFigure.StartPoint = New-Object System.Windows.Point($centerX, $centerY)
-            
-            # Add line to arc start
-            $lineSegment = New-Object System.Windows.Media.LineSegment(
-                (New-Object System.Windows.Point($startX, $startY)), $true)
-            $pathFigure.Segments.Add($lineSegment)
-            
-            # Add arc
-            $arcSegment = New-Object System.Windows.Media.ArcSegment(
-                (New-Object System.Windows.Point($endX, $endY)),
-                (New-Object System.Windows.Size($radius, $radius)),
-                0, # RotationAngle
-                ($sweepAngle -gt 180), # IsLargeArc
-                [System.Windows.Media.SweepDirection]::Clockwise,
-                $true) # IsStroked
-            $pathFigure.Segments.Add($arcSegment)
-            
-            # Close path
-            $lineSegment = New-Object System.Windows.Media.LineSegment(
-                (New-Object System.Windows.Point($centerX, $centerY)), $true)
-            $pathFigure.Segments.Add($lineSegment)
-            
-            # Add figure to geometry
-            $pathGeometry.Figures.Add($pathFigure)
-            $path.Data = $pathGeometry
-            
-            # Set color
-            $color = if ($platformColors.ContainsKey($platform.Name)) {
-                $platformColors[$platform.Name]
-            }
-            else {
-                $platformColors['Unknown']
-            }
-            $path.Fill = New-Object System.Windows.Media.SolidColorBrush(
-                [System.Windows.Media.ColorConverter]::ConvertFromString($color))
-            
-            # Add to canvas
-            $canvas.Children.Add($path)
-            
-            # Add to legend
-            $legendItem = New-Object System.Windows.Controls.StackPanel
-            $legendItem.Orientation = "Horizontal"
-            $legendItem.Margin = New-Object System.Windows.Thickness(0, 0, 0, 5)
-            
-            $colorBox = New-Object System.Windows.Shapes.Rectangle
-            $colorBox.Width = 12
-            $colorBox.Height = 12
-            $colorBox.Fill = $path.Fill
-            $colorBox.Margin = New-Object System.Windows.Thickness(0, 0, 5, 0)
-            
-            $label = New-Object System.Windows.Controls.TextBlock
-            $label.Text = "$($platform.Name) ($([Math]::Round($percentage * 100))%)"
-            $label.Foreground = "White"
-            $label.VerticalAlignment = "Center"
-            
-            $legendItem.Children.Add($colorBox)
-            $legendItem.Children.Add($label)
-            $legendPanel.Children.Add($legendItem)
-            
-            # Update start angle for next segment
-            $startAngle += $sweepAngle
-        }
+                # Define platform colors
+                $platformColors = @{
+                    'Windows' = '#0078D4'
+                    'iOS'     = '#48BB78'
+                    'Android' = '#9F7AEA'
+                    'macOS'   = '#F6AD55'
+                    'Linux'   = '#FC8181'
+                    'Other'   = '#718096'
+                    'Unknown' = '#718096'
+                }
 
-        Write-Log "Dashboard statistics updated successfully."
+                # Get the canvas and legend panel
+                $canvas = $Window.FindName('PlatformDistributionCanvas')
+                $legendPanel = $Window.FindName('PlatformDistributionLegend')
+                $canvas.Children.Clear()
+                $legendPanel.Children.Clear()
+
+                $total = ($platformGroups | Measure-Object Count -Sum).Sum
+                if ($total -gt 0) {
+                    $centerX = 100; $centerY = 100; $radius = 80; $startAngle = 0
+                    foreach ($platform in $platformGroups) {
+                        $percentage = $platform.Count / $total
+                        $sweepAngle = 360 * $percentage
+                        $startRad = $startAngle * [Math]::PI / 180
+                        $endRad = ($startAngle + $sweepAngle) * [Math]::PI / 180
+                        $startX = $centerX + $radius * [Math]::Cos($startRad)
+                        $startY = $centerY + $radius * [Math]::Sin($startRad)
+                        $endX = $centerX + $radius * [Math]::Cos($endRad)
+                        $endY = $centerY + $radius * [Math]::Sin($endRad)
+                        $path = New-Object System.Windows.Shapes.Path
+                        $pathGeometry = New-Object System.Windows.Media.PathGeometry
+                        $pathFigure = New-Object System.Windows.Media.PathFigure
+                        $pathFigure.StartPoint = New-Object System.Windows.Point($centerX, $centerY)
+                        $lineSegment = New-Object System.Windows.Media.LineSegment((New-Object System.Windows.Point($startX, $startY)), $true)
+                        $pathFigure.Segments.Add($lineSegment)
+                        $arcSegment = New-Object System.Windows.Media.ArcSegment((New-Object System.Windows.Point($endX, $endY)), (New-Object System.Windows.Size($radius, $radius)), 0, ($sweepAngle -gt 180), [System.Windows.Media.SweepDirection]::Clockwise, $true)
+                        $pathFigure.Segments.Add($arcSegment)
+                        $lineSegment = New-Object System.Windows.Media.LineSegment((New-Object System.Windows.Point($centerX, $centerY)), $true)
+                        $pathFigure.Segments.Add($lineSegment)
+                        $pathGeometry.Figures.Add($pathFigure)
+                        $path.Data = $pathGeometry
+                        $color = if ($platformColors.ContainsKey($platform.Name)) { $platformColors[$platform.Name] } else { $platformColors['Unknown'] }
+                        $path.Fill = New-Object System.Windows.Media.SolidColorBrush([System.Windows.Media.ColorConverter]::ConvertFromString($color))
+                        $canvas.Children.Add($path)
+                        $legendItem = New-Object System.Windows.Controls.StackPanel
+                        $legendItem.Orientation = 'Horizontal'
+                        $legendItem.Margin = New-Object System.Windows.Thickness(0,0,0,5)
+                        $colorBox = New-Object System.Windows.Shapes.Rectangle
+                        $colorBox.Width = 12; $colorBox.Height = 12; $colorBox.Fill = $path.Fill
+                        $colorBox.Margin = New-Object System.Windows.Thickness(0,0,5,0)
+                        $label = New-Object System.Windows.Controls.TextBlock
+                        $label.Text = "$(($platform.Name)) ($([Math]::Round($percentage * 100))%)"
+                        $label.Foreground = 'White'
+                        $label.VerticalAlignment = 'Center'
+                        $legendItem.Children.Add($colorBox)
+                        $legendItem.Children.Add($label)
+                        $legendPanel.Children.Add($legendItem)
+                        $startAngle += $sweepAngle
+                    }
+                }
+
+                # Close loading window if present
+                if ($script:currentLoadingWindow) {
+                    try { $script:currentLoadingWindow.Close() } catch {}
+                    $script:currentLoadingWindow = $null
+                }
+
+                Write-Log 'Dashboard statistics updated successfully.'
+            })
+
+        # Start the timer and immediately return to keep UI responsive
+        $script:dashboardUpdateTimer.Start()
+        return
     }
     catch {
-        Write-Log "Error updating dashboard statistics: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error updating dashboard statistics: $_"
         [System.Windows.MessageBox]::Show("Error updating dashboard statistics. Please ensure you are connected to MS Graph.")
     }
 }
@@ -5684,7 +6206,9 @@ $ExportSelectedButton = $Window.FindName('ExportSelectedButton')
 
 # Create and configure Select All checkbox
 $SelectAllCheckBox = New-Object System.Windows.Controls.CheckBox
-$SelectAllCheckBox.Content = "Select All"
+$SelectAllCheckBox.Content = ""
+$SelectAllCheckBox.ToolTip = "Select/Deselect All"
+($SearchResultsDataGrid.Columns[0]).Width = 33
 ($SearchResultsDataGrid.Columns[0]).Header = $SelectAllCheckBox
 
 # Add Select All checkbox click handler
@@ -5828,7 +6352,7 @@ function Show-PlaybookProgressModal {
         }
     }
     catch {
-        Write-Log "Error creating progress window: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error creating progress window: $_"
         [System.Windows.MessageBox]::Show(
             "Failed to create the progress dialog. Error: $_",
             "Dialog Creation Error",
@@ -5991,7 +6515,7 @@ function Invoke-Playbook {
         }
     }
     catch {
-        Write-Log "Error executing playbook: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error executing playbook: $_"
         if ($null -ne $progressWindow) {
             $errorMessage.Text = $_.Exception.Message
             $errorSection.Visibility = 'Visible'
@@ -6184,7 +6708,7 @@ function Show-ChangelogDialog {
         }
     }
     catch {
-        Write-Log "Error showing changelog dialog: $_"
+        Write-Log "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error showing changelog dialog: $_"
         [System.Windows.MessageBox]::Show(
             "Error showing changelog dialog: $_",
             "Error",
@@ -6192,6 +6716,250 @@ function Show-ChangelogDialog {
             [System.Windows.MessageBoxImage]::Error
         )
     }
+}
+
+function Show-SettingsDialog {
+    # Create window
+    $settingsWindow = New-Object System.Windows.Window
+    $settingsWindow.Title = "Settings"
+    $settingsWindow.Width = 380
+    $settingsWindow.Height = 320
+    $settingsWindow.WindowStartupLocation = 'CenterOwner'
+    $settingsWindow.ResizeMode = 'NoResize'
+    if ($Window) { $settingsWindow.Owner = $Window }
+
+    # Main grid
+    $grid = New-Object System.Windows.Controls.Grid
+    $grid.Margin = '20'
+    $settingsWindow.Content = $grid
+
+    # Row definitions
+    $row1 = New-Object System.Windows.Controls.RowDefinition
+    $row1.Height = "Auto"
+    $row2 = New-Object System.Windows.Controls.RowDefinition
+    $row2.Height = "Auto"
+    $row3 = New-Object System.Windows.Controls.RowDefinition
+    $row3.Height = "*"
+    $grid.RowDefinitions.Add($row1)
+    $grid.RowDefinitions.Add($row2)
+    $grid.RowDefinitions.Add($row3)
+
+    # Title
+    $title = New-Object System.Windows.Controls.TextBlock
+    $title.Text = "Authentication Settings"
+    $title.FontSize = 18
+    $title.FontWeight = 'Bold'
+    $title.Margin = '0,0,0,10'
+    [System.Windows.Controls.Grid]::SetRow($title, 0)
+    $grid.Children.Add($title)
+
+    # Description
+    $desc = New-Object System.Windows.Controls.TextBlock
+    $desc.Text = "Enable or disable automatic authentication"
+    $desc.FontSize = 13
+    $desc.Foreground = "#555"
+    $desc.Margin = '0,0,0,18'
+    [System.Windows.Controls.Grid]::SetRow($desc, 1)
+    $grid.Children.Add($desc)
+
+    # Auto Auth toggle panel
+    $autoAuthPanel = New-Object System.Windows.Controls.StackPanel
+    $autoAuthPanel.Orientation = 'Horizontal'
+    $autoAuthPanel.Margin = '0,0,0,0'
+    [System.Windows.Controls.Grid]::SetRow($autoAuthPanel, 2)
+    $grid.Children.Add($autoAuthPanel)
+
+    # Auto Auth checkbox
+    $autoAuthCheck = New-Object System.Windows.Controls.CheckBox
+    $autoAuthCheck.Content = "Enable Auto Authentication"
+    $autoAuthCheck.FontSize = 14
+    $autoAuthCheck.VerticalAlignment = 'Top'
+    $autoAuthCheck.Margin = '0,0,0,10'
+    $autoAuthPanel.Children.Add($autoAuthCheck)
+
+    # Ensure SCCM checkbox is below Auto Auth checkbox
+    $autoAuthPanel.Orientation = 'Vertical'
+    $sccmCheck = New-Object System.Windows.Controls.CheckBox
+    $sccmCheck.Content = "Enable SCCM Management"
+    $sccmCheck.FontSize = 14
+    $sccmCheck.VerticalAlignment = 'Top'
+    $sccmCheck.Margin = '0,0,0,10'
+    $autoAuthPanel.Children.Add($sccmCheck)
+
+    # Load current SCCM setting
+    if (Test-Path $settingsPath) {
+        try {
+            $settings = Get-Content $settingsPath | ConvertFrom-Json
+            $sccmCheck.IsChecked = $settings.QuerySCCM
+        } catch {
+            Write-Log -message "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error loading SCCM setting from $($settingsPath): $_"
+        }
+    }
+
+    # Handler for SCCM checkbox
+    $sccmCheck.Add_Checked({
+        Write-Log -message "Enabling SCCM Management"
+        if (Test-Path $settingsPath) {
+            try {
+                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                $settings.QuerySCCM = $true
+                $settings | ConvertTo-Json | Set-Content -Path $settingsPath
+                $QuerySCCM = $true
+            } catch {
+                Write-Log -message "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error updating settings when enabling SCCM: $_"
+            }
+        }
+        [System.Windows.MessageBox]::Show("SCCM Management enabled.", "Settings", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+
+    $sccmCheck.Add_Unchecked({
+        Write-Log -message "Disabling SCCM Management"
+        if (Test-Path $settingsPath) {
+            try {
+                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                $settings.QuerySCCM = $false
+                $settings | ConvertTo-Json | Set-Content -Path $settingsPath
+                $QuerySCCM = $false
+            } catch {
+                Write-Log -message "|| Line: $($_.InvocationInfo.ScriptLineNumber) || Error updating settings when disabling SCCM: $_"
+            }
+        }
+        [System.Windows.MessageBox]::Show("SCCM Management disabled.", "Settings", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+
+    # Load current setting
+    if (Test-Path $settingsPath) {
+        try {
+            Write-Log -message "Loading settings from $settingsPath"
+            $settings = Get-Content $settingsPath | ConvertFrom-Json
+            $rememberCertAuth = $settings.RememberCertAuthentication
+            $rememberSecretAuth = $settings.RememberSecretAuthentication
+
+            If ($rememberCertAuth -or $rememberSecretAuth) {
+                Write-Log -message "Auto authentication is enabled"
+                $autoAuthCheck.IsChecked = $true
+            }
+            else {
+                Write-Log -message "Auto authentication is disabled"
+                $autoAuthCheck.IsChecked = $false
+            }
+        } catch {
+            Write-Log -message "Error loading settings from $($settingsPath): $_"
+        }
+    }
+    
+    # Handler for the auto authentication checkbox
+    $autoAuthCheck.Add_Checked({
+        Write-Log -message "Enabling auto authentication"
+        if (Test-Path $settingsPath) {
+            try {
+                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                $settings.RememberCertAuthentication = $true
+                $settings.RememberSecretAuthentication = $true
+                $settings | ConvertTo-Json | Set-Content -Path $settingsPath
+            } catch {
+                Write-Log -message "Error updating settings when attempting to enable auto authentication from $($settingsPath): $_"
+            }
+        }
+        # Prompt for credentials if not present
+        $secretFilePath = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Secret.json")
+        if (-not (Test-Path $secretFilePath)) {
+            Write-Log -message "Showing authentication dialog - $secretFilePath not found"
+            Show-AuthenticationDialog | Out-Null
+        }
+        [System.Windows.MessageBox]::Show("Auto Authentication enabled.", "Settings", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+
+    $autoAuthCheck.Add_Unchecked({
+        Write-Log -message "Disabling auto authentication"
+        if (Test-Path $settingsPath) {
+            try {
+                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                $settings.RememberCertAuthentication = $false
+                $settings.RememberSecretAuthentication = $false
+                $settings | ConvertTo-Json | Set-Content -Path $settingsPath
+            } catch {
+                Write-Log -message "Error updating settings when attempting to disable auto authentication from $($settingsPath): $_"
+            }
+        }
+        [System.Windows.MessageBox]::Show("Auto Authentication disabled.", "Settings", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+    })
+
+    # Add "Delete Saved Authentication" button
+    $deleteAuthButton = New-Object System.Windows.Controls.Button
+    $deleteAuthButton.Content = "Delete Saved Authentication"
+    $deleteAuthButton.Width = 180
+    $deleteAuthButton.Height = 30
+    $deleteAuthButton.HorizontalAlignment = 'Right'
+    $deleteAuthButton.Margin = '0,10,0,0'
+
+    # Add to the grid as a new row
+    $row4 = New-Object System.Windows.Controls.RowDefinition
+    $row4.Height = "Auto"
+    $grid.RowDefinitions.Add($row4)
+    [System.Windows.Controls.Grid]::SetRow($deleteAuthButton, 3)
+    $grid.Children.Add($deleteAuthButton)
+
+    $deleteAuthButton.Add_Click({
+        Write-Log -message "Deleting saved authentication files"
+        $secretFile = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Secret.json")
+        $certFile = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Secret.crt")
+        $deleted = $false
+        if (Test-Path $secretFile) {
+            Remove-Item $secretFile -Force
+            Write-Log -message "Deleted saved authentication file: $secretFile"
+            $deleted = $true
+        }
+        if (Test-Path $certFile) {
+            Remove-Item $certFile -Force
+            Write-Log -message "Deleted saved authentication file: $certFile"
+            $deleted = $true
+        }
+        if ($deleted) {
+            Write-Log -message "Updating settings after deleting authentication files"
+            $settings = Get-Content $settingsPath | ConvertFrom-Json
+            $settings.RememberCertAuthentication = $false
+            $settings.RememberSecretAuthentication = $false
+            $settings | ConvertTo-Json | Set-Content -Path $settingsPath
+
+            [System.Windows.MessageBox]::Show("Saved authentication files deleted.", "Delete Saved Authentication", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        } else {
+            [System.Windows.MessageBox]::Show("No saved authentication files found.", "Delete Saved Authentication", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Information)
+        }
+    })
+
+    # Disable the button if neither file exists
+    $secretFile = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Secret.json")
+    $certFile = [System.IO.Path]::Combine($env:LOCALAPPDATA, "DeviceOffBoardingManager", "IntuneOffboardingTool_Secret.crt")
+    if (-not (Test-Path $secretFile) -and -not (Test-Path $certFile)) {
+        Write-Log -message "No saved authentication files found, disabling delete button"
+        $deleteAuthButton.IsEnabled = $false
+    } else {
+        Write-Log -message "Saved authentication files found, enabling delete button"
+        $deleteAuthButton.IsEnabled = $true
+    }
+
+    # Disable the checkbox and update settings if neither file exists
+    if (-not (Test-Path $secretFile) -and -not (Test-Path $certFile)) {
+        Write-Log -message "No saved authentication files found, disabling auto authentication"
+        $deleteAuthButton.IsEnabled = $false
+        $autoAuthCheck.IsChecked = $false
+        if (Test-Path $settingsPath) {
+            try {
+                Write-Log -message "Updating settings after disabling auto authentication"
+                $settings = Get-Content $settingsPath | ConvertFrom-Json
+                $settings.RememberCertAuthentication = $false
+                $settings.RememberSecretAuthentication = $false
+                $settings | ConvertTo-Json | Set-Content -Path $settingsPath
+            } catch {
+                Write-Log -message "Error updating settings when attempting to disable auto authentication from $($settingsPath): $_"
+            }
+        }
+    } else {
+        $deleteAuthButton.IsEnabled = $true
+    }
+
+    $settingsWindow.ShowDialog()
 }
 
 # Connect back button
@@ -6511,7 +7279,7 @@ $EntraIDDevicesCard.Add_MouseLeftButtonUp({
                 }
                 
                 $title = "All Entra ID Devices"
-                
+                write-host "line 6817"
                 Show-DashboardCardResults -Title $title -DeviceList $deviceList
             }
             catch {
@@ -6521,11 +7289,56 @@ $EntraIDDevicesCard.Add_MouseLeftButtonUp({
         }
     })
 
+$SCCMDevicesCard = $Window.FindName('SCCMDevicesCard')
+$SCCMDevicesCard.Add_MouseLeftButtonUp({
+        if (-not $AuthenticateButton.IsEnabled) {
+            try {
+                Write-Log "Fetching all SCCM devices..."
+                $originaldrive = Get-Location
+                ConnectSCCM
+                $SCCMDevices = get-cmdevice -CollectionID 'SMSDM003' -fast | Where-Object { $_.IsClient -eq $true -and $_.IsActive -eq $true }
+                write-host ($SCCMDevices).count "SCCM Devices"
+                set-location $originaldrive
+                
+                $deviceList = @()
+                foreach ($device in $SCCMDevices) {
+                    $deviceList += [PSCustomObject]@{
+                        DeviceName      = $device.Name
+                        SerialNumber    = $device.SerialNumber
+                        LastContact     = if ($device.LastActiveTime) {
+                            $date = ConvertTo-SafeDateTime -dateString $device.LastActiveTime
+                            if ($date) { $date.ToString('yyyy-MM-dd HH:mm') } else { "Never" }
+                        }
+                        else { "Never" }
+                        OperatingSystem = if ($device.DeviceOS) { $device.DeviceOS.Replace(" NT Workstation", "") } else { "Unknown" }
+                        OSVersion       = $device.DeviceOSBuild
+                        PrimaryUser     = $device.PrimaryUser
+                        Ownership       = $tenantName
+                    }
+                }
+                
+                $title = "All SCCM Workstations"
+                write-host "line 6856"
+                Show-DashboardCardResults -Title $title -DeviceList $deviceList
+            }
+            catch {
+                Write-Log "Error fetching SCCM devices: $_"
+                [System.Windows.MessageBox]::Show("Error fetching SCCM devices. Check logs for details.", "Error", [System.Windows.MessageBoxButton]::OK, [System.Windows.MessageBoxImage]::Error)
+            }
+        }
+    })
+
 # Connect changelog button
 $changelog_button = $Window.FindName('changelog_button')
 $changelog_button.Add_Click({
         Show-ChangelogDialog
     })
+
+$settings_button = $Window.FindName('settings_button')
+$settings_button.Add_Click({
+    Write-log -Message "Opening settings dialog"
+    Show-SettingsDialog
+})
 
 # Show Window
 try {

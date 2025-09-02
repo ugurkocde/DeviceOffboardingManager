@@ -1,3 +1,20 @@
+## Version 0.2.3 - 8/29/2025 (Fork) ##
+- **SCCM Integration**: DeviceOffboardingManager will now query\offboard SCCM devices
+  - The SCCM console must be installed on the device that is running DeviceOffboardingManager
+  - User must have appropriate access to SCCM
+- **Added Settings Menu**
+  - Toggle SCCM Management On/Off
+  - Toggle Automatic MS Graph authentication On/Off
+- **Ability to save Encrypted JSON for Application Registration Secret for Automatic Authentication to MS Graph**
+  - Added button to save authentication method when using App Registration Secret
+  - JSON is encrypted and saved to %LOCALAPPDATA%\DeviceOffboardingManager
+  - Encrypted JSON is bound to the device it was created on.
+- **Added Animated Loading Window**
+  - Animated loading menu will show when Dashboard is compiling and device searches
+- **Misc**
+  - Updated Entra ID Icon
+  - Adjusted window sizes to prevent having to scroll
+
 ## Version 0.2.2 - 7/26/2025
 
 - **Fixed Autopilot Device Removal by Serial Number**: Enhanced offboarding process to properly retrieve and use serial numbers for Autopilot device removal (Issue #45)
