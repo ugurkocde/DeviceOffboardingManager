@@ -300,7 +300,7 @@ function Show-PrerequisitesDialog {
                 $installMsalButton.IsEnabled = $false
                 $installMsalButton.Content = "Installing..."
 
-                Install-Module "MSAL.PS" -Scope CurrentUser -Force
+                Install-Module "MSAL.PS" -Scope CurrentUser -Force -ErrorAction Stop
 
                 $msalCheckbox.IsChecked = $true
                 $msalCheckbox.Foreground = "#28A745"

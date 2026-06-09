@@ -6,6 +6,7 @@ if (-not (Test-Path $script:LogDirectory)) { New-Item -Path $script:LogDirectory
 $script:LogFilePath = [System.IO.Path]::Combine($script:LogDirectory, "DOM_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
 
 $script:AdminUPN = $null
+$script:CurrentAuthDetails = $null
 
 $script:ConfigDirectory = [System.IO.Path]::Combine(
     [Environment]::GetFolderPath("LocalApplicationData"),
@@ -380,6 +381,10 @@ $Disconnect.Add_Click({
 
             # Disconnect from Graph
             Disconnect-MgGraph -ErrorAction Stop
+            if ($script:CurrentAuthDetails -and $script:CurrentAuthDetails.SecretSecureString) {
+                $script:CurrentAuthDetails.SecretSecureString.Dispose()
+            }
+            $script:CurrentAuthDetails = $null
 
             # Reset UI state
             $Disconnect.Content = "Disconnected"
@@ -422,6 +427,10 @@ $Disconnect.Add_Click({
             Write-Log "Successfully disconnected from MS Graph"
         }
         catch {
+            if ($script:CurrentAuthDetails -and $script:CurrentAuthDetails.SecretSecureString) {
+                $script:CurrentAuthDetails.SecretSecureString.Dispose()
+            }
+            $script:CurrentAuthDetails = $null
             Write-Log "Error occurred while attempting to disconnect from MS Graph: $_"
             Show-Toast -Message "Error disconnecting from Microsoft Graph: $_" -Type "error" -DurationSeconds 6
         }
@@ -482,6 +491,10 @@ $AuthenticateButton.Add_Click({
             else {
                 # Reset button state on failed connection
                 Write-Log "Authentication Failed"
+                if ($script:CurrentAuthDetails -and $script:CurrentAuthDetails.SecretSecureString) {
+                    $script:CurrentAuthDetails.SecretSecureString.Dispose()
+                }
+                $script:CurrentAuthDetails = $null
                 $AuthenticateButton.Content = "Connect to MS Graph"
                 $AuthenticateButton.IsEnabled = $true
                 $Disconnect.Content = "Disconnected"
@@ -509,6 +522,10 @@ $AuthenticateButton.Add_Click({
         }
         catch {
             Write-Log "Error occurred during authentication. Exception: $_"
+            if ($script:CurrentAuthDetails -and $script:CurrentAuthDetails.SecretSecureString) {
+                $script:CurrentAuthDetails.SecretSecureString.Dispose()
+            }
+            $script:CurrentAuthDetails = $null
             # Reset button state on error
             $AuthenticateButton.Content = "Connect to MS Graph"
             $AuthenticateButton.IsEnabled = $true

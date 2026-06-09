@@ -6,6 +6,7 @@ function Connect-ToGraph {
 
     try {
         Write-Log "Attempting to connect to Microsoft Graph using $($AuthDetails.Method) authentication..."
+        $script:CurrentAuthDetails = $null
 
         # Get required permissions
         $permissionsList = ($script:requiredPermissions | ForEach-Object { $_.Permission })
@@ -14,9 +15,15 @@ function Connect-ToGraph {
         switch ($AuthDetails.Method) {
             'Interactive' {
                 $connectionResult = Connect-MgGraph -Scopes $permissionsList -NoWelcome -ErrorAction Stop
+                $script:CurrentAuthDetails = @{
+                    Method = 'Interactive'
+                }
             }
             'DeviceCode' {
                 $connectionResult = Connect-MgGraph -Scopes $permissionsList -UseDeviceCode -NoWelcome -ErrorAction Stop
+                $script:CurrentAuthDetails = @{
+                    Method = 'DeviceCode'
+                }
             }
             'Certificate' {
                 # Validate certificate credentials before attempting connection
@@ -34,6 +41,12 @@ function Connect-ToGraph {
                 Disconnect-MgGraph -ErrorAction SilentlyContinue
 
                 $connectionResult = Connect-MgGraph -ClientId $AuthDetails.AppId -TenantId $AuthDetails.TenantId -CertificateThumbprint $AuthDetails.Thumbprint -NoWelcome -ErrorAction Stop
+                $script:CurrentAuthDetails = @{
+                    Method     = 'Certificate'
+                    AppId      = $AuthDetails.AppId
+                    TenantId   = $AuthDetails.TenantId
+                    Thumbprint = $AuthDetails.Thumbprint
+                }
             }
             'Secret' {
                 # Validate client secret credentials before attempting connection
@@ -51,6 +64,12 @@ function Connect-ToGraph {
                 $ClientSecretCredential = New-Object -TypeName System.Management.Automation.PSCredential -ArgumentList $AuthDetails.AppId, $SecuredPasswordPassword
 
                 $connectionResult = Connect-MgGraph -TenantId $AuthDetails.TenantId -ClientSecretCredential $ClientSecretCredential -NoWelcome -ErrorAction Stop
+                $script:CurrentAuthDetails = @{
+                    Method             = 'Secret'
+                    AppId              = $AuthDetails.AppId
+                    TenantId           = $AuthDetails.TenantId
+                    SecretSecureString = $SecuredPasswordPassword
+                }
 
                 # Clear sensitive credentials from memory
                 $SecuredPasswordPassword = $null

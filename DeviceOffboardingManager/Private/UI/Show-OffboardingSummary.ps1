@@ -181,7 +181,7 @@ function Show-OffboardingSummary {
     $hasMAA = $false
 
     # Check if MDE was selected
-    $mdeSelected = $script:serviceCheckboxes -and $script:serviceCheckboxes.ContainsKey("Defender for Endpoint") -and $script:serviceCheckboxes["Defender for Endpoint"].IsChecked
+    $mdeSelected = (Get-DefenderIntegrationEnabled) -and $script:serviceCheckboxes -and $script:serviceCheckboxes.ContainsKey("Defender for Endpoint") -and $script:serviceCheckboxes["Defender for Endpoint"].IsChecked
 
     # Process results and create display objects
     $displayResults = @()

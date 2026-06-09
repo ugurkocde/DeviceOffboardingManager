@@ -38,6 +38,25 @@ if ($parseErrors.Count -gt 0) {
     throw "Parser errors found:`n$($parseErrors -join [Environment]::NewLine)"
 }
 
+$runtimeText = Get-Content -Path (Join-Path $repoRoot 'DeviceOffboardingManager/Private/Runtime/Start-DeviceOffboardingManager.Runtime.ps1') -Raw
+$summaryText = Get-Content -Path (Join-Path $repoRoot 'DeviceOffboardingManager/Private/UI/Show-OffboardingSummary.ps1') -Raw
+$connectText = Get-Content -Path (Join-Path $repoRoot 'DeviceOffboardingManager/Private/Auth/Connect-ToGraph.ps1') -Raw
+$mdeAuthText = Get-Content -Path (Join-Path $repoRoot 'DeviceOffboardingManager/Private/Auth/Get-MdeAccessToken.ps1') -Raw
+
+if ($runtimeText -notmatch '\$offboardMde\s*=\s*\(Get-DefenderIntegrationEnabled\)') {
+    throw 'Defender offboarding is not gated by the Defender integration setting in the runtime.'
+}
+if ($summaryText -notmatch '\$mdeSelected\s*=\s*\(Get-DefenderIntegrationEnabled\)') {
+    throw 'Defender summary display is not gated by the Defender integration setting.'
+}
+if ($connectText -notmatch 'SecretSecureString' -or $connectText -notmatch '\$script:CurrentAuthDetails') {
+    throw 'Graph authentication no longer preserves session-only auth metadata for Defender token acquisition.'
+}
+if ($mdeAuthText -notmatch '-ClientSecret\s+\$script:CurrentAuthDetails\.SecretSecureString' -or
+    $mdeAuthText -notmatch '-ClientCertificate\s+\$certificate') {
+    throw 'Defender token acquisition no longer supports app-only client secret and certificate flows.'
+}
+
 $manifest = Test-ModuleManifest -Path $moduleManifest
 if ($manifest.Name -ne 'DeviceOffboardingManager') {
     throw "Unexpected module name: $($manifest.Name)"
