@@ -1,0 +1,57 @@
+<Window
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Changelog" Height="600" Width="800"
+    WindowStartupLocation="CenterScreen"
+    Background="#F8F9FA">
+
+    <Border Background="White"
+            CornerRadius="8"
+            Margin="16">
+        <DockPanel Margin="24">
+            <!-- Header -->
+            <StackPanel DockPanel.Dock="Top"
+                       Margin="0,0,0,24">
+                <TextBlock Text="Changelog"
+                          FontSize="24"
+                          FontWeight="SemiBold"
+                          Foreground="#1A202C"/>
+            </StackPanel>
+
+            <!-- Close Button -->
+            <Button x:Name="CloseChangelogButton"
+                    DockPanel.Dock="Bottom"
+                    Content="Close"
+                    Width="120"
+                    Height="40"
+                    Background="#F0F0F0"
+                    Foreground="#2D3748"
+                    BorderThickness="0"
+                    HorizontalAlignment="Right"
+                    Margin="0,24,0,0"
+                    IsCancel="True"
+                    Cursor="Hand"/>
+
+            <!-- Changelog Content -->
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                         HorizontalScrollBarVisibility="Auto">
+                <RichTextBox x:Name="ChangelogContent"
+                            Background="Transparent"
+                            BorderThickness="0"
+                            IsReadOnly="True"
+                            Margin="20"
+                            Width="Auto">
+                    <RichTextBox.Resources>
+                        <Style TargetType="{x:Type Paragraph}">
+                            <Setter Property="Margin" Value="0,0,0,10"/>
+                        </Style>
+                    </RichTextBox.Resources>
+                    <RichTextBox.Document>
+                        <FlowDocument PageWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=ScrollViewer}}">
+                        </FlowDocument>
+                    </RichTextBox.Document>
+                </RichTextBox>
+            </ScrollViewer>
+        </DockPanel>
+    </Border>
+</Window>

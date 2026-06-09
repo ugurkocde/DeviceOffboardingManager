@@ -9,7 +9,13 @@
   - Fixed permission scopes: `Device.ReadWrite.All`, added `BitlockerKey.Read.All`
   - Fixed export functions to use actual DeviceObject class properties
   - Fixed playbook result columns to generate dynamically from actual output schema
-- **Local Playbook Execution**: Playbooks now load from local `Playbooks/` directory instead of downloading from GitHub URLs at runtime
+- **Full PowerShell Module Migration**: The project now ships as a module with a manifest, exported `Start-DeviceOffboardingManager` command, split private/public source files, XAML resources, bundled playbooks, and a compatibility `DeviceOffboardingManager.ps1` launcher.
+- **Module Verification Tests**: Added repository checks for parser health, manifest/import behavior, packaged module import, compatibility launcher validation, XAML control bindings, bundled playbooks, and a Windows-only WPF smoke test.
+- **Local Playbook Execution**: Playbooks now load from the module's bundled `Playbooks/` directory instead of downloading from GitHub URLs at runtime
+- **Hardened Device Identity Correlation**: Search and offboarding now prefer Graph object IDs, Entra `deviceId`, Intune `azureADDeviceId`, and exact serial matches before any name-only fallback. Ambiguous duplicate matches are skipped with warnings to reduce wrong-device deletion risk.
+- **Improved Empty Autopilot DisplayName Handling**: Autopilot device-name matching now avoids server-side displayName filters and supports client-side serial matching for devices with blank Autopilot display names.
+- **Safer Audit Trail**: Confirmation preview now shows full Entra, Intune, and Autopilot IDs; CSV exports include Graph IDs; recovery keys and LAPS values are written to the timestamped audit log with a `SENSITIVE` prefix.
+- **Authentication Fallback**: Added Device Code login to avoid browser localhost redirect / WAM issues with interactive Microsoft Graph authentication.
 
 ### Graph API Performance and Reliability
 - **Retry Logic with Backoff**: New `Invoke-GraphRequestWithRetry` wrapper handles 429 throttling (reads Retry-After header), 5xx transient errors (exponential backoff), and network failures
@@ -28,6 +34,7 @@
 - **Grid Filtering and Shift-Click Range Selection** (Issue #33): Filter TextBoxes above the DataGrid for live column filtering, shift-click on checkboxes to toggle device ranges
 - **HTML Offboarding Report Generation**: Professional styled HTML reports with per-device service status and summary statistics, accessible via export buttons in summary and dashboard dialogs
 - **Defender for Endpoint**: Now shown as a supported service on the homepage (no longer marked as "Soon")
+- **Autopilot Group Tag Management** (Issue #21): Set or clear the Autopilot group tag for selected devices from the device management results grid.
 
 ### New Playbooks
 - **Playbook 6: OS-Specific Devices** -- Filter and list managed devices by operating system
@@ -35,6 +42,7 @@
 - **Playbook 8: End-of-Life OS Devices** -- Detect devices running end-of-life OS versions
 - **Playbook 9: BitLocker Key Report** -- Retrieve BitLocker recovery key metadata for Windows devices
 - **Playbook 10: FileVault Key Report** -- Check FileVault key availability for macOS devices
+- **Playbook 11: Corporate Identifier Stale Report** -- List imported corporate device identifiers with enrollment state and last contact status
 - **Shared Playbook Helpers**: Extracted common utility functions (`Get-GraphPagedResults`, `ConvertTo-SafeDateTime`, etc.) into `PlaybookHelpers.ps1` to reduce duplication across playbooks
 
 ---

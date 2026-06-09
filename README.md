@@ -24,9 +24,9 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
 
 <div align="center">
       <a href="https://www.youtube.com/watch?v=CbximIIAEgc">
-     <img 
-      src="https://img.youtube.com/vi/CbximIIAEgc/maxresdefault.jpg" 
-      alt="IntuneAssignmentChecker" 
+     <img
+      src="https://img.youtube.com/vi/CbximIIAEgc/maxresdefault.jpg"
+      alt="IntuneAssignmentChecker"
       style="width:100%;">
       </a>
 </div>
@@ -55,32 +55,34 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
 
 ## 🚀 Quick Start
 
-> **Important**: All commands must be run in a PowerShell 7 session. The script will not work in PowerShell 5.1 or earlier versions.
+> **Important**: All commands must be run in a PowerShell 7 session on Windows. The WPF desktop UI will not work in PowerShell 5.1 or on non-Windows platforms.
 
 ### Option 1: Install from PowerShell Gallery (Recommended)
 
 ```powershell
-# Install Microsoft Graph Authentication Modul
+# Install Microsoft Graph Authentication Module
 Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
+
+# Install from PowerShell Gallery as a module
+Install-Module DeviceOffboardingManager -Scope CurrentUser
 ```
 
 ```powershell
-# Install from PowerShell Gallery
-Install-Script DeviceOffboardingManager
-```
-
-```powershell
-# Open a new PowerShell 7 session to run the script with
-DeviceOffboardingManager
+# Open a new PowerShell 7 session to run the tool
+Start-DeviceOffboardingManager
 ```
 
 ### Option 2: Manual Installation
 
 ```powershell
-# Install Microsoft Graph Authentication Modul
+# Install Microsoft Graph Authentication Module
 Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 
-# Download and run the script
+# Import the local module from the repository
+Import-Module .\DeviceOffboardingManager\DeviceOffboardingManager.psd1 -Force
+Start-DeviceOffboardingManager
+
+# Existing script usage remains supported through the compatibility launcher
 .\DeviceOffboardingManager.ps1
 ```
 
@@ -88,30 +90,44 @@ Install-Module Microsoft.Graph.Authentication -Scope CurrentUser
 
 ```powershell
 # Restart the PowerShell Session after installing the new version
-Install-Script DeviceOffboardingManager -Force
+Update-Module DeviceOffboardingManager -Force
+```
+
+### Verify a Local Build
+
+```powershell
+# Cross-platform module/package checks
+.\tests\Verify-Module.ps1
+
+# Windows-only WPF resource smoke test
+.\tests\Verify-WindowsUi.ps1
 ```
 
 ## 🎯 Features
 
 ### 🔑 Core Functionality
 
-- **Multi-Service Integration**: Manage devices across Intune, Autopilot, and Entra ID
+- **Multi-Service Integration**: Manage devices across Intune, Autopilot, Entra ID, and Defender for Endpoint
+- **PowerShell Module Packaging**: Install as a module and launch with `Start-DeviceOffboardingManager`; the root script remains as a compatibility launcher
 - **Bulk Operations**: Support for bulk device imports and operations
 - **Real-time Dashboard**: View device statistics and distribution
-- **Secure Authentication**: Multiple authentication methods including interactive, certificate, and client secret
+- **Secure Authentication**: Multiple authentication methods including interactive, device code, certificate, and client secret
 
 ### 💻 Device Management
 
 ![Homer](media/device_offboarding.png)
 
-- Search devices by name or serial number
+- Search devices by name, serial number, partial match, or Entra device ID
 - View device details including:
   - Last contact times
   - Operating system
   - Primary user
+  - Compliance state
   - Management status across services
-- Bulk device offboarding with confirmation
-- Automatic retrieval of BitLocker/FileVault keys
+- Bulk device offboarding with exact Graph ID confirmation
+- Optional Entra disable, Intune retire/wipe, and Defender for Endpoint offboarding actions
+- Automatic retrieval of BitLocker/FileVault keys and LAPS passwords
+- Autopilot group tag updates for selected devices
 
 ### 📊 Dashboard Analytics
 
@@ -144,16 +160,21 @@ Install-Script DeviceOffboardingManager -Force
    - Group.Read.All
    - User.Read.All
    - BitlockerKey.Read.All
+   - DeviceLocalCredential.Read.All
+4. Optional Defender for Endpoint offboarding:
+   - MSAL.PS module
+   - Defender API `Machine.Offboard` permission
 
 ## 🔧 Usage
 
 ### 🔐 Authentication
 
-The tool supports three authentication methods:
+The tool supports four authentication methods:
 
 1. **Interactive Login**: Best for admin users with appropriate permissions
-2. **Certificate-based**: For automated or service principal authentication
-3. **Client Secret**: Alternative service principal authentication method
+2. **Device Code Login**: Browser-redirect-free fallback for localhost redirect or WAM issues
+3. **Certificate-based**: For automated or service principal authentication
+4. **Client Secret**: Alternative service principal authentication method
 
 To connect:
 
@@ -166,7 +187,7 @@ To connect:
 
 1. **Search for Devices**:
 
-   - Select search type (Device name/Serial number)
+   - Select search type (Device name, Serial number, Device ID, or Contains)
    - Enter search terms (supports multiple values with comma separation)
    - Click Search to retrieve device information
 
@@ -182,6 +203,11 @@ To connect:
    - Review the confirmation dialog
    - Note any encryption recovery keys
    - Confirm the operation
+
+4. **Autopilot Group Tags**:
+   - Select devices in the results grid
+   - Click "Set Group Tag"
+   - Enter a tag or clear the existing tag
 
 ### 📊 Dashboard
 
@@ -204,6 +230,9 @@ Automated tasks for common scenarios:
 - Analyze stale devices
 - OS-specific device reports
 - Encryption key reports
+- Corporate device identifier stale report
+
+Playbooks are bundled in the module under `DeviceOffboardingManager/Playbooks/`. In environments using an `AllSigned` execution policy, sign the module files, compatibility launcher, and local playbook files with your organization certificate before running the tool.
 
 ## 👥 Contributing
 
