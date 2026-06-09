@@ -33,7 +33,7 @@
 - **Platform Filtering on Dashboard** (Issue #40): ComboBox to filter all dashboard statistics by OS platform
 - **Grid Filtering and Shift-Click Range Selection** (Issue #33): Filter TextBoxes above the DataGrid for live column filtering, shift-click on checkboxes to toggle device ranges
 - **HTML Offboarding Report Generation**: Professional styled HTML reports with per-device service status and summary statistics, accessible via export buttons in summary and dashboard dialogs
-- **Defender for Endpoint**: Now shown as a supported service on the homepage (no longer marked as "Soon")
+- **Defender for Endpoint**: Now shown as a supported service on the homepage (no longer marked as "Soon"). Defender offboarding is optional and disabled by default; admins can enable it from Prerequisites to show the Defender target and request Defender API tokens only when used.
 - **Autopilot Group Tag Management** (Issue #21): Set or clear the Autopilot group tag for selected devices from the device management results grid.
 
 ### New Playbooks

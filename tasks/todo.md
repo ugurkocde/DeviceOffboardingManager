@@ -50,7 +50,7 @@ Addresses wrong-device deletion (Issues #47, #49) and audit requirements (#35).
 
 ### Offboarding Actions
 - [x] **Retire/Wipe before delete** — Added optional pre-offboarding actions: Retire (`POST .../retire`), Wipe (`POST .../wipe`), or Delete-only.
-- [x] **Defender for Endpoint offboarding** — Added MDE as a fourth service checkbox (`POST /api/machines/{id}/offboard`). Requires Defender API permission / token support. (Issue #11)
+- [x] **Defender for Endpoint offboarding** — Added optional settings-gated MDE offboarding (`POST /api/machines/{id}/offboard`). Defender is disabled by default and requests Defender API token/permissions only when enabled and selected. Requires `WindowsDefenderATP` permissions and token support. (Issue #11)
 - [x] **LAPS password retrieval** — Displays LAPS password in confirmation dialog alongside BitLocker/FileVault. Uses `GET /deviceLocalCredentials/{id}` with `DeviceLocalCredential.Read.All`. (Issue #13)
 - [x] **Multi-Admin Approval awareness** — Detects protected-operation / MAA-style API responses and shows a summary notification when a second approval is required. (Issue #58)
 

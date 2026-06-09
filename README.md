@@ -125,7 +125,7 @@ Update-Module DeviceOffboardingManager -Force
   - Compliance state
   - Management status across services
 - Bulk device offboarding with exact Graph ID confirmation
-- Optional Entra disable, Intune retire/wipe, and Defender for Endpoint offboarding actions
+- Optional Entra disable, Intune retire/wipe, and settings-gated Defender for Endpoint offboarding actions
 - Automatic retrieval of BitLocker/FileVault keys and LAPS passwords
 - Autopilot group tag updates for selected devices
 
@@ -162,8 +162,10 @@ Update-Module DeviceOffboardingManager -Force
    - BitlockerKey.Read.All
    - DeviceLocalCredential.Read.All
 4. Optional Defender for Endpoint offboarding:
+   - Disabled by default for tenants without Defender for Endpoint
+   - Enable from the Prerequisites dialog before it appears as an offboarding target
    - MSAL.PS module
-   - Defender API `Machine.Offboard` permission
+   - Defender API `Machine.ReadWrite.All` and `Machine.Offboard` permissions on the `WindowsDefenderATP` API
 
 ## 🔧 Usage
 
@@ -204,7 +206,13 @@ To connect:
    - Note any encryption recovery keys
    - Confirm the operation
 
-4. **Autopilot Group Tags**:
+4. **Defender for Endpoint Offboarding**:
+   - Open "Prerequisites"
+   - Enable "Defender for Endpoint integration"
+   - Consent the required `WindowsDefenderATP` permissions
+   - Select "Defender for Endpoint" during offboarding when needed
+
+5. **Autopilot Group Tags**:
    - Select devices in the results grid
    - Click "Set Group Tag"
    - Enter a tag or clear the existing tag

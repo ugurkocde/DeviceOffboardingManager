@@ -197,6 +197,135 @@ function Show-PrerequisitesDialog {
             }
         })
 
+    # Optional Defender for Endpoint integration toggle
+    $defenderSettingsItem = New-Object System.Windows.Controls.StackPanel
+    $defenderSettingsItem.Style = $prereqWindow.FindResource("CheckItemStyle")
+    $defenderSettingsItem.Orientation = "Horizontal"
+
+    $defenderToggle = New-Object System.Windows.Controls.CheckBox
+    $defenderToggle.VerticalAlignment = "Center"
+    $defenderToggle.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+    $defenderToggle.IsChecked = Get-DefenderIntegrationEnabled
+
+    $defenderTextPanel = New-Object System.Windows.Controls.StackPanel
+    $defenderTextPanel.Orientation = "Vertical"
+    $defenderTextPanel.Margin = New-Object System.Windows.Thickness(0, 0, 0, 4)
+
+    $defenderTitle = New-Object System.Windows.Controls.TextBlock
+    $defenderTitle.Text = "Enable Defender for Endpoint integration"
+    $defenderTitle.Style = $prereqWindow.FindResource("CheckTextStyle")
+    $defenderTitle.FontWeight = "SemiBold"
+
+    $defenderDescription = New-Object System.Windows.Controls.TextBlock
+    $defenderDescription.Text = "Optional. When enabled, Defender appears as an offboarding target and requests a separate Defender API token only when selected. Requires WindowsDefenderATP permissions: Machine.ReadWrite.All and Machine.Offboard."
+    $defenderDescription.Style = $prereqWindow.FindResource("CheckTextStyle")
+    $defenderDescription.Foreground = "#666666"
+    $defenderDescription.FontSize = 12
+    $defenderDescription.TextWrapping = "Wrap"
+    $defenderDescription.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
+
+    $defenderTextPanel.Children.Add($defenderTitle)
+    $defenderTextPanel.Children.Add($defenderDescription)
+    $defenderSettingsItem.Children.Add($defenderToggle)
+    $defenderSettingsItem.Children.Add($defenderTextPanel)
+    $modulePanel.Children.Add($defenderSettingsItem)
+
+    # Optional MSAL.PS module check for Defender token acquisition
+    $msalItem = New-Object System.Windows.Controls.StackPanel
+    $msalItem.Style = $prereqWindow.FindResource("CheckItemStyle")
+    $msalItem.Orientation = "Horizontal"
+
+    $msalCheckbox = New-Object System.Windows.Controls.CheckBox
+    $msalCheckbox.IsEnabled = $false
+    $msalCheckbox.VerticalAlignment = "Center"
+    $msalCheckbox.Margin = New-Object System.Windows.Thickness(0, 0, 8, 0)
+
+    $msalTextPanel = New-Object System.Windows.Controls.StackPanel
+    $msalTextPanel.Orientation = "Vertical"
+    $msalTextPanel.Margin = New-Object System.Windows.Thickness(0, 0, 0, 4)
+
+    $msalText = New-Object System.Windows.Controls.TextBlock
+    $msalText.Text = "MSAL.PS"
+    $msalText.Style = $prereqWindow.FindResource("CheckTextStyle")
+    $msalText.FontWeight = "SemiBold"
+
+    $msalDesc = New-Object System.Windows.Controls.TextBlock
+    $msalDesc.Text = "Optional module used only for Defender for Endpoint token acquisition."
+    $msalDesc.Style = $prereqWindow.FindResource("CheckTextStyle")
+    $msalDesc.Foreground = "#666666"
+    $msalDesc.FontSize = 12
+    $msalDesc.TextWrapping = "Wrap"
+    $msalDesc.Margin = New-Object System.Windows.Thickness(0, 2, 0, 0)
+
+    $msalTextPanel.Children.Add($msalText)
+    $msalTextPanel.Children.Add($msalDesc)
+
+    $installMsalButton = New-Object System.Windows.Controls.Button
+    $installMsalButton.Content = "Install"
+    $installMsalButton.Style = $prereqWindow.FindResource("InstallButtonStyle")
+    $installMsalButton.Margin = New-Object System.Windows.Thickness(8, 0, 0, 0)
+
+    if (Get-Module -ListAvailable -Name "MSAL.PS") {
+        $msalCheckbox.IsChecked = $true
+        $msalCheckbox.Foreground = "#28A745"
+        $installMsalButton.Visibility = "Collapsed"
+    }
+    else {
+        $msalCheckbox.IsChecked = $false
+        $msalCheckbox.Foreground = "#DC3545"
+        $installMsalButton.Visibility = if (Get-DefenderIntegrationEnabled) { "Visible" } else { "Collapsed" }
+    }
+
+    $msalItem.Children.Add($msalCheckbox)
+    $msalItem.Children.Add($msalTextPanel)
+    $msalItem.Children.Add($installMsalButton)
+    $modulePanel.Children.Add($msalItem)
+
+    $defenderToggle.Add_Checked({
+            Set-DefenderIntegrationEnabled -Enabled $true
+            if (-not (Get-Module -ListAvailable -Name "MSAL.PS")) {
+                $installMsalButton.Visibility = "Visible"
+            }
+        })
+
+    $defenderToggle.Add_Unchecked({
+            Set-DefenderIntegrationEnabled -Enabled $false
+            if (-not (Get-Module -ListAvailable -Name "MSAL.PS")) {
+                $installMsalButton.Visibility = "Collapsed"
+            }
+        })
+
+    $installMsalButton.Add_Click({
+            try {
+                $installMsalButton.IsEnabled = $false
+                $installMsalButton.Content = "Installing..."
+
+                Install-Module "MSAL.PS" -Scope CurrentUser -Force
+
+                $msalCheckbox.IsChecked = $true
+                $msalCheckbox.Foreground = "#28A745"
+                $installMsalButton.Visibility = "Collapsed"
+
+                [System.Windows.MessageBox]::Show(
+                    "MSAL.PS installed successfully. Please restart the application for changes to take effect.",
+                    "Installation Complete",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Information
+                )
+            }
+            catch {
+                Write-Log "Error installing MSAL.PS module: $_"
+                [System.Windows.MessageBox]::Show(
+                    "Failed to install MSAL.PS. Please ensure you have internet connection and necessary permissions.",
+                    "Installation Error",
+                    [System.Windows.MessageBoxButton]::OK,
+                    [System.Windows.MessageBoxImage]::Error
+                )
+                $installMsalButton.IsEnabled = $true
+                $installMsalButton.Content = "Install"
+            }
+        })
+
     # Add close button handler
     $closeButton.Add_Click({
             $prereqWindow.Close()

@@ -15,6 +15,8 @@ if (-not (Test-Path $script:ConfigDirectory)) {
     New-Item -Path $script:ConfigDirectory -ItemType Directory -Force | Out-Null
 }
 
+$script:DeviceOffboardingSettings = Get-DeviceOffboardingSettings
+
 try {
     $reader = (New-Object System.Xml.XmlNodeReader $xaml)
     $Window = [Windows.Markup.XamlReader]::Load($reader)
@@ -1079,9 +1081,12 @@ $OffboardButton.Add_Click({
             @{ Name = "Entra ID"; Icon = "M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"; DefaultChecked = $true },
             @{ Name = "Disable in Entra ID"; Icon = "M12,5.5A3.5,3.5 0 0,1 15.5,9A3.5,3.5 0 0,1 12,12.5A3.5,3.5 0 0,1 8.5,9A3.5,3.5 0 0,1 12,5.5M5,8C5.56,8 6.08,8.15 6.53,8.42C6.38,9.85 6.8,11.27 7.66,12.38C7.16,13.34 6.16,14 5,14A3,3 0 0,1 2,11A3,3 0 0,1 5,8M19,8A3,3 0 0,1 22,11A3,3 0 0,1 19,14C17.84,14 16.84,13.34 16.34,12.38C17.2,11.27 17.62,9.85 17.47,8.42C17.92,8.15 18.44,8 19,8M5.5,18.25C5.5,16.18 8.41,14.5 12,14.5C15.59,14.5 18.5,16.18 18.5,18.25V20H5.5V18.25M0,20V18.5C0,17.11 1.89,15.94 4.45,15.6C3.86,16.28 3.5,17.22 3.5,18.25V20H0M24,20H20.5V18.25C20.5,17.22 20.14,16.28 19.55,15.6C22.11,15.94 24,17.11 24,18.5V20Z"; DefaultChecked = $false },
             @{ Name = "Intune"; Icon = "M21,14V4H3V14H21M21,2A2,2 0 0,1 23,4V16A2,2 0 0,1 21,18H14L16,21V22H8V21L10,18H3C1.89,18 1,17.1 1,16V4C1,2.89 1.89,2 3,2H21M4,5H20V13H4V5Z"; DefaultChecked = $true },
-            @{ Name = "Autopilot"; Icon = "M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"; DefaultChecked = $true },
-            @{ Name = "Defender for Endpoint"; Icon = "M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,3.18L19,6.3V11.22C19,15.54 16.18,19.5 12,20.93C7.82,19.5 5,15.54 5,11.22V6.3L12,3.18Z"; DefaultChecked = $false }
+            @{ Name = "Autopilot"; Icon = "M12,3L1,9L12,15L21,10.09V17H23V9M5,13.18V17.18L12,21L19,17.18V13.18L12,17L5,13.18Z"; DefaultChecked = $true }
         )
+
+        if (Get-DefenderIntegrationEnabled) {
+            $services += @{ Name = "Defender for Endpoint"; Icon = "M12,1L3,5V11C3,16.55 6.84,21.74 12,23C17.16,21.74 21,16.55 21,11V5L12,1M12,3.18L19,6.3V11.22C19,15.54 16.18,19.5 12,20.93C7.82,19.5 5,15.54 5,11.22V6.3L12,3.18Z"; DefaultChecked = $false }
+        }
 
         # Create hashtable to store checkbox references
         $script:serviceCheckboxes = @{}
@@ -1202,7 +1207,7 @@ $OffboardButton.Add_Click({
             $deleteEntra = (-not $disableEntra) -and $script:serviceCheckboxes["Entra ID"].IsChecked
             $deleteIntune = $script:serviceCheckboxes["Intune"].IsChecked
             $deleteAutopilot = $script:serviceCheckboxes["Autopilot"].IsChecked
-            $offboardMde = $script:serviceCheckboxes.ContainsKey("Defender for Endpoint") -and $script:serviceCheckboxes["Defender for Endpoint"].IsChecked
+            $offboardMde = (Get-DefenderIntegrationEnabled) -and $script:serviceCheckboxes.ContainsKey("Defender for Endpoint") -and $script:serviceCheckboxes["Defender for Endpoint"].IsChecked
 
             # Resolve MDE device IDs if MDE offboarding is selected
             if ($offboardMde) {

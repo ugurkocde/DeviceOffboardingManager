@@ -14,23 +14,31 @@ function Get-MdeAccessToken {
         }
 
         Import-Module MSAL.PS -ErrorAction Stop
-        $scopes = @("https://api.security.microsoft.com/.default")
+        $resourceScopes = @(
+            "https://api.securitycenter.microsoft.com/.default",
+            "https://api.security.microsoft.com/.default"
+        )
 
-        # Try silent token acquisition first
-        try {
-            $mdeToken = (Get-MsalToken -ClientId $context.ClientId -TenantId $context.TenantId -Scopes $scopes -Silent -ErrorAction Stop).AccessToken
-            return $mdeToken
-        } catch {
-            Write-Log "Silent MDE token acquisition failed, trying interactive: $_" -Severity "WARN"
+        foreach ($scopes in $resourceScopes) {
+            try {
+                $mdeToken = (Get-MsalToken -ClientId $context.ClientId -TenantId $context.TenantId -Scopes @($scopes) -Silent -ErrorAction Stop).AccessToken
+                Write-Log "Acquired Defender for Endpoint token silently for resource $scopes"
+                return $mdeToken
+            } catch {
+                Write-Log "Silent Defender token acquisition failed for $scopes`: $_" -Severity "WARN"
+            }
+
+            try {
+                $mdeToken = (Get-MsalToken -ClientId $context.ClientId -TenantId $context.TenantId -Scopes @($scopes) -Interactive -ErrorAction Stop).AccessToken
+                Write-Log "Acquired Defender for Endpoint token interactively for resource $scopes"
+                return $mdeToken
+            } catch {
+                Write-Log "Interactive Defender token acquisition failed for $scopes`: $_" -Severity "WARN"
+            }
         }
-        # Fallback: try interactive token acquisition
-        try {
-            $mdeToken = (Get-MsalToken -ClientId $context.ClientId -TenantId $context.TenantId -Scopes $scopes -Interactive -ErrorAction Stop).AccessToken
-            return $mdeToken
-        } catch {
-            Write-Log "Interactive MDE token acquisition failed: $_" -Severity "ERROR"
-            return $null
-        }
+
+        Write-Log "Could not acquire Defender for Endpoint token. Ensure WindowsDefenderATP Machine.ReadWrite.All and Machine.Offboard permissions are consented." -Severity "ERROR"
+        return $null
     } catch {
         Write-Log "Error acquiring MDE access token: $_" -Severity "ERROR"
         return $null
