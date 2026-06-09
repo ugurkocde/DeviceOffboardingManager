@@ -101,6 +101,13 @@ Addresses wrong-device deletion (Issues #47, #49) and audit requirements (#35).
 - [ ] **Localization / French translation framework** (Issue #14) — Needs a string-resource architecture before translation can be completed safely.
 - [ ] **Signed / packaged distribution** (Issue #60) — Needs a packaging/signing pipeline or maintained signed release artifacts. v0.3 now ships as a module with bundled local playbooks, but the project still needs an official signing/distribution workflow.
 
+## v0.4 WinUI App Track
+
+- [ ] **WinUI shell and packaged app scaffold** (Issue #60) — Create a native WinUI 3 app that can be signed, packaged, and distributed independently of PowerShell execution policy.
+- [ ] **MSAL.NET authentication** — Port interactive, device-code, certificate, and client-secret authentication to C# without persisting secrets.
+- [ ] **Graph and Defender services** — Port device search, dashboard, offboarding, Autopilot group tags, and optional Defender offboarding to typed C# services.
+- [ ] **Enterprise deployment** — Add signed MSIX/EXE release artifacts, Intune deployment guidance, winget manifest support, and Microsoft Store readiness checks.
+
 ---
 
 ## Notes

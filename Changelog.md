@@ -1,3 +1,12 @@
+## Version 0.4 - Planned
+
+### WinUI App Track
+- Added the initial WinUI 3 / Windows App SDK solution scaffold for a native Windows app.
+- Added the v0.4 migration plan for signed releases, Intune packaging, WinGet, and Microsoft Store readiness.
+- Added static validation for the WinUI project structure, package manifest, package assets, and migration plan.
+
+---
+
 ## Version 0.3 - 3/14/2026
 
 ### Bug Fixes

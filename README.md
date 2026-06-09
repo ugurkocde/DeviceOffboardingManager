@@ -48,8 +48,9 @@ A modern PowerShell-based GUI tool for managing and offboarding devices from Mic
   - [🔧 Usage](#-usage)
     - [🔐 Authentication](#-authentication)
     - [💻 Device Management](#-device-management-1)
-    - [📊 Dashboard](#-dashboard)
-    - [📚 Playbooks](#-playbooks-1)
+  - [📊 Dashboard](#-dashboard)
+  - [📚 Playbooks](#-playbooks-1)
+  - [🪟 v0.4 Native Windows App Track](#-v04-native-windows-app-track)
   - [👥 Contributing](#-contributing)
   - [📄 License](#-license)
 
@@ -241,6 +242,12 @@ Automated tasks for common scenarios:
 - Corporate device identifier stale report
 
 Playbooks are bundled in the module under `DeviceOffboardingManager/Playbooks/`. In environments using an `AllSigned` execution policy, sign the module files, compatibility launcher, and local playbook files with your organization certificate before running the tool.
+
+## 🪟 v0.4 Native Windows App Track
+
+The v0.4 branch starts a WinUI 3 / Windows App SDK app track for signed and packaged distribution. The goal is to make Device Offboarding Manager deployable as a trusted Windows app through signed releases, Intune, WinGet, and eventually Microsoft Store, while keeping the PowerShell module as a compatibility surface.
+
+See [docs/v0.4-winui-migration-plan.md](docs/v0.4-winui-migration-plan.md) for the architecture, milestones, and distribution plan.
 
 ## 👥 Contributing
 

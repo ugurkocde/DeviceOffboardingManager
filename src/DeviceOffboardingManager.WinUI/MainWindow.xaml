@@ -1,0 +1,50 @@
+<Window
+    x:Class="DeviceOffboardingManager.WinUI.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
+    Title="Device Offboarding Manager">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <muxc:NavigationView
+            x:Name="RootNavigation"
+            IsBackButtonVisible="Collapsed"
+            IsSettingsVisible="True"
+            PaneDisplayMode="LeftCompact">
+            <muxc:NavigationView.MenuItems>
+                <muxc:NavigationViewItem Content="Dashboard" Icon="Home" Tag="dashboard" />
+                <muxc:NavigationViewItem Content="Devices" Icon="Manage" Tag="devices" />
+                <muxc:NavigationViewItem Content="Playbooks" Icon="Library" Tag="playbooks" />
+            </muxc:NavigationView.MenuItems>
+
+            <Grid Margin="32" RowSpacing="16">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <TextBlock
+                    Text="Device Offboarding Manager"
+                    Style="{ThemeResource TitleTextBlockStyle}" />
+
+                <TextBlock
+                    Grid.Row="1"
+                    MaxWidth="760"
+                    Text="WinUI app shell for the v0.4 native Windows migration. Core Graph, Defender, settings import, and offboarding services will be ported from the v0.3 PowerShell module in focused milestones."
+                    TextWrapping="Wrap"
+                    Style="{ThemeResource BodyTextBlockStyle}" />
+
+                <StackPanel Grid.Row="2" Spacing="12">
+                    <Button x:Name="ConnectButton" Content="Connect" />
+                    <muxc:InfoBar
+                        x:Name="MigrationInfoBar"
+                        IsOpen="True"
+                        Severity="Informational"
+                        Title="v0.4 scaffold"
+                        Message="This branch contains the initial WinUI solution, project structure, and migration plan. Build validation must run on Windows with Visual Studio and the Windows App SDK tooling." />
+                </StackPanel>
+            </Grid>
+        </muxc:NavigationView>
+    </Grid>
+</Window>
