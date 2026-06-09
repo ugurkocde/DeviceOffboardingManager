@@ -249,6 +249,8 @@ The v0.4 branch starts a WinUI 3 / Windows App SDK app track for signed and pack
 
 See [docs/v0.4-winui-migration-plan.md](docs/v0.4-winui-migration-plan.md) for the architecture, milestones, and distribution plan.
 
+On Windows, build the native app with the instructions in [docs/v0.4-windows-build.md](docs/v0.4-windows-build.md).
+
 ## 👥 Contributing
 
 1. Fork the repository

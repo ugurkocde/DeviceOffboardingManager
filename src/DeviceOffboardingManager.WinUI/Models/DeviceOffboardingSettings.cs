@@ -8,5 +8,7 @@ public sealed record DeviceOffboardingSettings
 
     public string? ClientId { get; init; }
 
+    public string? CertificateThumbprint { get; init; }
+
     public AppDistributionChannel DistributionChannel { get; init; } = AppDistributionChannel.DeveloperBuild;
 }

@@ -25,10 +25,16 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
-        services.AddSingleton<Services.Contracts.ISettingsService, Services.Placeholders.SettingsService>();
-        services.AddSingleton<Services.Contracts.IAuthenticationService, Services.Placeholders.AuthenticationService>();
-        services.AddSingleton<Services.Contracts.IDeviceInventoryService, Services.Placeholders.DeviceInventoryService>();
-        services.AddSingleton<Services.Contracts.IOffboardingService, Services.Placeholders.OffboardingService>();
+        services.AddSingleton<Services.Contracts.IAuditLogService, Services.AuditLogService>();
+        services.AddSingleton<Services.Contracts.ISettingsService, Services.SettingsService>();
+        services.AddSingleton<Services.Contracts.IAuthenticationService, Services.AuthenticationService>();
+        services.AddSingleton<Services.Graph.GraphApiClient>();
+        services.AddSingleton<Services.Defender.DefenderApiClient>();
+        services.AddSingleton<Services.Contracts.IDeviceInventoryService, Services.DeviceInventoryService>();
+        services.AddSingleton<Services.Contracts.IOffboardingService, Services.OffboardingService>();
+        services.AddSingleton<Services.Contracts.IRecoveryKeyService, Services.RecoveryKeyService>();
+        services.AddSingleton<Services.Contracts.IPlaybookService, Services.PlaybookService>();
+        services.AddSingleton<Services.Contracts.IReportExportService, Services.ReportExportService>();
 
         return services.BuildServiceProvider();
     }

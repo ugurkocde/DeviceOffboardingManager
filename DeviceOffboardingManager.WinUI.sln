@@ -2,7 +2,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DeviceOffboardingManager.WinUI", "src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj", "{2C5D4F91-B605-4F66-82A8-E24D745B9C0D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A1F3E79}") = "DeviceOffboardingManager.WinUI", "src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj", "{2C5D4F91-B605-4F66-82A8-E24D745B9C0D}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

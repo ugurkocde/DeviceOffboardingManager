@@ -1,0 +1,33 @@
+name: Build WinUI App
+
+on:
+  pull_request:
+    paths:
+      - 'src/DeviceOffboardingManager.WinUI/**'
+      - 'DeviceOffboardingManager.WinUI.sln'
+      - '.github/workflows/build-winui.yml'
+  push:
+    branches:
+      - codex/v0.4-winui-app
+    paths:
+      - 'src/DeviceOffboardingManager.WinUI/**'
+      - 'DeviceOffboardingManager.WinUI.sln'
+      - '.github/workflows/build-winui.yml'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore
+        run: dotnet restore .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj
+
+      - name: Build
+        run: dotnet build .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -c Release -p:Platform=x64 --no-restore

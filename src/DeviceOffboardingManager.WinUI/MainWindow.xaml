@@ -12,39 +12,227 @@
             IsSettingsVisible="True"
             PaneDisplayMode="LeftCompact">
             <muxc:NavigationView.MenuItems>
-                <muxc:NavigationViewItem Content="Dashboard" Icon="Home" Tag="dashboard" />
-                <muxc:NavigationViewItem Content="Devices" Icon="Manage" Tag="devices" />
-                <muxc:NavigationViewItem Content="Playbooks" Icon="Library" Tag="playbooks" />
+                <muxc:NavigationViewItem Content="Dashboard" Tag="dashboard">
+                    <muxc:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE80F;" />
+                    </muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Devices" Tag="devices">
+                    <muxc:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE975;" />
+                    </muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
+                <muxc:NavigationViewItem Content="Playbooks" Tag="playbooks">
+                    <muxc:NavigationViewItem.Icon>
+                        <FontIcon Glyph="&#xE8F1;" />
+                    </muxc:NavigationViewItem.Icon>
+                </muxc:NavigationViewItem>
             </muxc:NavigationView.MenuItems>
 
-            <Grid Margin="32" RowSpacing="16">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                </Grid.RowDefinitions>
+            <ScrollViewer>
+                <StackPanel Margin="32" MaxWidth="1180" Spacing="18">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Device Offboarding Manager" Style="{ThemeResource TitleTextBlockStyle}" />
+                        <TextBlock Text="Native WinUI app for Microsoft Intune, Autopilot, Entra ID, and optional Defender for Endpoint offboarding." TextWrapping="Wrap" />
+                    </StackPanel>
 
-                <TextBlock
-                    Text="Device Offboarding Manager"
-                    Style="{ThemeResource TitleTextBlockStyle}" />
-
-                <TextBlock
-                    Grid.Row="1"
-                    MaxWidth="760"
-                    Text="WinUI app shell for the v0.4 native Windows migration. Core Graph, Defender, settings import, and offboarding services will be ported from the v0.3 PowerShell module in focused milestones."
-                    TextWrapping="Wrap"
-                    Style="{ThemeResource BodyTextBlockStyle}" />
-
-                <StackPanel Grid.Row="2" Spacing="12">
-                    <Button x:Name="ConnectButton" Content="Connect" />
                     <muxc:InfoBar
-                        x:Name="MigrationInfoBar"
+                        x:Name="StatusInfoBar"
                         IsOpen="True"
                         Severity="Informational"
-                        Title="v0.4 scaffold"
-                        Message="This branch contains the initial WinUI solution, project structure, and migration plan. Build validation must run on Windows with Visual Studio and the Windows App SDK tooling." />
+                        Title="Not connected"
+                        Message="Configure authentication, connect to Microsoft Graph, then search devices." />
+
+                    <muxc:Expander Header="Authentication and settings" IsExpanded="True">
+                        <Grid RowSpacing="12" ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <ComboBox x:Name="AuthMethodBox" Header="Authentication method" SelectedIndex="0">
+                                <ComboBoxItem Content="Interactive" />
+                                <ComboBoxItem Content="Device code" />
+                                <ComboBoxItem Content="Certificate" />
+                                <ComboBoxItem Content="Client secret" />
+                            </ComboBox>
+                            <TextBox x:Name="TenantIdBox" Grid.Column="1" Header="Tenant ID" PlaceholderText="Tenant ID or organizations" />
+                            <TextBox x:Name="ClientIdBox" Grid.Row="1" Header="Client ID" PlaceholderText="App registration client ID" />
+                            <TextBox x:Name="CertificateThumbprintBox" Grid.Row="1" Grid.Column="1" Header="Certificate thumbprint" />
+                            <PasswordBox x:Name="ClientSecretBox" Grid.Row="2" Header="Client secret (session only)" />
+                            <ToggleSwitch x:Name="DefenderToggle" Grid.Row="2" Grid.Column="1" Header="Defender for Endpoint integration" />
+
+                            <TextBox x:Name="ConfigPathBox" Grid.Row="3" Grid.ColumnSpan="2" Header="Config JSON path" PlaceholderText="Paste an app registration config JSON path for import" />
+                            <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                <Button Content="Import" Click="ImportConfig_Click" />
+                                <Button Content="Save" Click="SaveSettings_Click" />
+                            </StackPanel>
+
+                            <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8">
+                                <Button x:Name="ConnectButton" Content="Connect" Click="Connect_Click" />
+                                <Button x:Name="DisconnectButton" Content="Disconnect" Click="Disconnect_Click" IsEnabled="False" />
+                                <Button Content="Refresh dashboard" Click="RefreshDashboard_Click" />
+                            </StackPanel>
+                        </Grid>
+                    </muxc:Expander>
+
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                            <StackPanel>
+                                <TextBlock Text="Intune" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Name="IntuneCountText" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                            <StackPanel>
+                                <TextBlock Text="Autopilot" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Name="AutopilotCountText" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                            <StackPanel>
+                                <TextBlock Text="Entra ID" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Name="EntraCountText" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                            </StackPanel>
+                        </Border>
+                        <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}">
+                            <StackPanel>
+                                <TextBlock Text="Stale 90 days" Style="{ThemeResource CaptionTextBlockStyle}" />
+                                <TextBlock x:Name="Stale90Text" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+
+                    <muxc:Expander Header="Device search and bulk import" IsExpanded="True">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="220" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="SearchModeBox" Header="Search mode" SelectedIndex="0">
+                                    <ComboBoxItem Content="Device Name" />
+                                    <ComboBoxItem Content="Serial Number" />
+                                    <ComboBoxItem Content="Device ID" />
+                                    <ComboBoxItem Content="Contains (partial match)" />
+                                </ComboBox>
+                                <TextBox x:Name="SearchTextBox" Grid.Column="1" Header="Search terms" PlaceholderText="Comma or line separated device names, serials, or IDs" AcceptsReturn="True" TextWrapping="Wrap" />
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                    <Button Content="Search" Click="Search_Click" />
+                                    <Button Content="Import file path" Click="ImportBulkPath_Click" />
+                                    <Button Content="Export CSV" Click="ExportCsv_Click" />
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock x:Name="SearchStatusText" Text="No devices searched yet." />
+
+                            <ListView x:Name="DeviceListView" MinHeight="280" SelectionMode="None">
+                                <ListView.Header>
+                                    <Grid ColumnSpacing="8" Margin="8">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="48" />
+                                            <ColumnDefinition Width="2*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="1" Text="Device" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="2" Text="Serial" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="3" Text="OS" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="4" Text="User" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="5" Text="Compliance" FontWeight="SemiBold" />
+                                        <TextBlock Grid.Column="6" Text="Services" FontWeight="SemiBold" />
+                                    </Grid>
+                                </ListView.Header>
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid ColumnSpacing="8" Margin="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="48" />
+                                                <ColumnDefinition Width="2*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="*" />
+                                            </Grid.ColumnDefinitions>
+                                            <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" />
+                                            <TextBlock Grid.Column="1" Text="{Binding DeviceName}" TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="2" Text="{Binding SerialNumber}" TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="3" Text="{Binding OperatingSystem}" TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="4" Text="{Binding PrimaryUser}" TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="5" Text="{Binding ComplianceState}" TextWrapping="Wrap" />
+                                            <TextBlock Grid.Column="6" Text="{Binding ServiceSummary}" TextWrapping="Wrap" />
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </StackPanel>
+                    </muxc:Expander>
+
+                    <muxc:Expander Header="Offboarding actions" IsExpanded="True">
+                        <StackPanel Spacing="12">
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <CheckBox x:Name="DeleteEntraBox" Content="Remove from Entra ID" IsChecked="True" />
+                                <CheckBox x:Name="DisableEntraBox" Content="Disable in Entra ID" />
+                                <CheckBox x:Name="DeleteIntuneBox" Content="Remove from Intune" IsChecked="True" />
+                                <CheckBox x:Name="DeleteAutopilotBox" Content="Remove from Autopilot" IsChecked="True" />
+                                <CheckBox x:Name="OffboardDefenderBox" Content="Offboard Defender" />
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <ComboBox x:Name="PreActionBox" Header="Pre-action" SelectedIndex="0" Width="220">
+                                    <ComboBoxItem Content="None" />
+                                    <ComboBoxItem Content="Retire Intune device" />
+                                    <ComboBoxItem Content="Wipe Intune device" />
+                                </ComboBox>
+                                <TextBox x:Name="GroupTagBox" Header="Autopilot group tag" Width="260" PlaceholderText="New tag or empty to clear" />
+                                <Button Content="Set group tag" Click="SetGroupTag_Click" VerticalAlignment="Bottom" />
+                                <Button Content="Fetch recovery keys" Click="FetchRecoveryKeys_Click" VerticalAlignment="Bottom" />
+                                <Button Content="Run offboarding" Click="RunOffboarding_Click" VerticalAlignment="Bottom" />
+                                <Button Content="Export HTML report" Click="ExportReport_Click" VerticalAlignment="Bottom" />
+                            </StackPanel>
+                            <TextBlock x:Name="OffboardingStatusText" Text="Select devices before running actions." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </muxc:Expander>
+
+                    <muxc:Expander Header="Permissions" IsExpanded="False">
+                        <TextBlock x:Name="PermissionsText" TextWrapping="Wrap" />
+                    </muxc:Expander>
+
+                    <muxc:Expander Header="Playbooks" IsExpanded="False">
+                        <StackPanel Spacing="12">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="280" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="PlaybookBox" Header="Playbook" />
+                                <TextBox x:Name="PlaybookParameterBox" Grid.Column="1" Header="Parameter" PlaceholderText="Used by OS-specific playbook" />
+                                <Button Grid.Column="2" Content="Run playbook" Click="RunPlaybook_Click" VerticalAlignment="Bottom" />
+                            </Grid>
+                            <TextBlock x:Name="PlaybookStatusText" Text="Run a playbook to export a CSV report to the desktop." TextWrapping="Wrap" />
+                        </StackPanel>
+                    </muxc:Expander>
                 </StackPanel>
-            </Grid>
+            </ScrollViewer>
         </muxc:NavigationView>
     </Grid>
 </Window>

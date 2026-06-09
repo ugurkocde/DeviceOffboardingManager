@@ -22,10 +22,23 @@ $requiredFiles = @(
     (Join-Path $projectRoot 'MainWindow.xaml.cs'),
     (Join-Path $projectRoot 'app.manifest'),
     (Join-Path $projectRoot 'Models/DeviceOffboardingSettings.cs'),
+    (Join-Path $projectRoot 'Models/DeviceRecord.cs'),
+    (Join-Path $projectRoot 'Models/OffboardingOptions.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IAuthenticationService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IDeviceInventoryService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IOffboardingService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/ISettingsService.cs'),
+    (Join-Path $projectRoot 'Services/AuthenticationService.cs'),
+    (Join-Path $projectRoot 'Services/DeviceInventoryService.cs'),
+    (Join-Path $projectRoot 'Services/OffboardingService.cs'),
+    (Join-Path $projectRoot 'Services/RecoveryKeyService.cs'),
+    (Join-Path $projectRoot 'Services/PlaybookService.cs'),
+    (Join-Path $projectRoot 'Services/SettingsService.cs'),
+    (Join-Path $projectRoot 'Services/Graph/GraphApiClient.cs'),
+    (Join-Path $projectRoot 'Services/Defender/DefenderApiClient.cs'),
+    (Join-Path $projectRoot 'Services/ReportExportService.cs'),
+    (Join-Path $projectRoot 'Services/AuditLogService.cs'),
+    (Join-Path $projectRoot 'Assets/AppIcon.ico'),
     (Join-Path $projectRoot 'Assets/StoreLogo.png'),
     (Join-Path $projectRoot 'Assets/Square44x44Logo.png'),
     (Join-Path $projectRoot 'Assets/Square150x150Logo.png'),
@@ -57,8 +70,14 @@ foreach ($propertyGroup in @($projectXml.Project.PropertyGroup)) {
 if ($properties['UseWinUI'] -ne 'true') {
     throw 'The WinUI project must set UseWinUI=true.'
 }
+if ($properties['WindowsPackageType'] -ne 'MSIX') {
+    throw 'The WinUI project must be configured as an MSIX packaged app.'
+}
 if ($properties['EnableMsixTooling'] -ne 'true') {
     throw 'The WinUI project must enable MSIX tooling.'
+}
+if ($properties['ApplicationIcon'] -ne 'Assets\AppIcon.ico') {
+    throw 'The WinUI project must reference the branded application icon.'
 }
 if ($properties['TargetFramework'] -notmatch '^net[0-9]+\.0-windows10\.0\.19041\.0$') {
     throw "Unexpected WinUI target framework: $($properties['TargetFramework'])"
@@ -74,6 +93,30 @@ foreach ($packageName in @('Microsoft.WindowsAppSDK', 'Microsoft.Identity.Client
     }
 }
 
+$sourceText = (Get-ChildItem -Path $projectRoot -Recurse -Filter '*.cs' | ForEach-Object { Get-Content $_.FullName -Raw }) -join "`n"
+foreach ($requiredPattern in @(
+        'AcquireTokenInteractive',
+        'AcquireTokenWithDeviceCode',
+        'AcquireTokenForClient',
+        'DeviceManagementManagedDevices.ReadWrite.All',
+        'DeviceManagementServiceConfig.ReadWrite.All',
+        'Machine.Offboard',
+        'deviceManagement/windowsAutopilotDeviceIdentities',
+        'api.security.microsoft.com/api/machines',
+        'informationProtection/bitlocker/recoveryKeys',
+        'directory/deviceLocalCredentials',
+        'getFileVaultKey',
+        'importedDeviceIdentities',
+        'Autopilot not in Intune',
+        'ExportOffboardingHtmlAsync')) {
+    if ($sourceText -notmatch [regex]::Escape($requiredPattern)) {
+        throw "The WinUI source is missing expected ported behavior: $requiredPattern"
+    }
+}
+if ($sourceText -match 'Services\.Placeholders|not implemented yet') {
+    throw 'The WinUI source still references placeholder services.'
+}
+
 foreach ($xamlFile in @($appXaml, $mainWindowXaml)) {
     [xml](Get-Content -Path $xamlFile -Raw) | Out-Null
 }
@@ -84,6 +127,11 @@ if ($mainWindowText -match '<Grid\s+[^>]*Padding=') {
 }
 if ($mainWindowText -notmatch 'NavigationView') {
     throw 'The WinUI shell should include a NavigationView.'
+}
+foreach ($requiredControl in @('AuthMethodBox', 'DeviceListView', 'RunOffboarding_Click', 'SetGroupTag_Click', 'ExportReport_Click')) {
+    if ($mainWindowText -notmatch $requiredControl) {
+        throw "The WinUI shell is missing required control or handler: $requiredControl"
+    }
 }
 
 $manifestNamespace = @{
@@ -106,6 +154,7 @@ foreach ($requiredPlanTerm in @('Issue #60', 'MSIX', 'WinGet', 'Microsoft Store'
     Project           = Split-Path -Path $projectFile -Leaf
     TargetFramework   = $properties['TargetFramework']
     PackageReferences = $packageReferences.Count
-    Assets            = 4
+    SourceFiles       = @(Get-ChildItem -Path $projectRoot -Recurse -Filter '*.cs').Count
+    Assets            = 5
     IsValid           = $true
 }

@@ -2,10 +2,9 @@ using DeviceOffboardingManager.WinUI.Models;
 
 namespace DeviceOffboardingManager.WinUI.Services.Contracts;
 
-public interface IOffboardingService
+public interface IRecoveryKeyService
 {
-    Task<OffboardingSummary> OffboardAsync(
+    Task<IReadOnlyList<RecoveryKeyRecord>> GetRecoveryKeysAsync(
         IReadOnlyCollection<DeviceRecord> devices,
-        OffboardingOptions options,
         CancellationToken cancellationToken = default);
 }
