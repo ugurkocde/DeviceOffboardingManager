@@ -6,6 +6,8 @@ using DeviceOffboardingManager.WinUI.Services.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.Storage.Pickers;
+using WinRT.Interop;
 
 namespace DeviceOffboardingManager.WinUI;
 
@@ -177,6 +179,19 @@ public sealed partial class MainWindow : Window
         });
     }
 
+    private async void BrowseConfig_Click(object sender, RoutedEventArgs e)
+    {
+        await RunUiActionAsync("Selecting config", async () =>
+        {
+            var path = await PickFilePathAsync(".json");
+            if (!string.IsNullOrWhiteSpace(path))
+            {
+                ConfigPathBox.Text = path;
+                SetStatus("Config selected", path, InfoBarSeverity.Informational);
+            }
+        });
+    }
+
     private async void SaveSettings_Click(object sender, RoutedEventArgs e)
     {
         await RunUiActionAsync("Saving settings", async () =>
@@ -250,14 +265,15 @@ public sealed partial class MainWindow : Window
         });
     }
 
-    private async void ImportBulkPath_Click(object sender, RoutedEventArgs e)
+    private async void ImportBulkFile_Click(object sender, RoutedEventArgs e)
     {
         await RunUiActionAsync("Importing search terms", async () =>
         {
-            var path = SearchTextBox.Text.Trim();
-            if (!File.Exists(path))
+            var path = await PickFilePathAsync(".csv", ".txt");
+            if (string.IsNullOrWhiteSpace(path))
             {
-                throw new FileNotFoundException("Bulk import file was not found. Paste the CSV/TXT path into Search terms first.", path);
+                SetStatus("Import canceled", "No file was selected.", InfoBarSeverity.Informational);
+                return;
             }
 
             var lines = await File.ReadAllLinesAsync(path);
@@ -482,6 +498,47 @@ public sealed partial class MainWindow : Window
         }
     }
 
+    private async void OpenChangelog_Click(object sender, RoutedEventArgs e)
+    {
+        var candidates = new[]
+        {
+            Path.Combine(AppContext.BaseDirectory, "Changelog.md"),
+            Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Changelog.md"))
+        };
+        var changelogPath = candidates.FirstOrDefault(File.Exists);
+        if (changelogPath is null)
+        {
+            SetStatus("Changelog unavailable", "Changelog.md was not found in the app output or repository root.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        var text = await File.ReadAllTextAsync(changelogPath);
+        var dialog = new ContentDialog
+        {
+            Title = "Changelog",
+            Content = new ScrollViewer
+            {
+                Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap },
+                MaxHeight = 560
+            },
+            CloseButtonText = "Close",
+            XamlRoot = this.Content.XamlRoot
+        };
+        await dialog.ShowAsync();
+    }
+
+    private void OpenRepository_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo("https://github.com/ugurkocde/DeviceOffboardingManager") { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Could not open repository", ex.Message, InfoBarSeverity.Error);
+        }
+    }
+
     private void ReplaceDeviceList(IReadOnlyList<DeviceRecord> devices)
     {
         _allDevices.Clear();
@@ -669,6 +726,19 @@ public sealed partial class MainWindow : Window
             .Split(new[] { ',', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(term => !string.IsNullOrWhiteSpace(term))
             .ToArray();
+    }
+
+    private async Task<string?> PickFilePathAsync(params string[] extensions)
+    {
+        var picker = new FileOpenPicker();
+        foreach (var extension in extensions)
+        {
+            picker.FileTypeFilter.Add(extension);
+        }
+
+        InitializeWithWindow.Initialize(picker, WindowNative.GetWindowHandle(this));
+        var file = await picker.PickSingleFileAsync();
+        return file?.Path;
     }
 
     private static bool Contains(string? value, string? filter)

@@ -273,7 +273,7 @@
                                 <TextBox x:Name="SearchTextBox" AutomationProperties.AutomationId="SearchTextBox" Grid.Column="1" Header="Search terms" PlaceholderText="Comma or line separated device names, serials, or IDs" AcceptsReturn="True" TextWrapping="Wrap" />
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
                                     <Button x:Name="SearchButton" AutomationProperties.AutomationId="SearchButton" Content="Search" Click="Search_Click" />
-                                    <Button x:Name="ImportBulkButton" AutomationProperties.AutomationId="ImportBulkButton" Content="Import file path" Click="ImportBulkPath_Click" />
+                                    <Button x:Name="ImportBulkButton" AutomationProperties.AutomationId="ImportBulkButton" Content="Import file" Click="ImportBulkFile_Click" />
                                     <Button x:Name="ClearSearchButton" AutomationProperties.AutomationId="ClearSearchButton" Content="Clear" Click="ClearSearch_Click" />
                                 </StackPanel>
                             </Grid>
@@ -509,8 +509,9 @@
                                     <PasswordBox x:Name="ClientSecretBox" AutomationProperties.AutomationId="ClientSecretBox" Grid.Row="2" Header="Client secret (session only)" />
                                     <ToggleSwitch x:Name="DefenderToggle" AutomationProperties.AutomationId="DefenderToggle" Grid.Row="2" Grid.Column="1" Header="Defender for Endpoint integration" />
 
-                                    <TextBox x:Name="ConfigPathBox" AutomationProperties.AutomationId="ConfigPathBox" Grid.Row="3" Grid.ColumnSpan="2" Header="Config JSON path" PlaceholderText="Paste an app registration config JSON path for import" />
+                                    <TextBox x:Name="ConfigPathBox" AutomationProperties.AutomationId="ConfigPathBox" Grid.Row="3" Grid.ColumnSpan="2" Header="Config JSON path" PlaceholderText="Select or paste an app registration config JSON path for import" />
                                     <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                        <Button Content="Browse" Click="BrowseConfig_Click" AutomationProperties.AutomationId="BtnBrowseConfig" />
                                         <Button Content="Import" Click="ImportConfig_Click" AutomationProperties.AutomationId="BtnImportConfig" />
                                         <Button Content="Save" Click="SaveSettings_Click" AutomationProperties.AutomationId="BtnSaveSettings" />
                                     </StackPanel>
@@ -559,6 +560,10 @@
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="Validation" Style="{ThemeResource SubtitleTextBlockStyle}" />
                                     <TextBlock Text="Build on Windows with Visual Studio 2022, WinUI application development, Desktop development with C++, .NET 8 SDK, Developer Mode, and Windows App Runtime installed or available through the Windows App SDK deployment manager." TextWrapping="Wrap" />
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Button Content="Open changelog" Click="OpenChangelog_Click" AutomationProperties.AutomationId="BtnOpenChangelog" />
+                                        <Button Content="Open repository" Click="OpenRepository_Click" AutomationProperties.AutomationId="BtnOpenRepository" />
+                                    </StackPanel>
                                 </StackPanel>
                             </Border>
                         </Grid>

@@ -103,6 +103,9 @@ foreach ($packageName in @('Microsoft.WindowsAppSDK', 'Microsoft.Identity.Client
         throw "Missing required WinUI package reference: $packageName"
     }
 }
+if (-not (Select-Xml -Path $projectFile -XPath '//Content[@Link="Changelog.md"]')) {
+    throw 'The WinUI project must include Changelog.md as linked content for the About page.'
+}
 
 $launchSettingsJson = Get-Content -Path $launchSettings -Raw | ConvertFrom-Json
 $launchProfiles = @($launchSettingsJson.profiles.PSObject.Properties.Value)
@@ -156,6 +159,10 @@ foreach ($requiredControl in @(
         'AboutPage',
         'DashboardPlatformFilter',
         'SelectAllDevicesBox',
+        'ImportBulkFile_Click',
+        'BrowseConfig_Click',
+        'OpenChangelog_Click',
+        'OpenRepository_Click',
         'ReviewSelectedIds_Click',
         'RunOffboarding_Click',
         'SetGroupTag_Click',

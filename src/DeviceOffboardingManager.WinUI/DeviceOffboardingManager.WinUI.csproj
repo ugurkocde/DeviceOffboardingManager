@@ -28,4 +28,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\Changelog.md" Link="Changelog.md" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>
