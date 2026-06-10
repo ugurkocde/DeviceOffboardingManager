@@ -92,6 +92,55 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
         };
     }
 
+    public async Task<IReadOnlyList<DeviceRecord>> GetDashboardDevicesAsync(
+        DashboardDeviceCategory category,
+        string? platformFilter = null,
+        CancellationToken cancellationToken = default)
+    {
+        var platform = string.IsNullOrWhiteSpace(platformFilter) ? null : platformFilter.Trim();
+        switch (category)
+        {
+            case DashboardDeviceCategory.Autopilot:
+            {
+                var autopilot = await _graph.GetPagedAsync(
+                    OData.Query("/deviceManagement/windowsAutopilotDeviceIdentities", ("$select", "id,displayName,serialNumber,lastContactedDateTime,model,manufacturer")),
+                    cancellationToken: cancellationToken);
+                return autopilot.Select(device => ToDeviceRecord(null, null, device)).ToArray();
+            }
+
+            case DashboardDeviceCategory.Entra:
+            {
+                var filter = string.IsNullOrWhiteSpace(platform)
+                    ? null
+                    : $"operatingSystem eq '{OData.StringLiteral(platform)}'";
+                var entra = await _graph.GetPagedAsync(
+                    BuildDeviceQuery("/devices", EntraSelect, filter),
+                    new Dictionary<string, string> { ["ConsistencyLevel"] = "eventual" },
+                    cancellationToken);
+                return entra.Select(device => ToDeviceRecord(device, null, null)).ToArray();
+            }
+
+            case DashboardDeviceCategory.Stale30:
+                return await GetIntuneDashboardDevicesAsync($"lastSyncDateTime lt {DateTimeOffset.UtcNow.AddDays(-30):O}", platform, cancellationToken);
+
+            case DashboardDeviceCategory.Stale90:
+                return await GetIntuneDashboardDevicesAsync($"lastSyncDateTime lt {DateTimeOffset.UtcNow.AddDays(-90):O}", platform, cancellationToken);
+
+            case DashboardDeviceCategory.Stale180:
+                return await GetIntuneDashboardDevicesAsync($"lastSyncDateTime lt {DateTimeOffset.UtcNow.AddDays(-180):O}", platform, cancellationToken);
+
+            case DashboardDeviceCategory.Corporate:
+                return await GetIntuneDashboardDevicesAsync("managedDeviceOwnerType eq 'company'", platform, cancellationToken);
+
+            case DashboardDeviceCategory.Personal:
+                return await GetIntuneDashboardDevicesAsync("managedDeviceOwnerType eq 'personal'", platform, cancellationToken);
+
+            case DashboardDeviceCategory.Intune:
+            default:
+                return await GetIntuneDashboardDevicesAsync(null, platform, cancellationToken);
+        }
+    }
+
     public async Task<GroupTagUpdateResult> SetAutopilotGroupTagAsync(
         IReadOnlyCollection<DeviceRecord> devices,
         string groupTag,
@@ -146,6 +195,34 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
             await _auditLog.WriteAsync($"Dashboard count fallback failed for {collectionUrl}: {ex.Message}", "WARN", cancellationToken);
             return 0;
         }
+    }
+
+    private async Task<IReadOnlyList<DeviceRecord>> GetIntuneDashboardDevicesAsync(
+        string? filter,
+        string? platform,
+        CancellationToken cancellationToken)
+    {
+        var platformFilter = string.IsNullOrWhiteSpace(platform)
+            ? null
+            : $"operatingSystem eq '{OData.StringLiteral(platform)}'";
+        var combinedFilter = AndFilter(filter, platformFilter);
+        var intuneDevices = await _graph.GetPagedAsync(
+            BuildDeviceQuery("/deviceManagement/managedDevices", IntuneSelect, combinedFilter),
+            cancellationToken: cancellationToken);
+        return intuneDevices.Select(device => ToDeviceRecord(null, device, null)).ToArray();
+    }
+
+    private static string BuildDeviceQuery(string path, string select, string? filter)
+    {
+        return string.IsNullOrWhiteSpace(filter)
+            ? OData.Query(path, ("$select", select))
+            : OData.Query(path, ("$filter", filter), ("$select", select));
+    }
+
+    private static string? AndFilter(params string?[] filters)
+    {
+        var active = filters.Where(filter => !string.IsNullOrWhiteSpace(filter)).ToArray();
+        return active.Length == 0 ? null : string.Join(" and ", active);
     }
 
     private async Task<int> SafeCountAsync(Task<int> task, CancellationToken cancellationToken)

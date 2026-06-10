@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Text;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
@@ -18,8 +19,11 @@ public sealed partial class MainWindow : Window
     private readonly IPlaybookService _playbookService;
     private readonly IReportExportService _reportExportService;
     private readonly IAuditLogService _auditLogService;
-    private readonly ObservableCollection<DeviceRecord> _devices = new();
+    private readonly List<DeviceRecord> _allDevices = new();
+    private readonly ObservableCollection<DeviceRecord> _visibleDevices = new();
+    private readonly ObservableCollection<string> _playbookRows = new();
     private OffboardingSummary? _lastOffboardingSummary;
+    private PlaybookRunResult? _lastPlaybookResult;
 
     public MainWindow()
     {
@@ -33,7 +37,9 @@ public sealed partial class MainWindow : Window
         _auditLogService = App.Services.GetRequiredService<IAuditLogService>();
 
         InitializeComponent();
-        DeviceListView.ItemsSource = _devices;
+        DeviceListView.ItemsSource = _visibleDevices;
+        PlaybookResultListView.ItemsSource = _playbookRows;
+
         foreach (var playbook in _playbookService.Definitions)
         {
             PlaybookBox.Items.Add(playbook.Name);
@@ -41,23 +47,25 @@ public sealed partial class MainWindow : Window
 
         PlaybookBox.SelectedIndex = 0;
         PermissionsText.Text = string.Join(Environment.NewLine, RequiredPermissions.Select(p => $"{p.Permission} - {p.Reason}"));
+        RootNavigation.SelectedItem = NavHome;
+        ShowPage("home");
         _ = LoadSettingsAsync();
     }
 
     private static IReadOnlyList<PermissionRequirement> RequiredPermissions { get; } =
-    new[]
-    {
-        new PermissionRequirement("User.Read.All", "Required to read user profile information and group memberships."),
-        new PermissionRequirement("Group.Read.All", "Needed to read group information and memberships."),
-        new PermissionRequirement("DeviceManagementConfiguration.Read.All", "Allows reading Intune device configuration policies and assignments."),
-        new PermissionRequirement("DeviceManagementApps.Read.All", "Necessary to read mobile app management policies and app configurations."),
-        new PermissionRequirement("DeviceManagementManagedDevices.ReadWrite.All", "Required to read and modify managed device information."),
-        new PermissionRequirement("Device.ReadWrite.All", "Needed to read, disable, and delete Entra ID device objects."),
-        new PermissionRequirement("DeviceManagementServiceConfig.ReadWrite.All", "Required for Autopilot configuration and management."),
-        new PermissionRequirement("BitlockerKey.Read.All", "Required to read BitLocker recovery key metadata during offboarding."),
-        new PermissionRequirement("DeviceLocalCredential.Read.All", "Required to read LAPS passwords during offboarding."),
-        new PermissionRequirement("WindowsDefenderATP Machine.ReadWrite.All / Machine.Offboard", "Optional Defender for Endpoint offboarding permissions.")
-    };
+        new[]
+        {
+            new PermissionRequirement("User.Read.All", "Required to read user profile information and group memberships."),
+            new PermissionRequirement("Group.Read.All", "Needed to read group information and memberships."),
+            new PermissionRequirement("DeviceManagementConfiguration.Read.All", "Allows reading Intune device configuration policies and assignments."),
+            new PermissionRequirement("DeviceManagementApps.Read.All", "Necessary to read mobile app management policies and app configurations."),
+            new PermissionRequirement("DeviceManagementManagedDevices.ReadWrite.All", "Required to read and modify managed device information."),
+            new PermissionRequirement("Device.ReadWrite.All", "Needed to read, disable, and delete Entra ID device objects."),
+            new PermissionRequirement("DeviceManagementServiceConfig.ReadWrite.All", "Required for Autopilot configuration and management."),
+            new PermissionRequirement("BitlockerKey.Read.All", "Required to read BitLocker recovery key metadata during offboarding."),
+            new PermissionRequirement("DeviceLocalCredential.Read.All", "Required to read LAPS passwords during offboarding."),
+            new PermissionRequirement("WindowsDefenderATP Machine.ReadWrite.All / Machine.Offboard", "Optional Defender for Endpoint offboarding permissions.")
+        };
 
     private async Task LoadSettingsAsync()
     {
@@ -69,11 +77,64 @@ public sealed partial class MainWindow : Window
             CertificateThumbprintBox.Text = settings.CertificateThumbprint ?? string.Empty;
             DefenderToggle.IsOn = settings.DefenderIntegrationEnabled;
             OffboardDefenderBox.IsEnabled = settings.DefenderIntegrationEnabled;
+            DashboardReadinessText.Text = settings.DefenderIntegrationEnabled
+                ? "Defender for Endpoint integration is enabled. Defender tokens are still requested only when Defender actions are used."
+                : "Defender for Endpoint integration is disabled. Tenants without Defender can use Graph-only workflows.";
             SetStatus("Settings loaded", $"Audit log: {_auditLogService.LogFilePath}", InfoBarSeverity.Informational);
         }
         catch (Exception ex)
         {
             SetStatus("Could not load settings", ex.Message, InfoBarSeverity.Error);
+        }
+    }
+
+    private void RootNavigation_SelectionChanged(NavigationView sender, NavigationViewSelectionChangedEventArgs args)
+    {
+        if (args.IsSettingsSelected)
+        {
+            ShowPage("settings");
+            return;
+        }
+
+        if (args.SelectedItemContainer?.Tag is string tag)
+        {
+            ShowPage(tag);
+        }
+    }
+
+    private void NavigateButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string tag })
+        {
+            return;
+        }
+
+        RootNavigation.SelectedItem = tag switch
+        {
+            "home" => NavHome,
+            "dashboard" => NavDashboard,
+            "devices" => NavDevices,
+            "offboarding" => NavOffboarding,
+            "playbooks" => NavPlaybooks,
+            "about" => NavAbout,
+            _ => RootNavigation.SelectedItem
+        };
+        ShowPage(tag);
+    }
+
+    private void ShowPage(string page)
+    {
+        HomePage.Visibility = page == "home" ? Visibility.Visible : Visibility.Collapsed;
+        DashboardPage.Visibility = page == "dashboard" ? Visibility.Visible : Visibility.Collapsed;
+        DevicesPage.Visibility = page == "devices" ? Visibility.Visible : Visibility.Collapsed;
+        OffboardingPage.Visibility = page == "offboarding" ? Visibility.Visible : Visibility.Collapsed;
+        PlaybooksPage.Visibility = page == "playbooks" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPage.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
+        AboutPage.Visibility = page == "about" ? Visibility.Visible : Visibility.Collapsed;
+
+        if (page == "offboarding")
+        {
+            RefreshSelectedSummary();
         }
     }
 
@@ -83,6 +144,7 @@ public sealed partial class MainWindow : Window
         {
             var request = BuildAuthenticationRequest();
             await _authenticationService.ConnectAsync(request);
+            HomeConnectButton.IsEnabled = false;
             ConnectButton.IsEnabled = false;
             DisconnectButton.IsEnabled = true;
             SetStatus("Connected", _authenticationService.AccountDisplayName ?? "Connected to Microsoft Graph.", InfoBarSeverity.Success);
@@ -94,6 +156,7 @@ public sealed partial class MainWindow : Window
         await RunUiActionAsync("Disconnecting", async () =>
         {
             await _authenticationService.DisconnectAsync();
+            HomeConnectButton.IsEnabled = true;
             ConnectButton.IsEnabled = true;
             DisconnectButton.IsEnabled = false;
             SetStatus("Disconnected", "The Graph session has been cleared.", InfoBarSeverity.Informational);
@@ -109,6 +172,7 @@ public sealed partial class MainWindow : Window
             ClientIdBox.Text = settings.ClientId ?? string.Empty;
             CertificateThumbprintBox.Text = settings.CertificateThumbprint ?? string.Empty;
             DefenderToggle.IsOn = settings.DefenderIntegrationEnabled;
+            OffboardDefenderBox.IsEnabled = settings.DefenderIntegrationEnabled;
             SetStatus("Config imported", "The app registration settings were imported.", InfoBarSeverity.Success);
         });
     }
@@ -125,6 +189,9 @@ public sealed partial class MainWindow : Window
                 DefenderIntegrationEnabled = DefenderToggle.IsOn
             });
             OffboardDefenderBox.IsEnabled = DefenderToggle.IsOn;
+            DashboardReadinessText.Text = DefenderToggle.IsOn
+                ? "Defender for Endpoint integration is enabled. Defender tokens are requested only when Defender actions are used."
+                : "Defender for Endpoint integration is disabled. Defender controls remain gated for tenants without Defender.";
             SetStatus("Settings saved", "Defender visibility and app registration settings were saved.", InfoBarSeverity.Success);
         });
     }
@@ -138,8 +205,30 @@ public sealed partial class MainWindow : Window
             IntuneCountText.Text = dashboard.IntuneDevices.ToString("n0");
             AutopilotCountText.Text = dashboard.AutopilotDevices.ToString("n0");
             EntraCountText.Text = dashboard.EntraDevices.ToString("n0");
+            Stale30Text.Text = dashboard.StaleDevices30Days.ToString("n0");
             Stale90Text.Text = dashboard.StaleDevices90Days.ToString("n0");
-            SetStatus("Dashboard refreshed", $"30d stale: {dashboard.StaleDevices30Days:n0}; 180d stale: {dashboard.StaleDevices180Days:n0}.", InfoBarSeverity.Success);
+            Stale180Text.Text = dashboard.StaleDevices180Days.ToString("n0");
+            CorporateCountText.Text = dashboard.CorporateDevices.ToString("n0");
+            PersonalCountText.Text = dashboard.PersonalDevices.ToString("n0");
+            SetStatus("Dashboard refreshed", $"Platform filter: {GetDashboardPlatformFilter() ?? "all"}.", InfoBarSeverity.Success);
+        });
+    }
+
+    private async void DashboardCard_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { Tag: string tag })
+        {
+            return;
+        }
+
+        await RunUiActionAsync("Loading dashboard results", async () =>
+        {
+            EnsureConnected();
+            var devices = await _deviceInventoryService.GetDashboardDevicesAsync(GetDashboardCategory(tag), GetDashboardPlatformFilter());
+            ReplaceDeviceList(devices);
+            RootNavigation.SelectedItem = NavDevices;
+            ShowPage("devices");
+            SetStatus("Dashboard results loaded", $"{devices.Count:n0} device(s) loaded into Devices.", InfoBarSeverity.Success);
         });
     }
 
@@ -155,12 +244,7 @@ public sealed partial class MainWindow : Window
             }
 
             var result = await _deviceInventoryService.SearchDevicesAsync(terms, GetSearchOption());
-            _devices.Clear();
-            foreach (var device in result.Devices)
-            {
-                _devices.Add(device);
-            }
-
+            ReplaceDeviceList(result.Devices);
             SearchStatusText.Text = $"{result.Devices.Count:n0} device(s) found. Intune: {result.IntuneCount:n0}; Autopilot: {result.AutopilotCount:n0}; Entra ID: {result.EntraCount:n0}.";
             SetStatus("Search complete", SearchStatusText.Text, InfoBarSeverity.Success);
         });
@@ -182,11 +266,52 @@ public sealed partial class MainWindow : Window
         });
     }
 
+    private void ClearSearch_Click(object sender, RoutedEventArgs e)
+    {
+        SearchTextBox.Text = string.Empty;
+        _allDevices.Clear();
+        _visibleDevices.Clear();
+        SearchStatusText.Text = "No devices searched yet.";
+        RefreshSelectedSummary();
+        SetStatus("Device list cleared", "Search terms and results were cleared.", InfoBarSeverity.Informational);
+    }
+
+    private void DeviceFilter_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        ApplyDeviceFilters();
+    }
+
+    private void ResetFilters_Click(object sender, RoutedEventArgs e)
+    {
+        FilterDeviceNameBox.Text = string.Empty;
+        FilterSerialBox.Text = string.Empty;
+        FilterOsBox.Text = string.Empty;
+        FilterUserBox.Text = string.Empty;
+        FilterComplianceBox.Text = string.Empty;
+        ApplyDeviceFilters();
+    }
+
+    private void SelectAllDevices_Click(object sender, RoutedEventArgs e)
+    {
+        var isSelected = SelectAllDevicesBox.IsChecked == true;
+        foreach (var device in _visibleDevices)
+        {
+            device.IsSelected = isSelected;
+        }
+
+        RefreshSelectedSummary();
+    }
+
+    private void DeviceSelectionChanged_Click(object sender, RoutedEventArgs e)
+    {
+        RefreshSelectedSummary();
+    }
+
     private async void ExportCsv_Click(object sender, RoutedEventArgs e)
     {
         await RunUiActionAsync("Exporting CSV", async () =>
         {
-            var devices = GetSelectedOrAllDevices();
+            var devices = GetSelectedOrVisibleDevices();
             if (devices.Count == 0)
             {
                 throw new InvalidOperationException("No devices are available to export.");
@@ -195,6 +320,34 @@ public sealed partial class MainWindow : Window
             var path = await _reportExportService.ExportDeviceCsvAsync(devices);
             SetStatus("CSV exported", path, InfoBarSeverity.Success);
         });
+    }
+
+    private async void ReviewSelectedIds_Click(object sender, RoutedEventArgs e)
+    {
+        var selected = GetSelectedDevices();
+        if (selected.Count == 0)
+        {
+            SetStatus("No devices selected", "Select at least one device before reviewing IDs.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        var content = new TextBlock
+        {
+            Text = string.Join(
+                Environment.NewLine + Environment.NewLine,
+                selected.Select(device =>
+                    $"{device.DeviceName ?? "(unnamed)"}{Environment.NewLine}Serial: {device.SerialNumber ?? "(none)"}{Environment.NewLine}Entra object: {device.EntraDeviceId ?? "(none)"}{Environment.NewLine}Entra deviceId: {device.EntraDeviceObjectId ?? "(none)"}{Environment.NewLine}Intune: {device.IntuneDeviceId ?? "(none)"}{Environment.NewLine}Autopilot: {device.AutopilotIdentityId ?? "(none)"}")),
+            TextWrapping = TextWrapping.Wrap
+        };
+
+        var dialog = new ContentDialog
+        {
+            Title = "Resolved device IDs",
+            Content = new ScrollViewer { Content = content, MaxHeight = 520 },
+            CloseButtonText = "Close",
+            XamlRoot = this.Content.XamlRoot
+        };
+        await dialog.ShowAsync();
     }
 
     private async void SetGroupTag_Click(object sender, RoutedEventArgs e)
@@ -227,7 +380,7 @@ public sealed partial class MainWindow : Window
             var dialog = new ContentDialog
             {
                 Title = "Confirm offboarding",
-                Content = $"Run selected actions for {selected.Count} device(s)? Review Graph IDs in the device list before continuing.",
+                Content = $"Run selected actions for {selected.Count:n0} device(s)? Review Graph IDs before continuing. Offboarding operations may be permanent.",
                 PrimaryButtonText = "Run",
                 CloseButtonText = "Cancel",
                 DefaultButton = ContentDialogButton.Close,
@@ -236,6 +389,7 @@ public sealed partial class MainWindow : Window
 
             if (await dialog.ShowAsync() != ContentDialogResult.Primary)
             {
+                SetStatus("Offboarding canceled", "No changes were made.", InfoBarSeverity.Informational);
                 return;
             }
 
@@ -284,11 +438,113 @@ public sealed partial class MainWindow : Window
             EnsureConnected();
             var selectedIndex = PlaybookBox.SelectedIndex < 0 ? 0 : PlaybookBox.SelectedIndex;
             var definition = _playbookService.Definitions[selectedIndex];
-            var result = await _playbookService.RunAsync(definition.Id, PlaybookParameterBox.Text);
-            var path = await ExportPlaybookRowsAsync(result);
-            PlaybookStatusText.Text = $"{result.Definition.Name} completed with {result.Rows.Count:n0} row(s). CSV exported to {path}";
+            _lastPlaybookResult = await _playbookService.RunAsync(definition.Id, PlaybookParameterBox.Text);
+            PopulatePlaybookRows(_lastPlaybookResult);
+            PlaybookStatusText.Text = $"{_lastPlaybookResult.Definition.Name} completed with {_lastPlaybookResult.Rows.Count:n0} row(s).";
             SetStatus("Playbook complete", PlaybookStatusText.Text, InfoBarSeverity.Success);
         });
+    }
+
+    private async void ExportLastPlaybook_Click(object sender, RoutedEventArgs e)
+    {
+        await RunUiActionAsync("Exporting playbook", async () =>
+        {
+            if (_lastPlaybookResult is null)
+            {
+                throw new InvalidOperationException("Run a playbook before exporting.");
+            }
+
+            var path = await ExportPlaybookRowsAsync(_lastPlaybookResult);
+            SetStatus("Playbook exported", path, InfoBarSeverity.Success);
+        });
+    }
+
+    private void OpenAuditLog_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var directory = Path.GetDirectoryName(_auditLogService.LogFilePath);
+            if (!string.IsNullOrWhiteSpace(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            if (!File.Exists(_auditLogService.LogFilePath))
+            {
+                File.WriteAllText(_auditLogService.LogFilePath, string.Empty);
+            }
+
+            Process.Start(new ProcessStartInfo(_auditLogService.LogFilePath) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus("Could not open audit log", ex.Message, InfoBarSeverity.Error);
+        }
+    }
+
+    private void ReplaceDeviceList(IReadOnlyList<DeviceRecord> devices)
+    {
+        _allDevices.Clear();
+        _allDevices.AddRange(devices);
+        ApplyDeviceFilters();
+        RefreshSelectedSummary();
+    }
+
+    private void ApplyDeviceFilters()
+    {
+        var name = FilterDeviceNameBox.Text;
+        var serial = FilterSerialBox.Text;
+        var os = FilterOsBox.Text;
+        var user = FilterUserBox.Text;
+        var compliance = FilterComplianceBox.Text;
+
+        var filtered = _allDevices.Where(device =>
+            Contains(device.DeviceName, name)
+            && Contains(device.SerialNumber, serial)
+            && Contains(device.OperatingSystem, os)
+            && Contains(device.PrimaryUser, user)
+            && Contains(device.ComplianceState, compliance)).ToArray();
+
+        _visibleDevices.Clear();
+        foreach (var device in filtered)
+        {
+            _visibleDevices.Add(device);
+        }
+
+        SearchStatusText.Text = $"{_visibleDevices.Count:n0} visible of {_allDevices.Count:n0} loaded device(s).";
+        RefreshSelectedSummary();
+    }
+
+    private void RefreshSelectedSummary()
+    {
+        var selected = GetSelectedDevices();
+        SelectedDeviceCountText.Text = selected.Count == 0
+            ? "No devices selected."
+            : $"{selected.Count:n0} selected device(s). Visible: {_visibleDevices.Count:n0}; loaded: {_allDevices.Count:n0}.";
+
+        OffboardingStatusText.Text = selected.Count == 0
+            ? "Select devices before running actions."
+            : $"{selected.Count:n0} selected device(s) ready for offboarding review.";
+    }
+
+    private void PopulatePlaybookRows(PlaybookRunResult result)
+    {
+        _playbookRows.Clear();
+        if (result.Rows.Count == 0)
+        {
+            _playbookRows.Add("No rows returned.");
+            return;
+        }
+
+        foreach (var row in result.Rows.Take(500))
+        {
+            _playbookRows.Add(string.Join(" | ", row.Select(item => $"{item.Key}: {item.Value}")));
+        }
+
+        if (result.Rows.Count > _playbookRows.Count)
+        {
+            _playbookRows.Add($"Showing first {_playbookRows.Count:n0} of {result.Rows.Count:n0} row(s). Export the CSV for the full result.");
+        }
     }
 
     private AuthenticationRequest BuildAuthenticationRequest()
@@ -339,15 +595,42 @@ public sealed partial class MainWindow : Window
         };
     }
 
-    private IReadOnlyList<DeviceRecord> GetSelectedDevices()
+    private string? GetDashboardPlatformFilter()
     {
-        return _devices.Where(device => device.IsSelected).ToArray();
+        if (DashboardPlatformFilter.SelectedItem is not ComboBoxItem item)
+        {
+            return null;
+        }
+
+        var platform = item.Content?.ToString();
+        return string.Equals(platform, "All platforms", StringComparison.OrdinalIgnoreCase) ? null : platform;
     }
 
-    private IReadOnlyList<DeviceRecord> GetSelectedOrAllDevices()
+    private static DashboardDeviceCategory GetDashboardCategory(string tag)
+    {
+        return tag switch
+        {
+            "intune" => DashboardDeviceCategory.Intune,
+            "autopilot" => DashboardDeviceCategory.Autopilot,
+            "entra" => DashboardDeviceCategory.Entra,
+            "stale30" => DashboardDeviceCategory.Stale30,
+            "stale90" => DashboardDeviceCategory.Stale90,
+            "stale180" => DashboardDeviceCategory.Stale180,
+            "corporate" => DashboardDeviceCategory.Corporate,
+            "personal" => DashboardDeviceCategory.Personal,
+            _ => DashboardDeviceCategory.Intune
+        };
+    }
+
+    private IReadOnlyList<DeviceRecord> GetSelectedDevices()
+    {
+        return _allDevices.Where(device => device.IsSelected).ToArray();
+    }
+
+    private IReadOnlyList<DeviceRecord> GetSelectedOrVisibleDevices()
     {
         var selected = GetSelectedDevices();
-        return selected.Count > 0 ? selected : _devices.ToArray();
+        return selected.Count > 0 ? selected : _visibleDevices.ToArray();
     }
 
     private void EnsureConnected()
@@ -386,6 +669,12 @@ public sealed partial class MainWindow : Window
             .Split(new[] { ',', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Where(term => !string.IsNullOrWhiteSpace(term))
             .ToArray();
+    }
+
+    private static bool Contains(string? value, string? filter)
+    {
+        return string.IsNullOrWhiteSpace(filter)
+            || (value?.Contains(filter.Trim(), StringComparison.OrdinalIgnoreCase) ?? false);
     }
 
     private static string? EmptyToNull(string? value)

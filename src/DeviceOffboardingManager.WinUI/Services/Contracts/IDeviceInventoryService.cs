@@ -11,6 +11,11 @@ public interface IDeviceInventoryService
 
     Task<DashboardSummary> GetDashboardSummaryAsync(CancellationToken cancellationToken = default);
 
+    Task<IReadOnlyList<DeviceRecord>> GetDashboardDevicesAsync(
+        DashboardDeviceCategory category,
+        string? platformFilter = null,
+        CancellationToken cancellationToken = default);
+
     Task<GroupTagUpdateResult> SetAutopilotGroupTagAsync(
         IReadOnlyCollection<DeviceRecord> devices,
         string groupTag,

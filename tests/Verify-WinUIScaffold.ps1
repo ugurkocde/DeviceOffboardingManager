@@ -23,6 +23,7 @@ $requiredFiles = @(
     (Join-Path $projectRoot 'App.xaml.cs'),
     (Join-Path $projectRoot 'MainWindow.xaml.cs'),
     (Join-Path $projectRoot 'app.manifest'),
+    (Join-Path $projectRoot 'Models/DashboardDeviceCategory.cs'),
     (Join-Path $projectRoot 'Models/DeviceOffboardingSettings.cs'),
     (Join-Path $projectRoot 'Models/DeviceRecord.cs'),
     (Join-Path $projectRoot 'Models/OffboardingOptions.cs'),
@@ -124,6 +125,7 @@ foreach ($requiredPattern in @(
         'getFileVaultKey',
         'importedDeviceIdentities',
         'Autopilot not in Intune',
+        'GetDashboardDevicesAsync',
         'ExportOffboardingHtmlAsync')) {
     if ($sourceText -notmatch [regex]::Escape($requiredPattern)) {
         throw "The WinUI source is missing expected ported behavior: $requiredPattern"
@@ -144,10 +146,27 @@ if ($mainWindowText -match '<Grid\s+[^>]*Padding=') {
 if ($mainWindowText -notmatch 'NavigationView') {
     throw 'The WinUI shell should include a NavigationView.'
 }
-foreach ($requiredControl in @('AuthMethodBox', 'DeviceListView', 'RunOffboarding_Click', 'SetGroupTag_Click', 'ExportReport_Click')) {
+foreach ($requiredControl in @(
+        'HomePage',
+        'DashboardPage',
+        'DevicesPage',
+        'OffboardingPage',
+        'PlaybooksPage',
+        'SettingsPage',
+        'AboutPage',
+        'DashboardPlatformFilter',
+        'SelectAllDevicesBox',
+        'ReviewSelectedIds_Click',
+        'RunOffboarding_Click',
+        'SetGroupTag_Click',
+        'ExportLastPlaybook_Click',
+        'ExportReport_Click')) {
     if ($mainWindowText -notmatch $requiredControl) {
         throw "The WinUI shell is missing required control or handler: $requiredControl"
     }
+}
+if ($mainWindowText -match '<muxc:Expander') {
+    throw 'The WinUI app should use first-class pages instead of the old expander prototype shell.'
 }
 
 $manifestNamespace = @{
