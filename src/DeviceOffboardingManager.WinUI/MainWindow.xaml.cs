@@ -1,11 +1,14 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Text;
+using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.UI.Text;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
 
@@ -13,6 +16,9 @@ namespace DeviceOffboardingManager.WinUI;
 
 public sealed partial class MainWindow : Window
 {
+    private const string AppVersion = "0.4.0";
+    private static readonly HttpClient UpdateHttpClient = new();
+
     private readonly IAuthenticationService _authenticationService;
     private readonly ISettingsService _settingsService;
     private readonly IDeviceInventoryService _deviceInventoryService;
@@ -23,7 +29,10 @@ public sealed partial class MainWindow : Window
     private readonly IAuditLogService _auditLogService;
     private readonly List<DeviceRecord> _allDevices = new();
     private readonly ObservableCollection<DeviceRecord> _visibleDevices = new();
+    private readonly ObservableCollection<string> _dashboardRows = new();
     private readonly ObservableCollection<string> _playbookRows = new();
+    private IReadOnlyList<DeviceRecord> _lastDashboardDevices = Array.Empty<DeviceRecord>();
+    private string _lastDashboardTitle = "Dashboard drilldown";
     private OffboardingSummary? _lastOffboardingSummary;
     private PlaybookRunResult? _lastPlaybookResult;
 
@@ -39,8 +48,16 @@ public sealed partial class MainWindow : Window
         _auditLogService = App.Services.GetRequiredService<IAuditLogService>();
 
         InitializeComponent();
+        Title = $"Device Offboarding Manager {AppVersion}";
         DeviceListView.ItemsSource = _visibleDevices;
+        DashboardResultListView.ItemsSource = _dashboardRows;
         PlaybookResultListView.ItemsSource = _playbookRows;
+        AboutVersionText.Text = $"Version {AppVersion} native Windows app track";
+
+        if (!UpdateHttpClient.DefaultRequestHeaders.UserAgent.Any())
+        {
+            UpdateHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"DeviceOffboardingManager-WinUI/{AppVersion}");
+        }
 
         foreach (var playbook in _playbookService.Definitions)
         {
@@ -225,6 +242,7 @@ public sealed partial class MainWindow : Window
             Stale180Text.Text = dashboard.StaleDevices180Days.ToString("n0");
             CorporateCountText.Text = dashboard.CorporateDevices.ToString("n0");
             PersonalCountText.Text = dashboard.PersonalDevices.ToString("n0");
+            UpdateDashboardVisuals(dashboard);
             SetStatus("Dashboard refreshed", $"Platform filter: {GetDashboardPlatformFilter() ?? "all"}.", InfoBarSeverity.Success);
         });
     }
@@ -240,29 +258,17 @@ public sealed partial class MainWindow : Window
         {
             EnsureConnected();
             var devices = await _deviceInventoryService.GetDashboardDevicesAsync(GetDashboardCategory(tag), GetDashboardPlatformFilter());
+            _lastDashboardDevices = devices;
+            _lastDashboardTitle = GetDashboardCategoryTitle(tag);
+            PopulateDashboardRows(_lastDashboardTitle, devices);
             ReplaceDeviceList(devices);
-            RootNavigation.SelectedItem = NavDevices;
-            ShowPage("devices");
-            SetStatus("Dashboard results loaded", $"{devices.Count:n0} device(s) loaded into Devices.", InfoBarSeverity.Success);
+            SetStatus("Dashboard results loaded", $"{devices.Count:n0} device(s) loaded. Use Open in devices or Export from the drilldown panel.", InfoBarSeverity.Success);
         });
     }
 
     private async void Search_Click(object sender, RoutedEventArgs e)
     {
-        await RunUiActionAsync("Searching devices", async () =>
-        {
-            EnsureConnected();
-            var terms = ParseSearchTerms(SearchTextBox.Text);
-            if (terms.Count == 0)
-            {
-                throw new InvalidOperationException("Enter at least one search term.");
-            }
-
-            var result = await _deviceInventoryService.SearchDevicesAsync(terms, GetSearchOption());
-            ReplaceDeviceList(result.Devices);
-            SearchStatusText.Text = $"{result.Devices.Count:n0} device(s) found. Intune: {result.IntuneCount:n0}; Autopilot: {result.AutopilotCount:n0}; Entra ID: {result.EntraCount:n0}.";
-            SetStatus("Search complete", SearchStatusText.Text, InfoBarSeverity.Success);
-        });
+        await RunUiActionAsync("Searching devices", SearchCurrentTermsAsync);
     }
 
     private async void ImportBulkFile_Click(object sender, RoutedEventArgs e)
@@ -276,9 +282,48 @@ public sealed partial class MainWindow : Window
                 return;
             }
 
-            var lines = await File.ReadAllLinesAsync(path);
-            SearchTextBox.Text = string.Join(Environment.NewLine, lines.SelectMany(ParseSearchTerms));
-            SetStatus("Bulk terms imported", $"Imported search terms from {path}.", InfoBarSeverity.Success);
+            var terms = await ParseBulkImportFileAsync(path);
+            if (terms.Count == 0)
+            {
+                throw new InvalidOperationException("The selected file did not contain device identifiers.");
+            }
+
+            if (!await ConfirmBulkImportAsync(path, terms))
+            {
+                SetStatus("Import canceled", "No search terms were changed.", InfoBarSeverity.Informational);
+                return;
+            }
+
+            SearchTextBox.Text = string.Join(Environment.NewLine, terms);
+            if (_authenticationService.IsConnected)
+            {
+                await SearchCurrentTermsAsync();
+            }
+            else
+            {
+                SetStatus("Bulk terms imported", $"Imported {terms.Count:n0} search term(s). Connect before searching.", InfoBarSeverity.Success);
+            }
+        });
+    }
+
+    private async void DownloadBulkTemplate_Click(object sender, RoutedEventArgs e)
+    {
+        await RunUiActionAsync("Saving import template", async () =>
+        {
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+                "device_import_template.csv");
+            var template = string.Join(Environment.NewLine, new[]
+            {
+                "DeviceIdentifier",
+                "DESKTOP-ABC123",
+                "LAPTOP-XYZ789",
+                "1234567890",
+                "0987654321"
+            });
+
+            await File.WriteAllTextAsync(path, template, Encoding.UTF8);
+            SetStatus("Template saved", path, InfoBarSeverity.Success);
         });
     }
 
@@ -335,6 +380,51 @@ public sealed partial class MainWindow : Window
 
             var path = await _reportExportService.ExportDeviceCsvAsync(devices);
             SetStatus("CSV exported", path, InfoBarSeverity.Success);
+        });
+    }
+
+    private async void ExportDashboardResults_Click(object sender, RoutedEventArgs e)
+    {
+        await RunUiActionAsync("Exporting dashboard results", async () =>
+        {
+            if (_lastDashboardDevices.Count == 0)
+            {
+                throw new InvalidOperationException("Select a dashboard card before exporting drilldown results.");
+            }
+
+            var path = await _reportExportService.ExportDeviceCsvAsync(_lastDashboardDevices);
+            SetStatus("Dashboard CSV exported", path, InfoBarSeverity.Success);
+        });
+    }
+
+    private void OpenDashboardResultsInDevices_Click(object sender, RoutedEventArgs e)
+    {
+        if (_lastDashboardDevices.Count == 0)
+        {
+            SetStatus("No dashboard results", "Select a dashboard card before opening results in Devices.", InfoBarSeverity.Warning);
+            return;
+        }
+
+        ReplaceDeviceList(_lastDashboardDevices);
+        RootNavigation.SelectedItem = NavDevices;
+        ShowPage("devices");
+        SetStatus("Dashboard results opened", $"{_lastDashboardDevices.Count:n0} device(s) are loaded in Devices.", InfoBarSeverity.Success);
+    }
+
+    private async void ViewSelectedGroups_Click(object sender, RoutedEventArgs e)
+    {
+        await RunUiActionAsync("Loading group memberships", async () =>
+        {
+            EnsureConnected();
+            var selected = GetSelectedDevices();
+            if (selected.Count != 1)
+            {
+                throw new InvalidOperationException("Select exactly one device with a resolved Entra object ID.");
+            }
+
+            var groups = await _deviceInventoryService.GetDeviceGroupMembershipsAsync(selected[0]);
+            await ShowGroupMembershipDialogAsync(selected[0], groups);
+            SetStatus("Group memberships loaded", $"{groups.Count:n0} group(s) found for {selected[0].DeviceName ?? "the selected device"}.", InfoBarSeverity.Success);
         });
     }
 
@@ -412,6 +502,7 @@ public sealed partial class MainWindow : Window
             _lastOffboardingSummary = await _offboardingService.OffboardAsync(selected, BuildOffboardingOptions());
             OffboardingStatusText.Text = $"Offboarding complete. Devices: {_lastOffboardingSummary.TotalDevices:n0}; successful: {_lastOffboardingSummary.SuccessfulDevices:n0}; failed/partial: {_lastOffboardingSummary.FailedDevices:n0}.";
             SetStatus("Offboarding complete", OffboardingStatusText.Text, _lastOffboardingSummary.FailedDevices == 0 ? InfoBarSeverity.Success : InfoBarSeverity.Warning);
+            await ShowOffboardingSummaryDialogAsync(_lastOffboardingSummary);
         });
     }
 
@@ -516,22 +607,69 @@ public sealed partial class MainWindow : Window
         var dialog = new ContentDialog
         {
             Title = "Changelog",
-            Content = new ScrollViewer
-            {
-                Content = new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap },
-                MaxHeight = 560
-            },
+            Content = new ScrollViewer { Content = CreateChangelogContent(text), MaxHeight = 560 },
             CloseButtonText = "Close",
             XamlRoot = this.Content.XamlRoot
         };
         await dialog.ShowAsync();
     }
 
+    private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
+    {
+        await RunUiActionAsync("Checking for updates", async () =>
+        {
+            using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/ugurkocde/DeviceOffboardingManager/releases/latest");
+            using var response = await UpdateHttpClient.SendAsync(request);
+            var responseText = await response.Content.ReadAsStringAsync();
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new InvalidOperationException($"GitHub update check failed with HTTP {(int)response.StatusCode}: {responseText}");
+            }
+
+            var latestTag = JsonNode.Parse(responseText)?["tag_name"]?.GetValue<string>();
+            var latestVersion = TryParseVersion(latestTag);
+            var currentVersion = TryParseVersion(AppVersion);
+            if (latestVersion is null || currentVersion is null)
+            {
+                SetStatus("Update check complete", $"Latest release tag: {latestTag ?? "(unknown)"}. Current app: {AppVersion}.", InfoBarSeverity.Informational);
+                return;
+            }
+
+            var updateAvailable = latestVersion.CompareTo(currentVersion) > 0;
+            var message = updateAvailable
+                ? $"A newer release is available: {latestTag}. Current app: {AppVersion}."
+                : $"You are on the current or newer app track. Latest release: {latestTag}; current app: {AppVersion}.";
+
+            SetStatus("Update check complete", message, updateAvailable ? InfoBarSeverity.Warning : InfoBarSeverity.Success);
+            var dialog = updateAvailable
+                ? new ContentDialog
+                {
+                    Title = "Update check",
+                    Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                    PrimaryButtonText = "Open releases",
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                }
+                : new ContentDialog
+                {
+                    Title = "Update check",
+                    Content = new TextBlock { Text = message, TextWrapping = TextWrapping.Wrap },
+                    CloseButtonText = "Close",
+                    XamlRoot = this.Content.XamlRoot
+                };
+
+            if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+            {
+                OpenUrl("https://github.com/ugurkocde/DeviceOffboardingManager/releases");
+            }
+        });
+    }
+
     private void OpenRepository_Click(object sender, RoutedEventArgs e)
     {
         try
         {
-            Process.Start(new ProcessStartInfo("https://github.com/ugurkocde/DeviceOffboardingManager") { UseShellExecute = true });
+            OpenUrl("https://github.com/ugurkocde/DeviceOffboardingManager");
         }
         catch (Exception ex)
         {
@@ -602,6 +740,329 @@ public sealed partial class MainWindow : Window
         {
             _playbookRows.Add($"Showing first {_playbookRows.Count:n0} of {result.Rows.Count:n0} row(s). Export the CSV for the full result.");
         }
+    }
+
+    private async Task SearchCurrentTermsAsync()
+    {
+        EnsureConnected();
+        var terms = ParseSearchTerms(SearchTextBox.Text);
+        if (terms.Count == 0)
+        {
+            throw new InvalidOperationException("Enter at least one search term.");
+        }
+
+        var result = await _deviceInventoryService.SearchDevicesAsync(terms, GetSearchOption());
+        ReplaceDeviceList(result.Devices);
+        SearchStatusText.Text = $"{result.Devices.Count:n0} device(s) found. Intune: {result.IntuneCount:n0}; Autopilot: {result.AutopilotCount:n0}; Entra ID: {result.EntraCount:n0}.";
+        SetStatus("Search complete", SearchStatusText.Text, InfoBarSeverity.Success);
+    }
+
+    private async Task<bool> ConfirmBulkImportAsync(string path, IReadOnlyList<string> terms)
+    {
+        var previewRows = terms
+            .Take(20)
+            .Select((term, index) => $"{index + 1:n0}. {term}")
+            .ToArray();
+
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(new TextBlock
+        {
+            Text = $"{Path.GetFileName(path)} contains {terms.Count:n0} unique device identifier(s).",
+            TextWrapping = TextWrapping.Wrap
+        });
+        content.Children.Add(new ListView
+        {
+            ItemsSource = previewRows,
+            MaxHeight = 300
+        });
+        if (terms.Count > previewRows.Length)
+        {
+            content.Children.Add(new TextBlock
+            {
+                Text = $"Showing first {previewRows.Length:n0} identifiers. Import will use all {terms.Count:n0}.",
+                TextWrapping = TextWrapping.Wrap
+            });
+        }
+
+        var dialog = new ContentDialog
+        {
+            Title = "Import devices",
+            Content = content,
+            PrimaryButtonText = "Import",
+            CloseButtonText = "Cancel",
+            DefaultButton = ContentDialogButton.Primary,
+            XamlRoot = this.Content.XamlRoot
+        };
+
+        return await dialog.ShowAsync() == ContentDialogResult.Primary;
+    }
+
+    private static async Task<IReadOnlyList<string>> ParseBulkImportFileAsync(string path)
+    {
+        var lines = await File.ReadAllLinesAsync(path);
+        var identifiers = new List<string>();
+        var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        for (var lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+        {
+            var line = lines[lineIndex].Trim();
+            if (string.IsNullOrWhiteSpace(line) || line.StartsWith('#'))
+            {
+                continue;
+            }
+
+            foreach (var value in SplitDelimitedLine(line))
+            {
+                var identifier = value.Trim();
+                if (lineIndex == 0 && IsBulkImportHeader(identifier))
+                {
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(identifier) || !seen.Add(identifier))
+                {
+                    continue;
+                }
+
+                identifiers.Add(identifier);
+            }
+        }
+
+        return identifiers;
+    }
+
+    private static IReadOnlyList<string> SplitDelimitedLine(string line)
+    {
+        var values = new List<string>();
+        var current = new StringBuilder();
+        var inQuotes = false;
+
+        for (var i = 0; i < line.Length; i++)
+        {
+            var character = line[i];
+            if (character == '"')
+            {
+                if (inQuotes && i + 1 < line.Length && line[i + 1] == '"')
+                {
+                    current.Append('"');
+                    i++;
+                    continue;
+                }
+
+                inQuotes = !inQuotes;
+                continue;
+            }
+
+            if (!inQuotes && (character == ',' || character == ';' || character == '\t'))
+            {
+                values.Add(current.ToString());
+                current.Clear();
+                continue;
+            }
+
+            current.Append(character);
+        }
+
+        values.Add(current.ToString());
+        return values;
+    }
+
+    private static bool IsBulkImportHeader(string value)
+    {
+        return value.Equals("DeviceIdentifier", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("DeviceName", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("Device", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("SerialNumber", StringComparison.OrdinalIgnoreCase)
+            || value.Equals("Serial", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void UpdateDashboardVisuals(DashboardSummary dashboard)
+    {
+        var total = Math.Max(dashboard.IntuneDevices, 0);
+        var corporatePercent = Percent(dashboard.CorporateDevices, total);
+        var personalPercent = Percent(dashboard.PersonalDevices, total);
+        var stale30Percent = Percent(dashboard.StaleDevices30Days, total);
+        var stale90Percent = Percent(dashboard.StaleDevices90Days, total);
+        var stale180Percent = Percent(dashboard.StaleDevices180Days, total);
+
+        CorporateDevicesProgress.Value = corporatePercent;
+        PersonalDevicesProgress.Value = personalPercent;
+        StaleDevices30Progress.Value = stale30Percent;
+        StaleDevices90Progress.Value = stale90Percent;
+        StaleDevices180Progress.Value = stale180Percent;
+
+        DashboardOwnershipText.Text =
+            $"Corporate: {dashboard.CorporateDevices:n0} ({corporatePercent:n0}%); Personal: {dashboard.PersonalDevices:n0} ({personalPercent:n0}%).";
+        DashboardStaleText.Text =
+            $"Stale ratios: 30 days {stale30Percent:n0}%, 90 days {stale90Percent:n0}%, 180 days {stale180Percent:n0}%.";
+        DashboardPlatformText.Text = dashboard.PlatformCounts.Count == 0
+            ? "Platform distribution unavailable."
+            : string.Join(" | ", dashboard.PlatformCounts.Select(item => $"{item.Key}: {item.Value:n0} ({Percent(item.Value, total):n0}%)"));
+    }
+
+    private void PopulateDashboardRows(string title, IReadOnlyList<DeviceRecord> devices)
+    {
+        DashboardResultTitleText.Text = title;
+        DashboardResultSummaryText.Text = devices.Count == 0
+            ? "No devices matched this dashboard card."
+            : $"{devices.Count:n0} device(s) matched. Showing up to 100 rows here; export the CSV for the full result.";
+
+        _dashboardRows.Clear();
+        foreach (var device in devices.Take(100))
+        {
+            _dashboardRows.Add(
+                $"{device.DeviceName ?? "(unnamed)"} | Serial: {device.SerialNumber ?? "(none)"} | OS: {device.OperatingSystem ?? "(unknown)"} | User: {device.PrimaryUser ?? "(none)"}");
+        }
+
+        if (devices.Count > _dashboardRows.Count)
+        {
+            _dashboardRows.Add($"Showing first {_dashboardRows.Count:n0} of {devices.Count:n0} device(s).");
+        }
+    }
+
+    private async Task ShowGroupMembershipDialogAsync(DeviceRecord device, IReadOnlyList<GroupMembershipRecord> groups)
+    {
+        var rows = groups.Count == 0
+            ? new[] { "No group memberships found." }
+            : groups.Select(group =>
+                $"{group.DisplayName} | {group.Type} | Mail: {YesNo(group.MailEnabled)} | Security: {YesNo(group.SecurityEnabled)}").ToArray();
+
+        var dialog = new ContentDialog
+        {
+            Title = $"Group memberships - {device.DeviceName ?? "Device"}",
+            Content = new ListView
+            {
+                ItemsSource = rows,
+                MaxHeight = 480
+            },
+            CloseButtonText = "Close",
+            XamlRoot = this.Content.XamlRoot
+        };
+
+        await dialog.ShowAsync();
+    }
+
+    private async Task ShowOffboardingSummaryDialogAsync(OffboardingSummary summary)
+    {
+        var rows = summary.Results.Select(result =>
+            $"{result.DeviceName ?? "(unnamed)"} | Serial: {result.SerialNumber ?? "(none)"} | Pre: {DescribeOperation(result.PreAction)} | Entra: {DescribeOperation(result.Entra)} | Intune: {DescribeOperation(result.Intune)} | Autopilot: {DescribeOperation(result.Autopilot)} | Defender: {DescribeOperation(result.Defender)}").ToArray();
+
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(new TextBlock
+        {
+            Text = $"Devices: {summary.TotalDevices:n0}; successful: {summary.SuccessfulDevices:n0}; failed/partial: {summary.FailedDevices:n0}.",
+            TextWrapping = TextWrapping.Wrap
+        });
+        content.Children.Add(new ListView
+        {
+            ItemsSource = rows,
+            MaxHeight = 480
+        });
+
+        var dialog = new ContentDialog
+        {
+            Title = "Offboarding summary",
+            Content = content,
+            PrimaryButtonText = "Export HTML report",
+            CloseButtonText = "Close",
+            XamlRoot = this.Content.XamlRoot
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            var path = await _reportExportService.ExportOffboardingHtmlAsync(summary);
+            SetStatus("Report exported", path, InfoBarSeverity.Success);
+        }
+    }
+
+    private static StackPanel CreateChangelogContent(string markdown)
+    {
+        var panel = new StackPanel { Spacing = 8 };
+        foreach (var rawLine in markdown.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+        {
+            var line = rawLine.TrimEnd();
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            var block = new TextBlock
+            {
+                TextWrapping = TextWrapping.Wrap
+            };
+
+            if (line.StartsWith("## ", StringComparison.Ordinal))
+            {
+                block.Text = StripMarkdownInline(line[3..]);
+                block.FontWeight = FontWeights.SemiBold;
+            }
+            else if (line.StartsWith("- ", StringComparison.Ordinal))
+            {
+                block.Text = "• " + StripMarkdownInline(line[2..]);
+                block.Margin = new Thickness(16, 0, 0, 0);
+            }
+            else if (line.StartsWith("  - ", StringComparison.Ordinal))
+            {
+                block.Text = "• " + StripMarkdownInline(line[4..]);
+                block.Margin = new Thickness(32, 0, 0, 0);
+            }
+            else
+            {
+                block.Text = StripMarkdownInline(line.TrimStart('#', ' '));
+            }
+
+            panel.Children.Add(block);
+        }
+
+        return panel;
+    }
+
+    private static string StripMarkdownInline(string text)
+    {
+        return text
+            .Replace("**", string.Empty, StringComparison.Ordinal)
+            .Replace("`", string.Empty, StringComparison.Ordinal);
+    }
+
+    private static Version? TryParseVersion(string? text)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return null;
+        }
+
+        var match = Regex.Match(text, @"\d+(\.\d+){0,3}");
+        return match.Success && Version.TryParse(match.Value, out var version) ? version : null;
+    }
+
+    private static string DescribeOperation(ServiceOperationResult result)
+    {
+        if (!result.Found && string.IsNullOrWhiteSpace(result.Error))
+        {
+            return "Skipped";
+        }
+
+        if (!result.Found)
+        {
+            return $"Not found: {result.Error}";
+        }
+
+        return result.Success ? result.Action ?? "Success" : $"Failed: {result.Error}";
+    }
+
+    private static string YesNo(bool value)
+    {
+        return value ? "yes" : "no";
+    }
+
+    private static double Percent(int value, int total)
+    {
+        return total <= 0 ? 0 : Math.Round((double)value / total * 100);
+    }
+
+    private static void OpenUrl(string url)
+    {
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
     private AuthenticationRequest BuildAuthenticationRequest()
@@ -676,6 +1137,22 @@ public sealed partial class MainWindow : Window
             "corporate" => DashboardDeviceCategory.Corporate,
             "personal" => DashboardDeviceCategory.Personal,
             _ => DashboardDeviceCategory.Intune
+        };
+    }
+
+    private static string GetDashboardCategoryTitle(string tag)
+    {
+        return tag switch
+        {
+            "intune" => "Intune devices",
+            "autopilot" => "Autopilot devices",
+            "entra" => "Entra ID devices",
+            "stale30" => "Stale devices - 30 days",
+            "stale90" => "Stale devices - 90 days",
+            "stale180" => "Stale devices - 180 days",
+            "corporate" => "Corporate devices",
+            "personal" => "Personal devices",
+            _ => "Dashboard drilldown"
         };
     }
 

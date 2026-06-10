@@ -3,8 +3,9 @@
 ### WinUI App Track
 - Added the initial WinUI 3 / Windows App SDK solution scaffold for a native Windows app.
 - Ported the core app surface to native C# services for MSAL.NET authentication, Graph device search, dashboard counts, Autopilot group tags, offboarding, optional Defender offboarding, recovery-key lookup, playbook reports, settings import, audit logging, CSV export, and HTML reports.
-- Reworked the WinUI prototype into a page-based shell with Home, Dashboard, Devices, Offboarding, Playbooks, Settings, and About views, including dashboard drilldowns and device filtering.
-- Added native file picker flows for bulk CSV/TXT import and app registration JSON import, plus About page changelog and repository actions.
+- Reworked the WinUI prototype into a page-based shell with Home, Dashboard, Devices, Offboarding, Playbooks, Settings, and About views, including dashboard drilldowns, dashboard CSV export, platform/ownership/stale distribution, and device filtering.
+- Added native file picker flows for bulk CSV/TXT import with preview and template export, app registration JSON import, About page changelog rendering, repository actions, and release update checks.
+- Added selected-device Entra group membership lookup, richer offboarding summary dialogs, device-list CSV export, and dashboard result handoff into the Devices view.
 - Replaced placeholder package images with branded app logo assets and an executable icon.
 - Added the Visual Studio `MsixPackage` launch profile required to debug the packaged WinUI app.
 - Added the v0.4 migration plan for signed releases, Intune packaging, WinGet, and Microsoft Store readiness.

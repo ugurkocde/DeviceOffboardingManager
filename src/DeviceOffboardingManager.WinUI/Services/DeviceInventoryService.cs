@@ -78,6 +78,7 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
         var stale180Task = CountWithFallbackAsync(OData.Query("/deviceManagement/managedDevices", ("$filter", $"lastSyncDateTime lt {oneEightyDaysAgo}"), ("$count", "true")), cancellationToken);
         var personalTask = CountWithFallbackAsync(OData.Query("/deviceManagement/managedDevices", ("$filter", "managedDeviceOwnerType eq 'personal'"), ("$count", "true")), cancellationToken);
         var corporateTask = CountWithFallbackAsync(OData.Query("/deviceManagement/managedDevices", ("$filter", "managedDeviceOwnerType eq 'company'"), ("$count", "true")), cancellationToken);
+        var platformTask = GetPlatformCountsAsync(cancellationToken);
 
         return new DashboardSummary
         {
@@ -88,7 +89,8 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
             StaleDevices90Days = await stale90Task,
             StaleDevices180Days = await stale180Task,
             PersonalDevices = await personalTask,
-            CorporateDevices = await corporateTask
+            CorporateDevices = await corporateTask,
+            PlatformCounts = await platformTask
         };
     }
 
@@ -183,6 +185,27 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
         return new GroupTagUpdateResult { Updated = updated, Failed = failed };
     }
 
+    public async Task<IReadOnlyList<GroupMembershipRecord>> GetDeviceGroupMembershipsAsync(
+        DeviceRecord device,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(device.EntraDeviceId))
+        {
+            throw new InvalidOperationException("The selected device does not have a resolved Entra object ID.");
+        }
+
+        var groups = await _graph.GetPagedAsync(
+            OData.Query(
+                $"/devices/{Uri.EscapeDataString(device.EntraDeviceId)}/memberOf",
+                ("$select", "id,displayName,groupTypes,mailEnabled,securityEnabled")),
+            cancellationToken: cancellationToken);
+
+        return groups
+            .Select(ToGroupMembershipRecord)
+            .OrderBy(group => group.DisplayName, StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
     private async Task<int> CountWithFallbackAsync(string collectionUrl, CancellationToken cancellationToken)
     {
         try
@@ -210,6 +233,26 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
             BuildDeviceQuery("/deviceManagement/managedDevices", IntuneSelect, combinedFilter),
             cancellationToken: cancellationToken);
         return intuneDevices.Select(device => ToDeviceRecord(null, device, null)).ToArray();
+    }
+
+    private async Task<IReadOnlyDictionary<string, int>> GetPlatformCountsAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            var intuneDevices = await _graph.GetPagedAsync(
+                OData.Query("/deviceManagement/managedDevices", ("$select", "operatingSystem")),
+                cancellationToken: cancellationToken);
+
+            return intuneDevices
+                .GroupBy(device => NormalizePlatform(device.GetStringValue("operatingSystem")), StringComparer.OrdinalIgnoreCase)
+                .OrderByDescending(group => group.Count())
+                .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
+        }
+        catch (Exception ex)
+        {
+            await _auditLog.WriteAsync($"Platform distribution lookup failed: {ex.Message}", "WARN", cancellationToken);
+            return new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+        }
     }
 
     private static string BuildDeviceQuery(string path, string select, string? filter)
@@ -504,6 +547,81 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
             ComplianceState = intuneDevice.GetStringValue("complianceState"),
             ManagementAgent = intuneDevice.GetStringValue("managementAgent")
         };
+    }
+
+    private static GroupMembershipRecord ToGroupMembershipRecord(JsonNode group)
+    {
+        var groupTypes = group.GetArrayValues("groupTypes")
+            .Select(value => value.GetValue<string>())
+            .ToArray();
+        var securityEnabled = group.GetBooleanValue("securityEnabled") == true;
+        var mailEnabled = group.GetBooleanValue("mailEnabled") == true;
+
+        return new GroupMembershipRecord
+        {
+            Id = group.GetStringValue("id"),
+            DisplayName = group.GetStringValue("displayName") ?? "(unnamed group)",
+            Type = GetGroupType(groupTypes, securityEnabled, mailEnabled),
+            SecurityEnabled = securityEnabled,
+            MailEnabled = mailEnabled
+        };
+    }
+
+    private static string GetGroupType(IReadOnlyCollection<string> groupTypes, bool securityEnabled, bool mailEnabled)
+    {
+        if (groupTypes.Contains("Unified", StringComparer.OrdinalIgnoreCase))
+        {
+            return "Microsoft 365 group";
+        }
+
+        if (groupTypes.Contains("DynamicMembership", StringComparer.OrdinalIgnoreCase) && securityEnabled)
+        {
+            return "Dynamic security group";
+        }
+
+        if (securityEnabled)
+        {
+            return "Security group";
+        }
+
+        return mailEnabled ? "Distribution group" : "Directory group";
+    }
+
+    private static string NormalizePlatform(string? operatingSystem)
+    {
+        if (string.IsNullOrWhiteSpace(operatingSystem))
+        {
+            return "Unknown";
+        }
+
+        var text = operatingSystem.Trim();
+        var normalized = text.ToLowerInvariant();
+        if (normalized.Contains("windows", StringComparison.Ordinal))
+        {
+            return "Windows";
+        }
+
+        if (normalized.Contains("macos", StringComparison.Ordinal) || normalized.Contains("mac os", StringComparison.Ordinal))
+        {
+            return "macOS";
+        }
+
+        if (normalized.Contains("ios", StringComparison.Ordinal))
+        {
+            return "iOS";
+        }
+
+        if (normalized.Contains("android", StringComparison.Ordinal))
+        {
+            return "Android";
+        }
+
+        if (normalized.Contains("linux", StringComparison.Ordinal))
+        {
+            return "Linux";
+        }
+
+        return text;
     }
 
     private static JsonNode? SelectMatchingIntuneDevice(JsonNode? entraDevice, IReadOnlyList<JsonNode> intuneDevices, string? serialNumber, string? deviceName)

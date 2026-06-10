@@ -77,7 +77,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="Device Offboarding Manager" Style="{ThemeResource TitleTextBlockStyle}" />
+                                    <TextBlock Text="Device Offboarding Manager" Style="{StaticResource TitleTextBlockStyle}" />
                                     <TextBlock Text="Native Windows app for Intune, Autopilot, Entra ID, and optional Defender for Endpoint offboarding." TextWrapping="Wrap" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
@@ -88,7 +88,7 @@
 
                             <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="Release posture" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                    <TextBlock Text="Release posture" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock Text="Version 0.4 is the native signed-app track. Test with non-production devices first; offboarding, wipe, delete, and Defender actions can be permanent." TextWrapping="Wrap" />
                                     <TextBlock Text="The v0.3 PowerShell module remains available for automation and compatibility while the WinUI app moves toward MSIX, Intune, WinGet, and Microsoft Store distribution." TextWrapping="Wrap" />
                                 </StackPanel>
@@ -103,25 +103,25 @@
                                 </Grid.ColumnDefinitions>
                                 <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Intune" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Intune" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <TextBlock Text="Search managed devices, retire or wipe, delete records, report stale devices, and read compliance/agent state." TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Autopilot" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Autopilot" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <TextBlock Text="Correlate identities, delete Autopilot records, and set or clear group tags for selected devices." TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Entra ID" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Entra ID" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <TextBlock Text="Resolve exact device IDs, disable or delete device objects, and preserve IDs in exports and confirmation flows." TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Defender" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Defender" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <TextBlock Text="Optional, settings-gated Defender for Endpoint offboarding that requests Defender tokens only when used." TextWrapping="Wrap" />
                                     </StackPanel>
                                 </Border>
@@ -134,6 +134,7 @@
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
                                 <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
 
                             <Grid ColumnSpacing="16">
@@ -142,7 +143,7 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Spacing="4">
-                                    <TextBlock Text="Dashboard" Style="{ThemeResource TitleTextBlockStyle}" />
+                                    <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}" />
                                     <TextBlock Text="Tenant-wide device posture for Intune, Autopilot, Entra ID, stale devices, and ownership." TextWrapping="Wrap" />
                                 </StackPanel>
                                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
@@ -167,29 +168,29 @@
                                 </Grid.ColumnDefinitions>
                                 <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Intune" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="IntuneCountText" AutomationProperties.AutomationId="IntuneCountText" Text="--" Style="{ThemeResource TitleTextBlockStyle}" />
+                                        <TextBlock Text="Intune" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="IntuneCountText" AutomationProperties.AutomationId="IntuneCountText" Text="--" Style="{StaticResource TitleTextBlockStyle}" />
                                         <Button Content="View" Tag="intune" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewIntune" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Autopilot" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="AutopilotCountText" AutomationProperties.AutomationId="AutopilotCountText" Text="--" Style="{ThemeResource TitleTextBlockStyle}" />
+                                        <TextBlock Text="Autopilot" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="AutopilotCountText" AutomationProperties.AutomationId="AutopilotCountText" Text="--" Style="{StaticResource TitleTextBlockStyle}" />
                                         <Button Content="View" Tag="autopilot" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewAutopilot" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Entra ID" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="EntraCountText" AutomationProperties.AutomationId="EntraCountText" Text="--" Style="{ThemeResource TitleTextBlockStyle}" />
+                                        <TextBlock Text="Entra ID" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="EntraCountText" AutomationProperties.AutomationId="EntraCountText" Text="--" Style="{StaticResource TitleTextBlockStyle}" />
                                         <Button Content="View" Tag="entra" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewEntra" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Stale 90 days" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="Stale90Text" AutomationProperties.AutomationId="Stale90Text" Text="--" Style="{ThemeResource TitleTextBlockStyle}" />
+                                        <TextBlock Text="Stale 90 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="Stale90Text" AutomationProperties.AutomationId="Stale90Text" Text="--" Style="{StaticResource TitleTextBlockStyle}" />
                                         <Button Content="View" Tag="stale90" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewStale90" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
@@ -204,37 +205,80 @@
                                 </Grid.ColumnDefinitions>
                                 <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Stale 30 days" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="Stale30Text" AutomationProperties.AutomationId="Stale30Text" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Stale 30 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="Stale30Text" AutomationProperties.AutomationId="Stale30Text" Text="--" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <Button Content="View" Tag="stale30" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewStale30" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Stale 180 days" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="Stale180Text" AutomationProperties.AutomationId="Stale180Text" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Stale 180 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="Stale180Text" AutomationProperties.AutomationId="Stale180Text" Text="--" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <Button Content="View" Tag="stale180" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewStale180" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Corporate" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="CorporateCountText" AutomationProperties.AutomationId="CorporateCountText" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Corporate" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="CorporateCountText" AutomationProperties.AutomationId="CorporateCountText" Text="--" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <Button Content="View" Tag="corporate" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewCorporate" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
                                 <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Personal" Style="{ThemeResource CaptionTextBlockStyle}" />
-                                        <TextBlock x:Name="PersonalCountText" AutomationProperties.AutomationId="PersonalCountText" Text="--" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Personal" Style="{StaticResource CaptionTextBlockStyle}" />
+                                        <TextBlock x:Name="PersonalCountText" AutomationProperties.AutomationId="PersonalCountText" Text="--" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <Button Content="View" Tag="personal" Click="DashboardCard_Click" AutomationProperties.AutomationId="BtnViewPersonal" HorizontalAlignment="Left" />
                                     </StackPanel>
                                 </Border>
                             </Grid>
 
-                            <Border Grid.Row="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                            <Grid Grid.Row="3" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="*" />
+                                </Grid.ColumnDefinitions>
+                                <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                    <StackPanel Spacing="8">
+                                        <TextBlock Text="Distribution" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                        <TextBlock x:Name="DashboardPlatformText" AutomationProperties.AutomationId="DashboardPlatformText" Text="Refresh the dashboard to show platform distribution." TextWrapping="Wrap" />
+                                        <TextBlock x:Name="DashboardOwnershipText" AutomationProperties.AutomationId="DashboardOwnershipText" Text="Ownership distribution is not loaded." TextWrapping="Wrap" />
+                                        <ProgressBar x:Name="CorporateDevicesProgress" AutomationProperties.AutomationId="CorporateDevicesProgress" Minimum="0" Maximum="100" />
+                                        <ProgressBar x:Name="PersonalDevicesProgress" AutomationProperties.AutomationId="PersonalDevicesProgress" Minimum="0" Maximum="100" />
+                                        <TextBlock x:Name="DashboardStaleText" AutomationProperties.AutomationId="DashboardStaleText" Text="Stale device ratios are not loaded." TextWrapping="Wrap" />
+                                        <ProgressBar x:Name="StaleDevices30Progress" AutomationProperties.AutomationId="StaleDevices30Progress" Minimum="0" Maximum="100" />
+                                        <ProgressBar x:Name="StaleDevices90Progress" AutomationProperties.AutomationId="StaleDevices90Progress" Minimum="0" Maximum="100" />
+                                        <ProgressBar x:Name="StaleDevices180Progress" AutomationProperties.AutomationId="StaleDevices180Progress" Minimum="0" Maximum="100" />
+                                    </StackPanel>
+                                </Border>
+                                <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                                    <StackPanel Spacing="8">
+                                        <Grid ColumnSpacing="12">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="DashboardResultTitleText" AutomationProperties.AutomationId="DashboardResultTitleText" Text="Dashboard drilldown" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                                                <Button Content="Open in devices" Click="OpenDashboardResultsInDevices_Click" AutomationProperties.AutomationId="BtnOpenDashboardResultsInDevices" />
+                                                <Button Content="Export" Click="ExportDashboardResults_Click" AutomationProperties.AutomationId="BtnExportDashboardResults" />
+                                            </StackPanel>
+                                        </Grid>
+                                        <TextBlock x:Name="DashboardResultSummaryText" AutomationProperties.AutomationId="DashboardResultSummaryText" Text="Select a dashboard card to preview matching devices." TextWrapping="Wrap" />
+                                        <ListView x:Name="DashboardResultListView" AutomationProperties.AutomationId="DashboardResultListView" MinHeight="160" MaxHeight="260">
+                                            <ListView.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" TextWrapping="Wrap" />
+                                                </DataTemplate>
+                                            </ListView.ItemTemplate>
+                                        </ListView>
+                                    </StackPanel>
+                                </Border>
+                            </Grid>
+
+                            <Border Grid.Row="4" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="Readiness" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                    <TextBlock Text="Readiness" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock x:Name="DashboardReadinessText" AutomationProperties.AutomationId="DashboardReadinessText" Text="Connect to Microsoft Graph to refresh dashboard statistics. Defender remains optional and disabled until enabled in Settings." TextWrapping="Wrap" />
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Button Content="Open settings" Tag="settings" Click="NavigateButton_Click" AutomationProperties.AutomationId="BtnDashboardSettings" />
@@ -254,7 +298,7 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Spacing="4">
-                                <TextBlock Text="Devices" Style="{ThemeResource TitleTextBlockStyle}" />
+                                <TextBlock Text="Devices" Style="{StaticResource TitleTextBlockStyle}" />
                                 <TextBlock Text="Search, correlate, filter, select, and export device records before offboarding." TextWrapping="Wrap" />
                             </StackPanel>
 
@@ -274,6 +318,7 @@
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
                                     <Button x:Name="SearchButton" AutomationProperties.AutomationId="SearchButton" Content="Search" Click="Search_Click" />
                                     <Button x:Name="ImportBulkButton" AutomationProperties.AutomationId="ImportBulkButton" Content="Import file" Click="ImportBulkFile_Click" />
+                                    <Button x:Name="BulkTemplateButton" AutomationProperties.AutomationId="BulkTemplateButton" Content="Save template" Click="DownloadBulkTemplate_Click" />
                                     <Button x:Name="ClearSearchButton" AutomationProperties.AutomationId="ClearSearchButton" Content="Clear" Click="ClearSearch_Click" />
                                 </StackPanel>
                             </Grid>
@@ -294,7 +339,11 @@
                                 <TextBox x:Name="FilterOsBox" AutomationProperties.AutomationId="FilterOsBox" Grid.Column="3" Header="OS" TextChanged="DeviceFilter_TextChanged" />
                                 <TextBox x:Name="FilterUserBox" AutomationProperties.AutomationId="FilterUserBox" Grid.Column="4" Header="User" TextChanged="DeviceFilter_TextChanged" />
                                 <TextBox x:Name="FilterComplianceBox" AutomationProperties.AutomationId="FilterComplianceBox" Grid.Column="5" Header="Compliance" TextChanged="DeviceFilter_TextChanged" />
-                                <Button Grid.Column="6" Content="Reset filters" Click="ResetFilters_Click" AutomationProperties.AutomationId="BtnResetFilters" VerticalAlignment="Bottom" />
+                                <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                                    <Button Content="Reset filters" Click="ResetFilters_Click" AutomationProperties.AutomationId="BtnResetFilters" />
+                                    <Button Content="View groups" Click="ViewSelectedGroups_Click" AutomationProperties.AutomationId="BtnViewSelectedGroups" />
+                                    <Button Content="Export CSV" Click="ExportCsv_Click" AutomationProperties.AutomationId="BtnExportDevicesCsv" />
+                                </StackPanel>
                             </Grid>
 
                             <TextBlock x:Name="SearchStatusText" AutomationProperties.AutomationId="SearchStatusText" Grid.Row="3" Text="No devices searched yet." TextWrapping="Wrap" />
@@ -312,13 +361,13 @@
                                             <ColumnDefinition Width="*" />
                                             <ColumnDefinition Width="*" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Grid.Column="1" Text="Device" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Grid.Column="2" Text="Serial" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Grid.Column="3" Text="OS" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Grid.Column="4" Text="User" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Grid.Column="5" Text="Compliance" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Grid.Column="6" Text="Services" Style="{ThemeResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Grid.Column="7" Text="IDs" Style="{ThemeResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Grid.Column="1" Text="Device" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Grid.Column="2" Text="Serial" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Grid.Column="3" Text="OS" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Grid.Column="4" Text="User" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Grid.Column="5" Text="Compliance" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Grid.Column="6" Text="Services" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Grid.Column="7" Text="IDs" Style="{StaticResource BodyStrongTextBlockStyle}" />
                                     </Grid>
                                 </ListView.Header>
                                 <ListView.ItemTemplate>
@@ -357,7 +406,7 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Spacing="4">
-                                <TextBlock Text="Offboarding" Style="{ThemeResource TitleTextBlockStyle}" />
+                                <TextBlock Text="Offboarding" Style="{StaticResource TitleTextBlockStyle}" />
                                 <TextBlock Text="Run selected pre-actions and service removals only after reviewing resolved IDs." TextWrapping="Wrap" />
                             </StackPanel>
 
@@ -368,7 +417,7 @@
                                         <ColumnDefinition Width="Auto" />
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Spacing="4">
-                                        <TextBlock Text="Selected devices" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Selected devices" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <TextBlock x:Name="SelectedDeviceCountText" AutomationProperties.AutomationId="SelectedDeviceCountText" Text="No devices selected." TextWrapping="Wrap" />
                                     </StackPanel>
                                     <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
@@ -385,7 +434,7 @@
                                 </Grid.ColumnDefinitions>
                                 <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="12">
-                                        <TextBlock Text="Service actions" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Service actions" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <CheckBox x:Name="DeleteEntraBox" AutomationProperties.AutomationId="DeleteEntraBox" Content="Remove from Entra ID" IsChecked="True" />
                                         <CheckBox x:Name="DisableEntraBox" AutomationProperties.AutomationId="DisableEntraBox" Content="Disable in Entra ID instead of removal" />
                                         <CheckBox x:Name="DeleteIntuneBox" AutomationProperties.AutomationId="DeleteIntuneBox" Content="Remove from Intune" IsChecked="True" />
@@ -395,7 +444,7 @@
                                 </Border>
                                 <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                     <StackPanel Spacing="12">
-                                        <TextBlock Text="Pre-actions and recovery" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                        <TextBlock Text="Pre-actions and recovery" Style="{StaticResource SubtitleTextBlockStyle}" />
                                         <ComboBox x:Name="PreActionBox" AutomationProperties.AutomationId="PreActionBox" Header="Intune pre-action" SelectedIndex="0">
                                             <ComboBoxItem Content="None" />
                                             <ComboBoxItem Content="Retire Intune device" />
@@ -433,7 +482,7 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Spacing="4">
-                                <TextBlock Text="Playbooks" Style="{ThemeResource TitleTextBlockStyle}" />
+                                <TextBlock Text="Playbooks" Style="{StaticResource TitleTextBlockStyle}" />
                                 <TextBlock Text="Run native reports for Autopilot gaps, stale devices, OS posture, recovery-key metadata, and corporate identifiers." TextWrapping="Wrap" />
                             </StackPanel>
 
@@ -478,7 +527,7 @@
                             </Grid.RowDefinitions>
 
                             <StackPanel Spacing="4">
-                                <TextBlock Text="Settings" Style="{ThemeResource TitleTextBlockStyle}" />
+                                <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
                                 <TextBlock Text="Authentication, app registration import, Defender gating, and required permissions." TextWrapping="Wrap" />
                             </StackPanel>
 
@@ -526,14 +575,14 @@
 
                             <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="Required permissions" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                    <TextBlock Text="Required permissions" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock x:Name="PermissionsText" AutomationProperties.AutomationId="PermissionsText" TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
                             <Border Grid.Row="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="Distribution readiness" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                    <TextBlock Text="Distribution readiness" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock Text="v0.4 targets signed MSIX or EXE releases first, then Intune packaging, WinGet, and Microsoft Store submission after functional and privacy review." TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
@@ -546,22 +595,23 @@
                                 <RowDefinition Height="Auto" />
                             </Grid.RowDefinitions>
                             <StackPanel Spacing="4">
-                                <TextBlock Text="Device Offboarding Manager" Style="{ThemeResource TitleTextBlockStyle}" />
-                                <TextBlock Text="Version 0.4 native Windows app track" TextWrapping="Wrap" />
+                                <TextBlock Text="Device Offboarding Manager" Style="{StaticResource TitleTextBlockStyle}" />
+                                <TextBlock x:Name="AboutVersionText" AutomationProperties.AutomationId="AboutVersionText" Text="Version 0.4.0 native Windows app track" TextWrapping="Wrap" />
                             </StackPanel>
                             <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="What this app does" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                    <TextBlock Text="What this app does" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock Text="Device Offboarding Manager correlates devices across Intune, Autopilot, Entra ID, and optional Defender for Endpoint, then provides auditable offboarding workflows and recovery-key handling." TextWrapping="Wrap" />
                                     <TextBlock Text="The PowerShell module remains the 0.3 automation and compatibility surface while this native app becomes the signed deployment surface." TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
                             <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
                                 <StackPanel Spacing="8">
-                                    <TextBlock Text="Validation" Style="{ThemeResource SubtitleTextBlockStyle}" />
+                                    <TextBlock Text="Validation" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock Text="Build on Windows with Visual Studio 2022, WinUI application development, Desktop development with C++, .NET 8 SDK, Developer Mode, and Windows App Runtime installed or available through the Windows App SDK deployment manager." TextWrapping="Wrap" />
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Button Content="Open changelog" Click="OpenChangelog_Click" AutomationProperties.AutomationId="BtnOpenChangelog" />
+                                        <Button Content="Check updates" Click="CheckForUpdates_Click" AutomationProperties.AutomationId="BtnCheckUpdates" />
                                         <Button Content="Open repository" Click="OpenRepository_Click" AutomationProperties.AutomationId="BtnOpenRepository" />
                                     </StackPanel>
                                 </StackPanel>

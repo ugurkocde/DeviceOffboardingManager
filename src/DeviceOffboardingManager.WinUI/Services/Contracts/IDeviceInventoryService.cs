@@ -20,4 +20,8 @@ public interface IDeviceInventoryService
         IReadOnlyCollection<DeviceRecord> devices,
         string groupTag,
         CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<GroupMembershipRecord>> GetDeviceGroupMembershipsAsync(
+        DeviceRecord device,
+        CancellationToken cancellationToken = default);
 }

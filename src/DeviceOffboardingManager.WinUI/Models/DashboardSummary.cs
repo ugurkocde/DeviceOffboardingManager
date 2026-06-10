@@ -17,4 +17,7 @@ public sealed record DashboardSummary
     public int PersonalDevices { get; init; }
 
     public int CorporateDevices { get; init; }
+
+    public IReadOnlyDictionary<string, int> PlatformCounts { get; init; } =
+        new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 }
