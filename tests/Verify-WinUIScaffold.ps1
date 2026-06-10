@@ -86,6 +86,9 @@ if ($properties['EnableMsixTooling'] -ne 'true') {
 if ($properties['ApplicationIcon'] -ne 'Assets\AppIcon.ico') {
     throw 'The WinUI project must reference the branded application icon.'
 }
+if ($properties['WindowsAppSdkDeploymentManagerInitialize'] -eq 'false') {
+    throw 'The WinUI project must not disable the Windows App SDK Deployment Manager auto-initializer.'
+}
 if ($properties['TargetFramework'] -notmatch '^net[0-9]+\.0-windows10\.0\.19041\.0$') {
     throw "Unexpected WinUI target framework: $($properties['TargetFramework'])"
 }
