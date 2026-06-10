@@ -58,6 +58,11 @@ $solutionText = Get-Content -Path $solutionFile -Raw
 if ($solutionText -notmatch [regex]::Escape('src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj')) {
     throw 'The WinUI solution does not reference the WinUI project.'
 }
+foreach ($solutionPlatform in @('Debug|x64', 'Debug|x86', 'Debug|ARM64', 'Release|x64', 'Release|x86', 'Release|ARM64')) {
+    if ($solutionText -notmatch [regex]::Escape("$solutionPlatform.Deploy.0 = $solutionPlatform")) {
+        throw "The WinUI solution must enable deployment for $solutionPlatform."
+    }
+}
 
 [xml]$projectXml = Get-Content -Path $projectFile -Raw
 $properties = @{}
@@ -163,6 +168,7 @@ foreach ($requiredPlanTerm in @('Issue #60', 'MSIX', 'WinGet', 'Microsoft Store'
     TargetFramework   = $properties['TargetFramework']
     PackageReferences = $packageReferences.Count
     LaunchProfiles    = $launchProfiles.Count
+    DeployProfiles    = ([regex]::Matches($solutionText, '\.Deploy\.0\s*=')).Count
     SourceFiles       = @(Get-ChildItem -Path $projectRoot -Recurse -Filter '*.cs').Count
     Assets            = 5
     IsValid           = $true
