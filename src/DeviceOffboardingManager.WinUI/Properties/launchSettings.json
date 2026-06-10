@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "DeviceOffboardingManager.WinUI (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "DeviceOffboardingManager.WinUI (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

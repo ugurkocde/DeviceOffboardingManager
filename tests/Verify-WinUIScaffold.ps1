@@ -8,6 +8,7 @@ $solutionFile = Join-Path $repoRoot 'DeviceOffboardingManager.WinUI.sln'
 $projectRoot = Join-Path $repoRoot 'src/DeviceOffboardingManager.WinUI'
 $projectFile = Join-Path $projectRoot 'DeviceOffboardingManager.WinUI.csproj'
 $packageManifest = Join-Path $projectRoot 'Package.appxmanifest'
+$launchSettings = Join-Path $projectRoot 'Properties/launchSettings.json'
 $mainWindowXaml = Join-Path $projectRoot 'MainWindow.xaml'
 $appXaml = Join-Path $projectRoot 'App.xaml'
 $migrationPlan = Join-Path $repoRoot 'docs/v0.4-winui-migration-plan.md'
@@ -16,6 +17,7 @@ $requiredFiles = @(
     $solutionFile,
     $projectFile,
     $packageManifest,
+    $launchSettings,
     $mainWindowXaml,
     $appXaml,
     (Join-Path $projectRoot 'App.xaml.cs'),
@@ -93,6 +95,12 @@ foreach ($packageName in @('Microsoft.WindowsAppSDK', 'Microsoft.Identity.Client
     }
 }
 
+$launchSettingsJson = Get-Content -Path $launchSettings -Raw | ConvertFrom-Json
+$launchProfiles = @($launchSettingsJson.profiles.PSObject.Properties.Value)
+if (-not @($launchProfiles | Where-Object { $_.commandName -eq 'MsixPackage' })) {
+    throw 'The WinUI project must include a launchSettings.json profile with commandName=MsixPackage for Visual Studio debugging.'
+}
+
 $sourceText = (Get-ChildItem -Path $projectRoot -Recurse -Filter '*.cs' | ForEach-Object { Get-Content $_.FullName -Raw }) -join "`n"
 foreach ($requiredPattern in @(
         'AcquireTokenInteractive',
@@ -154,6 +162,7 @@ foreach ($requiredPlanTerm in @('Issue #60', 'MSIX', 'WinGet', 'Microsoft Store'
     Project           = Split-Path -Path $projectFile -Leaf
     TargetFramework   = $properties['TargetFramework']
     PackageReferences = $packageReferences.Count
+    LaunchProfiles    = $launchProfiles.Count
     SourceFiles       = @(Get-ChildItem -Path $projectRoot -Recurse -Filter '*.cs').Count
     Assets            = 5
     IsValid           = $true

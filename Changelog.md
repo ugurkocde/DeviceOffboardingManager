@@ -4,6 +4,7 @@
 - Added the initial WinUI 3 / Windows App SDK solution scaffold for a native Windows app.
 - Ported the core app surface to native C# services for MSAL.NET authentication, Graph device search, dashboard counts, Autopilot group tags, offboarding, optional Defender offboarding, recovery-key lookup, playbook reports, settings import, audit logging, CSV export, and HTML reports.
 - Replaced placeholder package images with branded app logo assets and an executable icon.
+- Added the Visual Studio `MsixPackage` launch profile required to debug the packaged WinUI app.
 - Added the v0.4 migration plan for signed releases, Intune packaging, WinGet, and Microsoft Store readiness.
 - Added static validation for the WinUI project structure, package manifest, package assets, and migration plan.
 

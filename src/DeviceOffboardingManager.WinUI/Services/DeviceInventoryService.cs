@@ -475,7 +475,7 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
     private static IReadOnlyList<JsonNode> GetBatchValue(IReadOnlyList<GraphBatchResponse> responses, string id)
     {
         var response = responses.FirstOrDefault(item => item.Id == id);
-        return response.Body?["value"] is JsonArray array
+        return response?.Body?["value"] is JsonArray array
             ? array.Where(item => item is not null).Cast<JsonNode>().ToArray()
             : Array.Empty<JsonNode>();
     }
