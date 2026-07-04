@@ -165,9 +165,11 @@ function Invoke-DeviceSearch {
                 }
             }
             elseif ($SearchOption -eq "Serial Number") {
-                # Batch Intune + Autopilot queries together
+                # Batch Intune + Autopilot queries together.
+                # NOTE: Intune managedDevices only supports 'eq' on serialNumber; contains()/startswith()
+                # are silently ignored and return zero results. Autopilot does support contains().
                 $batchRequests = @(
-                    @{ id = "intune"; method = "GET"; url = "/deviceManagement/managedDevices?`$filter=contains(serialNumber,'$escapedSearchText')&`$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime,azureADDeviceId,complianceState,managementAgent" }
+                    @{ id = "intune"; method = "GET"; url = "/deviceManagement/managedDevices?`$filter=serialNumber eq '$escapedSearchText'&`$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime,azureADDeviceId,complianceState,managementAgent" }
                     @{ id = "autopilot"; method = "GET"; url = "/deviceManagement/windowsAutopilotDeviceIdentities?`$filter=contains(serialNumber,'$escapedSearchText')" }
                 )
                 $batchResponses = Invoke-GraphBatchRequest -Requests $batchRequests
@@ -291,10 +293,14 @@ function Invoke-DeviceSearch {
                 }
             }
             elseif ($SearchOption -eq "Contains (partial match)") {
-                # Batch Entra (startsWith) + Intune (contains) queries
+                # Batch Entra (startsWith) + Intune (contains) queries.
+                # NOTE: Intune managedDevices supports contains() on deviceName but NOT on serialNumber.
+                # Combining them with 'or' makes the whole filter return zero rows (the unsupported clause
+                # poisons the query), so we only filter on deviceName here. Partial serial matches are still
+                # covered client-side for Autopilot below, and exact serials via the "Serial Number" search.
                 $batchRequests = @(
                     @{ id = "entra"; method = "GET"; url = "/devices?`$filter=startsWith(displayName,'$escapedSearchText')&`$select=id,deviceId,displayName,operatingSystem,approximateLastSignInDateTime,accountEnabled,physicalIds&`$count=true"; headers = @{ "ConsistencyLevel" = "eventual" } }
-                    @{ id = "intune"; method = "GET"; url = "/deviceManagement/managedDevices?`$filter=contains(deviceName,'$escapedSearchText') or contains(serialNumber,'$escapedSearchText')&`$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime,azureADDeviceId,complianceState,managementAgent" }
+                    @{ id = "intune"; method = "GET"; url = "/deviceManagement/managedDevices?`$filter=contains(deviceName,'$escapedSearchText')&`$select=id,deviceName,serialNumber,operatingSystem,userDisplayName,lastSyncDateTime,azureADDeviceId,complianceState,managementAgent" }
                 )
                 $batchResponses = Invoke-GraphBatchRequest -Requests $batchRequests
                 $entraResp = $batchResponses | Where-Object { $_.id -eq "entra" }

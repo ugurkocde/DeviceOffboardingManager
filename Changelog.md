@@ -1,4 +1,4 @@
-## Version 0.3 - 3/14/2026
+## Version 0.3 - Unreleased
 
 ### Bug Fixes
 - **Fixed 8 Critical Bugs** across device offboarding and playbook execution
@@ -16,6 +16,8 @@
 - **Improved Empty Autopilot DisplayName Handling**: Autopilot device-name matching now avoids server-side displayName filters and supports client-side serial matching for devices with blank Autopilot display names.
 - **Safer Audit Trail**: Confirmation preview now shows full Entra, Intune, and Autopilot IDs; CSV exports include Graph IDs; recovery keys and LAPS values are written to the timestamped audit log with a `SENSITIVE` prefix.
 - **Authentication Fallback**: Added Device Code login to avoid browser localhost redirect / WAM issues with interactive Microsoft Graph authentication.
+- **Fixed Serial Number & Partial Search Not Returning Intune Devices**: Intune `managedDevices` only supports `eq` on `serialNumber` (not `contains`/`startswith`), and combining `contains(deviceName,…)` with `contains(serialNumber,…)` via `or` made the entire query return zero rows. Serial Number search now uses exact `serialNumber eq`, and partial "Contains" search filters on `deviceName`, so Intune devices are correctly returned again (verified against a live tenant).
+- **Dashboard Card Loading Feedback**: Clicking a dashboard statistic card now shows an immediate loading indicator (wait cursor + toast) before the device list is fetched, instead of the window appearing to freeze.
 
 ### Graph API Performance and Reliability
 - **Retry Logic with Backoff**: New `Invoke-GraphRequestWithRetry` wrapper handles 429 throttling (reads Retry-After header), 5xx transient errors (exponential backoff), and network failures
