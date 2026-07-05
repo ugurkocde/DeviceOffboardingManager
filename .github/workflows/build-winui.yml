@@ -16,7 +16,12 @@ on:
 
 jobs:
   build:
+    name: Build (${{ matrix.platform }})
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [x64, arm64]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,7 +32,7 @@ jobs:
           dotnet-version: '8.0.x'
 
       - name: Restore
-        run: dotnet restore .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj
+        run: dotnet restore .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -p:Platform=${{ matrix.platform }}
 
       - name: Build
-        run: dotnet build .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -c Release -p:Platform=x64 --no-restore
+        run: dotnet build .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} --no-restore

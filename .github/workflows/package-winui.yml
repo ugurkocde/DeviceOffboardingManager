@@ -1,0 +1,106 @@
+name: Package WinUI MSIX
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v0.4.*'
+
+jobs:
+  package:
+    name: Package (${{ matrix.platform }})
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        platform: [x64, arm64]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Detect signing certificate
+        shell: pwsh
+        env:
+          MSIX_SIGNING_CERT_PFX_BASE64: ${{ secrets.MSIX_SIGNING_CERT_PFX_BASE64 }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:MSIX_SIGNING_CERT_PFX_BASE64)) {
+            "HAS_SIGNING_CERT=false" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          } else {
+            "HAS_SIGNING_CERT=true" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
+
+      - name: Build MSIX
+        shell: pwsh
+        run: dotnet build .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} -p:GenerateAppxPackageOnBuild=true -p:AppxPackageDir=..\..\artifacts\ -p:UapAppxPackageBuildMode=SideloadOnly -p:AppxBundle=Never -p:AppxPackageSigningEnabled=false
+
+      - name: Decode signing certificate
+        if: ${{ env.HAS_SIGNING_CERT == 'true' }}
+        shell: pwsh
+        env:
+          MSIX_SIGNING_CERT_PFX_BASE64: ${{ secrets.MSIX_SIGNING_CERT_PFX_BASE64 }}
+        run: |
+          $pfxPath = Join-Path $env:RUNNER_TEMP "msix-signing-cert.pfx"
+          [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:MSIX_SIGNING_CERT_PFX_BASE64))
+          "MSIX_SIGNING_CERT_PFX_PATH=$pfxPath" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Sign MSIX packages
+        if: ${{ env.HAS_SIGNING_CERT == 'true' }}
+        shell: pwsh
+        env:
+          MSIX_SIGNING_CERT_PASSWORD: ${{ secrets.MSIX_SIGNING_CERT_PASSWORD }}
+        run: |
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending |
+            Select-Object -First 1
+          if (-not $signtool) {
+            throw "signtool.exe was not found in the Windows SDK."
+          }
+
+          $packages = Get-ChildItem -Path ".\artifacts" -Filter "*.msix" -Recurse
+          if (-not $packages) {
+            throw "No MSIX packages found under artifacts."
+          }
+
+          foreach ($package in $packages) {
+            & $signtool.FullName sign /fd SHA256 /f $env:MSIX_SIGNING_CERT_PFX_PATH /p $env:MSIX_SIGNING_CERT_PASSWORD /tr http://timestamp.digicert.com /td SHA256 $package.FullName
+            if ($LASTEXITCODE -ne 0) {
+              throw "signtool failed for $($package.Name) with exit code $LASTEXITCODE."
+            }
+          }
+
+      - name: Delete signing certificate
+        if: ${{ always() && env.HAS_SIGNING_CERT == 'true' }}
+        shell: pwsh
+        run: |
+          $pfxPath = $env:MSIX_SIGNING_CERT_PFX_PATH
+          if ([string]::IsNullOrWhiteSpace($pfxPath)) {
+            $pfxPath = Join-Path $env:RUNNER_TEMP "msix-signing-cert.pfx"
+          }
+
+          if (Test-Path $pfxPath) {
+            Remove-Item -Path $pfxPath -Force
+          }
+
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: msix-${{ matrix.platform }}
+          path: artifacts/**/*.msix
+          if-no-files-found: error
+
+      - name: Attach signed MSIX to draft release
+        if: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') && env.HAS_SIGNING_CERT == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          files: artifacts/**/*.msix
+          fail_on_unmatched_files: true
