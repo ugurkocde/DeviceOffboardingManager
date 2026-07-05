@@ -1,0 +1,33 @@
+name: Publish PowerShell Module
+
+on:
+  workflow_dispatch:
+
+jobs:
+  Publish-Module:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install manifest dependencies
+        shell: pwsh
+        run: |
+          Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
+          # Publish-Module runs Test-ModuleManifest, which validates the RequiredModules
+          # entry. Microsoft.Graph.Authentication must be present or publishing fails with
+          # "The specified RequiredModules entry ... is invalid".
+          Install-Module Microsoft.Graph.Authentication -Scope CurrentUser -Force -AllowClobber
+
+      - name: Publish to PowerShell Gallery
+        shell: pwsh
+        run: |
+          Publish-Module -Path ./DeviceOffboardingManager -Repository PSGallery -NuGetApiKey "${{ secrets.NUGET_KEY }}"
+
+      - name: Add Gallery Link to Summary
+        shell: pwsh
+        run: |
+          $manifest = Import-PowerShellDataFile ./DeviceOffboardingManager/DeviceOffboardingManager.psd1
+          $version = $manifest.ModuleVersion
+          "Successfully published [DeviceOffboardingManager version $version](https://www.powershellgallery.com/packages/DeviceOffboardingManager/$version) to PowerShell Gallery." | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append
+          "View the package at: https://www.powershellgallery.com/packages/DeviceOffboardingManager/$version" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Append

@@ -1216,7 +1216,6 @@ $OffboardButton.Add_Click({
 
         # Create results collection to track all operations
         $offboardingResults = @()
-        $bulkAutopilotIds = @()
 
         try {
             # Determine which services are selected
@@ -1255,10 +1254,10 @@ $OffboardButton.Add_Click({
                 }
             }
 
-            # Collect serial numbers and Autopilot IDs for potential bulk deletion (2+ devices)
+            # Collect serial numbers for potential bulk Autopilot deletion (2+ devices).
+            # The deleteDevices endpoint takes serialNumbers, so only serials are needed.
             $bulkAutopilotSerials = @()
             if ($deleteAutopilot) {
-                $bulkAutopilotIds = @($selectedDevices | Where-Object { $_.AutopilotIdentityId } | ForEach-Object { $_.AutopilotIdentityId })
                 $bulkAutopilotSerials = @($selectedDevices | Where-Object { $_.AutopilotIdentityId -and $_.SerialNumber } | ForEach-Object { $_.SerialNumber })
             }
             $useBulkAutopilot = $bulkAutopilotSerials.Count -ge 2
@@ -2029,7 +2028,6 @@ $ExportPlaybookResultsButton = $Window.FindName('ExportPlaybookResultsButton')
 $ExportPlaybookResultsButton.Add_Click({
         $results = $PlaybookResultsDataGrid.ItemsSource
         if ($results -and $results.Count -gt 0) {
-            $playbookName = $Window.FindName('PlaybookResultsHeader').Text
             $timestamp = Get-Date -Format "yyyyMMdd_HHmmss"
             $fileName = "Playbook_Results_${timestamp}.csv"
             Export-DeviceListToCSV -DeviceList $results -DefaultFileName $fileName
@@ -2046,6 +2044,8 @@ $StaleDevices30Card.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching 30-day stale devices..."
                 $thirtyDaysAgo = (Get-Date).AddDays(-30)
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($thirtyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))&`$select=deviceName,serialNumber,lastSyncDateTime,operatingSystem,osVersion,userPrincipalName,managedDeviceOwnerType"
@@ -2093,6 +2093,8 @@ $StaleDevices90Card.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching 90-day stale devices..."
                 $ninetyDaysAgo = (Get-Date).AddDays(-90)
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($ninetyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))&`$select=deviceName,serialNumber,lastSyncDateTime,operatingSystem,osVersion,userPrincipalName,managedDeviceOwnerType"
@@ -2138,6 +2140,8 @@ $StaleDevices180Card.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching 180-day stale devices..."
                 $hundredEightyDaysAgo = (Get-Date).AddDays(-180)
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?`$filter=lastSyncDateTime lt $($hundredEightyDaysAgo.ToString('yyyy-MM-ddTHH:mm:ssZ'))&`$select=deviceName,serialNumber,lastSyncDateTime,operatingSystem,osVersion,userPrincipalName,managedDeviceOwnerType"
@@ -2183,6 +2187,8 @@ $PersonalDevicesCard.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching personal devices..."
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?`$filter=managedDeviceOwnerType eq 'personal'&`$select=deviceName,serialNumber,lastSyncDateTime,operatingSystem,osVersion,userPrincipalName,managedDeviceOwnerType"
                 $personalDevices = Get-GraphPagedResults -Uri $uri
@@ -2225,6 +2231,8 @@ $CorporateDevicesCard.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching corporate devices..."
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?`$filter=managedDeviceOwnerType eq 'company'&`$select=deviceName,serialNumber,lastSyncDateTime,operatingSystem,osVersion,userPrincipalName,managedDeviceOwnerType"
                 $corporateDevices = Get-GraphPagedResults -Uri $uri
@@ -2267,6 +2275,8 @@ $IntuneDevicesCard.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching all Intune devices..."
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/managedDevices?`$select=deviceName,serialNumber,lastSyncDateTime,operatingSystem,osVersion,userPrincipalName,managedDeviceOwnerType"
                 $intuneDevices = Get-GraphPagedResults -Uri $uri
@@ -2309,6 +2319,8 @@ $AutopilotDevicesCard.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching all Autopilot devices..."
                 $uri = "https://graph.microsoft.com/beta/deviceManagement/windowsAutopilotDeviceIdentities"
                 $autopilotDevices = Get-GraphPagedResults -Uri $uri
@@ -2351,6 +2363,8 @@ $EntraIDDevicesCard.Add_MouseLeftButtonUp({
             $previousCursor = $Window.Cursor
             try {
                 $Window.Cursor = [System.Windows.Input.Cursors]::Wait
+                Show-Toast -Message "Loading devices..." -Type "info" -DurationSeconds 3
+                $Window.Dispatcher.Invoke([System.Windows.Threading.DispatcherPriority]::ApplicationIdle, [Action] {})
                 Write-Log "Fetching all Entra ID devices..."
                 $uri = "https://graph.microsoft.com/beta/devices?`$select=displayName,operatingSystem,operatingSystemVersion,approximateLastSignInDateTime,deviceOwnership"
                 $entraDevices = Get-GraphPagedResults -Uri $uri
