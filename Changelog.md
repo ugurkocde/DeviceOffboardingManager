@@ -10,6 +10,7 @@
 - Added the Visual Studio `MsixPackage` launch profile required to debug the packaged WinUI app.
 - Added the v0.4 migration plan for signed releases, Intune packaging, WinGet, and Microsoft Store readiness.
 - Added static validation for the WinUI project structure, package manifest, package assets, and migration plan.
+- Ported the v0.3 Intune search fixes to the native device search: serial number lookups now use `serialNumber eq` (Intune ignores `contains` on serialNumber), and partial-match searches filter on `deviceName` only so the unsupported serial clause no longer suppresses all Intune results.
 
 ---
 

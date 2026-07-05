@@ -303,10 +303,12 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
     private async Task<IReadOnlyList<DeviceRecord>> SearchBySerialNumberAsync(string term, CancellationToken cancellationToken)
     {
         var literal = OData.StringLiteral(term);
+        // Intune managedDevices only supports 'eq' on serialNumber; contains()/startswith()
+        // are silently ignored and return zero results. Autopilot does support contains().
         var batch = await _graph.BatchAsync(
         new[]
         {
-            new GraphBatchRequest("intune", "GET", OData.Query("/deviceManagement/managedDevices", ("$filter", $"contains(serialNumber,'{literal}')"), ("$select", IntuneSelect))),
+            new GraphBatchRequest("intune", "GET", OData.Query("/deviceManagement/managedDevices", ("$filter", $"serialNumber eq '{literal}'"), ("$select", IntuneSelect))),
             new GraphBatchRequest("autopilot", "GET", OData.Query("/deviceManagement/windowsAutopilotDeviceIdentities", ("$filter", $"contains(serialNumber,'{literal}')")))
         }, cancellationToken);
 
@@ -384,10 +386,14 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
                 "GET",
                 OData.Query("/devices", ("$filter", $"startsWith(displayName,'{literal}')"), ("$select", EntraSelect), ("$count", "true")),
                 Headers: new Dictionary<string, string> { ["ConsistencyLevel"] = "eventual" }),
+            // Intune managedDevices supports contains() on deviceName but NOT on serialNumber.
+            // Combining them with 'or' makes the whole filter return zero rows (the unsupported clause
+            // poisons the query), so we only filter on deviceName here. Partial serial matches are still
+            // covered client-side for Autopilot below, and exact serials via the "Serial Number" search.
             new GraphBatchRequest(
                 "intune",
                 "GET",
-                OData.Query("/deviceManagement/managedDevices", ("$filter", $"contains(deviceName,'{literal}') or contains(serialNumber,'{literal}')"), ("$select", IntuneSelect)))
+                OData.Query("/deviceManagement/managedDevices", ("$filter", $"contains(deviceName,'{literal}')"), ("$select", IntuneSelect)))
         }, cancellationToken);
 
         var autopilotDevices = allAutopilotDevices.Where(device =>
