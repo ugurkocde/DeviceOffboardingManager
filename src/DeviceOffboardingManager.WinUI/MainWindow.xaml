@@ -90,7 +90,7 @@
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="Release posture" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock Text="Version 0.4 is the native signed-app track. Test with non-production devices first; offboarding, wipe, delete, and Defender actions can be permanent." TextWrapping="Wrap" />
-                                    <TextBlock Text="The v0.3 PowerShell module remains available for automation and compatibility while the WinUI app moves toward MSIX, Intune, WinGet, and Microsoft Store distribution." TextWrapping="Wrap" />
+                                    <TextBlock Text="The WinUI app replaces the PowerShell module as of 0.4.0. v0.3 is the final module release. Distribution continues toward MSIX, Intune, WinGet, and Microsoft Store." TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
 
@@ -602,7 +602,7 @@
                                 <StackPanel Spacing="8">
                                     <TextBlock Text="What this app does" Style="{StaticResource SubtitleTextBlockStyle}" />
                                     <TextBlock Text="Device Offboarding Manager correlates devices across Intune, Autopilot, Entra ID, and optional Defender for Endpoint, then provides auditable offboarding workflows and recovery-key handling." TextWrapping="Wrap" />
-                                    <TextBlock Text="The PowerShell module remains the 0.3 automation and compatibility surface while this native app becomes the signed deployment surface." TextWrapping="Wrap" />
+                                    <TextBlock Text="This native app replaces the PowerShell module as of 0.4.0 and is the sole supported surface going forward." TextWrapping="Wrap" />
                                 </StackPanel>
                             </Border>
                             <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
