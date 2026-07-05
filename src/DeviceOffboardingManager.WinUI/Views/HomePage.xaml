@@ -1,0 +1,71 @@
+<Page
+    x:Class="DeviceOffboardingManager.WinUI.Views.HomePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <Grid x:Name="HomePageRoot" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Device Offboarding Manager" Style="{StaticResource TitleTextBlockStyle}" />
+                    <TextBlock Text="Native Windows app for Intune, Autopilot, Entra ID, and optional Defender for Endpoint offboarding." TextWrapping="Wrap" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                    <Button x:Name="HomeConnectButton" Content="Connect" Command="{x:Bind ViewModel.ConnectCommand}" AutomationProperties.AutomationId="BtnHomeConnect" />
+                    <Button Content="Search devices" Tag="devices" Command="{x:Bind ViewModel.GoToDevicesCommand}" AutomationProperties.AutomationId="BtnHomeDevices" />
+                </StackPanel>
+            </Grid>
+
+            <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Release posture" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="Version 0.4 is the native signed-app track. Test with non-production devices first; offboarding, wipe, delete, and Defender actions can be permanent." TextWrapping="Wrap" />
+                    <TextBlock Text="The WinUI app replaces the PowerShell module as of 0.4.0. v0.3 is the final module release. Distribution continues toward MSIX, Intune, WinGet, and Microsoft Store." TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="2" ColumnSpacing="12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Intune" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="Search managed devices, retire or wipe, delete records, report stale devices, and read compliance/agent state." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Autopilot" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="Correlate identities, delete Autopilot records, and set or clear group tags for selected devices." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Entra ID" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="Resolve exact device IDs, disable or delete device objects, and preserve IDs in exports and confirmation flows." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+                <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                    <StackPanel Spacing="4">
+                        <TextBlock Text="Defender" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="Optional, settings-gated Defender for Endpoint offboarding that requests Defender tokens only when used." TextWrapping="Wrap" />
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </ScrollViewer>
+</Page>

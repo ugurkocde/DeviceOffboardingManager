@@ -5,6 +5,7 @@
 - Added the initial WinUI 3 / Windows App SDK solution scaffold for a native Windows app.
 - Ported the core app surface to native C# services for MSAL.NET authentication, Graph device search, dashboard counts, Autopilot group tags, offboarding, optional Defender offboarding, recovery-key lookup, playbook reports, settings import, audit logging, CSV export, and HTML reports.
 - Reworked the WinUI prototype into a page-based shell with Home, Dashboard, Devices, Offboarding, Playbooks, Settings, and About views, including dashboard drilldowns, dashboard CSV export, platform/ownership/stale distribution, and device filtering.
+- Reworked the WinUI shell into real Frame-navigated pages with MVVM ViewModels (CommunityToolkit.Mvvm), compiled x:Bind bindings, virtualized device lists for large tenants, busy-state command disabling, and removal of unused dependencies.
 - Added native file picker flows for bulk CSV/TXT import with preview and template export, app registration JSON import, About page changelog rendering, repository actions, and release update checks.
 - Added selected-device Entra group membership lookup, richer offboarding summary dialogs, device-list CSV export, and dashboard result handoff into the Devices view.
 - Recovery keys and LAPS passwords are now displayed in-app only and are no longer written to the audit log.

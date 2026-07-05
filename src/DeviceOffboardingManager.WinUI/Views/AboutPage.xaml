@@ -1,0 +1,37 @@
+<Page
+    x:Class="DeviceOffboardingManager.WinUI.Views.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <Grid x:Name="AboutPageRoot" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <StackPanel Spacing="4">
+                <TextBlock Text="Device Offboarding Manager" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock x:Name="AboutVersionText" AutomationProperties.AutomationId="AboutVersionText" Text="{x:Bind ViewModel.AboutVersionText, Mode=OneWay}" TextWrapping="Wrap" />
+            </StackPanel>
+            <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="What this app does" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="Device Offboarding Manager correlates devices across Intune, Autopilot, Entra ID, and optional Defender for Endpoint, then provides auditable offboarding workflows and recovery-key handling." TextWrapping="Wrap" />
+                    <TextBlock Text="This native app replaces the PowerShell module as of 0.4.0 and is the sole supported surface going forward." TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Validation" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="Build on Windows with Visual Studio 2022, WinUI application development, Desktop development with C++, .NET 8 SDK, Developer Mode, and Windows App Runtime installed or available through the Windows App SDK deployment manager." TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                        <Button Content="Open changelog" Click="OpenChangelog_Click" AutomationProperties.AutomationId="BtnOpenChangelog" />
+                        <Button Content="Check updates" Click="CheckForUpdates_Click" AutomationProperties.AutomationId="BtnCheckUpdates" />
+                        <Button Content="Open repository" Command="{x:Bind ViewModel.OpenRepositoryCommand}" AutomationProperties.AutomationId="BtnOpenRepository" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>

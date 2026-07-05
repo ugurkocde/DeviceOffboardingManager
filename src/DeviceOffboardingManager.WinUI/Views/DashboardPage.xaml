@@ -1,0 +1,171 @@
+<Page
+    x:Class="DeviceOffboardingManager.WinUI.Views.DashboardPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:models="using:DeviceOffboardingManager.WinUI.Models">
+
+    <Grid x:Name="DashboardPageRoot" RowSpacing="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Spacing="4">
+                <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Tenant-wide device posture for Intune, Autopilot, Entra ID, stale devices, and ownership." TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                <ComboBox x:Name="DashboardPlatformFilter" AutomationProperties.AutomationId="DashboardPlatformFilter" Header="Platform" SelectedIndex="{x:Bind ViewModel.PlatformFilterIndex, Mode=TwoWay}" Width="180">
+                    <ComboBoxItem Content="All platforms" />
+                    <ComboBoxItem Content="Windows" />
+                    <ComboBoxItem Content="macOS" />
+                    <ComboBoxItem Content="iOS" />
+                    <ComboBoxItem Content="Android" />
+                    <ComboBoxItem Content="Linux" />
+                </ComboBox>
+                <Button x:Name="DashboardRefreshButton" AutomationProperties.AutomationId="DashboardRefreshButton" Content="Refresh" Command="{x:Bind ViewModel.RefreshCommand}" VerticalAlignment="Bottom" />
+            </StackPanel>
+        </Grid>
+
+        <Grid Grid.Row="1" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Intune" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="IntuneCountText" AutomationProperties.AutomationId="IntuneCountText" Text="{x:Bind ViewModel.IntuneCountText, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
+                    <Button Content="View" Tag="intune" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="intune" AutomationProperties.AutomationId="BtnViewIntune" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Autopilot" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="AutopilotCountText" AutomationProperties.AutomationId="AutopilotCountText" Text="{x:Bind ViewModel.AutopilotCountText, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
+                    <Button Content="View" Tag="autopilot" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="autopilot" AutomationProperties.AutomationId="BtnViewAutopilot" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Entra ID" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="EntraCountText" AutomationProperties.AutomationId="EntraCountText" Text="{x:Bind ViewModel.EntraCountText, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
+                    <Button Content="View" Tag="entra" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="entra" AutomationProperties.AutomationId="BtnViewEntra" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Stale 90 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="Stale90Text" AutomationProperties.AutomationId="Stale90Text" Text="{x:Bind ViewModel.Stale90Text, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
+                    <Button Content="View" Tag="stale90" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale90" AutomationProperties.AutomationId="BtnViewStale90" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="2" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Stale 30 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="Stale30Text" AutomationProperties.AutomationId="Stale30Text" Text="{x:Bind ViewModel.Stale30Text, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Button Content="View" Tag="stale30" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale30" AutomationProperties.AutomationId="BtnViewStale30" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Stale 180 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="Stale180Text" AutomationProperties.AutomationId="Stale180Text" Text="{x:Bind ViewModel.Stale180Text, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Button Content="View" Tag="stale180" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale180" AutomationProperties.AutomationId="BtnViewStale180" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Corporate" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="CorporateCountText" AutomationProperties.AutomationId="CorporateCountText" Text="{x:Bind ViewModel.CorporateCountText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Button Content="View" Tag="corporate" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="corporate" AutomationProperties.AutomationId="BtnViewCorporate" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="4">
+                    <TextBlock Text="Personal" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock x:Name="PersonalCountText" AutomationProperties.AutomationId="PersonalCountText" Text="{x:Bind ViewModel.PersonalCountText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Button Content="View" Tag="personal" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="personal" AutomationProperties.AutomationId="BtnViewPersonal" HorizontalAlignment="Left" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Distribution" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock x:Name="DashboardPlatformText" AutomationProperties.AutomationId="DashboardPlatformText" Text="{x:Bind ViewModel.DashboardPlatformText, Mode=OneWay}" TextWrapping="Wrap" />
+                    <TextBlock x:Name="DashboardOwnershipText" AutomationProperties.AutomationId="DashboardOwnershipText" Text="{x:Bind ViewModel.DashboardOwnershipText, Mode=OneWay}" TextWrapping="Wrap" />
+                    <ProgressBar x:Name="CorporateDevicesProgress" AutomationProperties.AutomationId="CorporateDevicesProgress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.CorporateDevicesProgress, Mode=OneWay}" />
+                    <ProgressBar x:Name="PersonalDevicesProgress" AutomationProperties.AutomationId="PersonalDevicesProgress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.PersonalDevicesProgress, Mode=OneWay}" />
+                    <TextBlock x:Name="DashboardStaleText" AutomationProperties.AutomationId="DashboardStaleText" Text="{x:Bind ViewModel.DashboardStaleText, Mode=OneWay}" TextWrapping="Wrap" />
+                    <ProgressBar x:Name="StaleDevices30Progress" AutomationProperties.AutomationId="StaleDevices30Progress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices30Progress, Mode=OneWay}" />
+                    <ProgressBar x:Name="StaleDevices90Progress" AutomationProperties.AutomationId="StaleDevices90Progress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices90Progress, Mode=OneWay}" />
+                    <ProgressBar x:Name="StaleDevices180Progress" AutomationProperties.AutomationId="StaleDevices180Progress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices180Progress, Mode=OneWay}" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="DashboardResultTitleText" AutomationProperties.AutomationId="DashboardResultTitleText" Text="{x:Bind ViewModel.DashboardResultTitleText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                            <Button Content="Open in devices" Command="{x:Bind ViewModel.OpenDashboardResultsInDevicesCommand}" AutomationProperties.AutomationId="BtnOpenDashboardResultsInDevices" />
+                            <Button Content="Export" Command="{x:Bind ViewModel.ExportDashboardResultsCommand}" AutomationProperties.AutomationId="BtnExportDashboardResults" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock x:Name="DashboardResultSummaryText" AutomationProperties.AutomationId="DashboardResultSummaryText" Grid.Row="1" Text="{x:Bind ViewModel.DashboardResultSummaryText, Mode=OneWay}" TextWrapping="Wrap" />
+                    <ListView x:Name="DashboardResultListView" AutomationProperties.AutomationId="DashboardResultListView" Grid.Row="2" ItemsSource="{x:Bind ViewModel.DashboardRows, Mode=OneWay}" MaxHeight="260">
+                        <ListView.ItemTemplate>
+                            <DataTemplate x:DataType="models:TextRow">
+                                <TextBlock Text="{x:Bind Text, Mode=OneWay}" TextWrapping="Wrap" />
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="4" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <StackPanel Spacing="8">
+                <TextBlock Text="Readiness" Style="{StaticResource SubtitleTextBlockStyle}" />
+                <TextBlock x:Name="DashboardReadinessText" AutomationProperties.AutomationId="DashboardReadinessText" Text="{x:Bind ViewModel.DashboardReadinessText, Mode=OneWay}" TextWrapping="Wrap" />
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Content="Open settings" Tag="settings" Command="{x:Bind ViewModel.OpenSettingsCommand}" AutomationProperties.AutomationId="BtnDashboardSettings" />
+                    <Button Content="Go to devices" Tag="devices" Command="{x:Bind ViewModel.GoToDevicesCommand}" AutomationProperties.AutomationId="BtnDashboardDevices" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Page>

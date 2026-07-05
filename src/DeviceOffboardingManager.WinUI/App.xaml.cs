@@ -25,6 +25,11 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
+        services.AddSingleton<Services.Contracts.IStatusService, Services.StatusService>();
+        services.AddSingleton<Services.ConnectionState>();
+        services.AddSingleton<Services.DeviceListState>();
+        services.AddSingleton<Services.ShellNavigationService>();
+        services.AddSingleton<Services.WindowHandleProvider>();
         services.AddSingleton<Services.Contracts.IAuditLogService, Services.AuditLogService>();
         services.AddSingleton<Services.Contracts.ISettingsService, Services.SettingsService>();
         services.AddSingleton<Services.Contracts.IAuthenticationService, Services.AuthenticationService>();
@@ -35,6 +40,13 @@ public partial class App : Application
         services.AddSingleton<Services.Contracts.IRecoveryKeyService, Services.RecoveryKeyService>();
         services.AddSingleton<Services.Contracts.IPlaybookService, Services.PlaybookService>();
         services.AddSingleton<Services.Contracts.IReportExportService, Services.ReportExportService>();
+        services.AddSingleton<ViewModels.HomeViewModel>();
+        services.AddSingleton<ViewModels.DashboardViewModel>();
+        services.AddSingleton<ViewModels.DevicesViewModel>();
+        services.AddSingleton<ViewModels.OffboardingViewModel>();
+        services.AddSingleton<ViewModels.PlaybooksViewModel>();
+        services.AddSingleton<ViewModels.SettingsViewModel>();
+        services.AddSingleton<ViewModels.AboutViewModel>();
 
         return services.BuildServiceProvider();
     }

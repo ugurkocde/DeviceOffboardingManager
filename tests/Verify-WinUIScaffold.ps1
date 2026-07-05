@@ -13,6 +13,27 @@ $mainWindowXaml = Join-Path $projectRoot 'MainWindow.xaml'
 $appXaml = Join-Path $projectRoot 'App.xaml'
 $migrationPlan = Join-Path $repoRoot 'docs/v0.4-winui-migration-plan.md'
 
+$viewFiles = @(
+    'Views/HomePage.xaml',
+    'Views/DashboardPage.xaml',
+    'Views/DevicesPage.xaml',
+    'Views/OffboardingPage.xaml',
+    'Views/PlaybooksPage.xaml',
+    'Views/SettingsPage.xaml',
+    'Views/AboutPage.xaml'
+)
+
+$viewModelFiles = @(
+    'ViewModels/AppViewModelBase.cs',
+    'ViewModels/HomeViewModel.cs',
+    'ViewModels/DashboardViewModel.cs',
+    'ViewModels/DevicesViewModel.cs',
+    'ViewModels/OffboardingViewModel.cs',
+    'ViewModels/PlaybooksViewModel.cs',
+    'ViewModels/SettingsViewModel.cs',
+    'ViewModels/AboutViewModel.cs'
+)
+
 $requiredFiles = @(
     $solutionFile,
     $projectFile,
@@ -23,21 +44,28 @@ $requiredFiles = @(
     (Join-Path $projectRoot 'App.xaml.cs'),
     (Join-Path $projectRoot 'MainWindow.xaml.cs'),
     (Join-Path $projectRoot 'app.manifest'),
+    (Join-Path $projectRoot 'Models/AppInfo.cs'),
     (Join-Path $projectRoot 'Models/DashboardDeviceCategory.cs'),
     (Join-Path $projectRoot 'Models/GroupMembershipRecord.cs'),
     (Join-Path $projectRoot 'Models/DeviceOffboardingSettings.cs'),
     (Join-Path $projectRoot 'Models/DeviceRecord.cs'),
     (Join-Path $projectRoot 'Models/OffboardingOptions.cs'),
+    (Join-Path $projectRoot 'Models/StatusReport.cs'),
+    (Join-Path $projectRoot 'Models/TextRow.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IAuthenticationService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IDeviceInventoryService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IOffboardingService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/ISettingsService.cs'),
+    (Join-Path $projectRoot 'Services/Contracts/IStatusService.cs'),
     (Join-Path $projectRoot 'Services/AuthenticationService.cs'),
     (Join-Path $projectRoot 'Services/DeviceInventoryService.cs'),
+    (Join-Path $projectRoot 'Services/DeviceListState.cs'),
     (Join-Path $projectRoot 'Services/OffboardingService.cs'),
     (Join-Path $projectRoot 'Services/RecoveryKeyService.cs'),
     (Join-Path $projectRoot 'Services/PlaybookService.cs'),
     (Join-Path $projectRoot 'Services/SettingsService.cs'),
+    (Join-Path $projectRoot 'Services/StatusService.cs'),
+    (Join-Path $projectRoot 'Services/ShellNavigationService.cs'),
     (Join-Path $projectRoot 'Services/Graph/GraphApiClient.cs'),
     (Join-Path $projectRoot 'Services/Defender/DefenderApiClient.cs'),
     (Join-Path $projectRoot 'Services/ReportExportService.cs'),
@@ -49,6 +77,9 @@ $requiredFiles = @(
     (Join-Path $projectRoot 'Assets/Wide310x150Logo.png'),
     $migrationPlan
 )
+
+$requiredFiles += $viewFiles | ForEach-Object { Join-Path $projectRoot $_ }
+$requiredFiles += $viewModelFiles | ForEach-Object { Join-Path $projectRoot $_ }
 
 foreach ($requiredFile in $requiredFiles) {
     if (-not (Test-Path $requiredFile)) {
@@ -99,9 +130,14 @@ $packageReferences = @(
     Select-Xml -Path $projectFile -XPath '//PackageReference' |
         ForEach-Object { $_.Node.Include }
 )
-foreach ($packageName in @('Microsoft.WindowsAppSDK', 'Microsoft.Identity.Client', 'Microsoft.Graph', 'CommunityToolkit.Mvvm')) {
+foreach ($packageName in @('Microsoft.WindowsAppSDK', 'Microsoft.Identity.Client', 'System.Security.Cryptography.ProtectedData', 'CommunityToolkit.Mvvm', 'Microsoft.Extensions.DependencyInjection')) {
     if ($packageReferences -notcontains $packageName) {
         throw "Missing required WinUI package reference: $packageName"
+    }
+}
+foreach ($removedPackageName in @('Microsoft.Graph', 'Microsoft.Extensions.Configuration.Json', 'Microsoft.Extensions.Logging')) {
+    if ($packageReferences -contains $removedPackageName) {
+        throw "Removed WinUI package reference is still present: $removedPackageName"
     }
 }
 if (-not (Select-Xml -Path $projectFile -XPath '//Content[@Link="Changelog.md"]')) {
@@ -115,6 +151,10 @@ if (-not @($launchProfiles | Where-Object { $_.commandName -eq 'MsixPackage' }))
 }
 
 $sourceText = (Get-ChildItem -Path $projectRoot -Recurse -Filter '*.cs' | ForEach-Object { Get-Content $_.FullName -Raw }) -join "`n"
+$xamlFiles = @(Get-ChildItem -Path $projectRoot -Recurse -Filter '*.xaml')
+$xamlText = ($xamlFiles | ForEach-Object { Get-Content $_.FullName -Raw }) -join "`n"
+$allText = $sourceText + "`n" + $xamlText
+
 foreach ($requiredPattern in @(
         'AcquireTokenInteractive',
         'AcquireTokenWithDeviceCode',
@@ -133,9 +173,15 @@ foreach ($requiredPattern in @(
         'GetDeviceGroupMembershipsAsync',
         'PlatformCounts',
         'CheckForUpdates_Click',
-        'DownloadBulkTemplate_Click',
-        'ExportOffboardingHtmlAsync')) {
-    if ($sourceText -notmatch [regex]::Escape($requiredPattern)) {
+        'DownloadBulkTemplate',
+        'ExportOffboardingHtmlAsync',
+        'ObservableObject',
+        'RelayCommand',
+        'DeviceListState',
+        'IStatusService',
+        'StatusSeverity',
+        'ContentFrame')) {
+    if ($allText -notmatch [regex]::Escape($requiredPattern)) {
         throw "The WinUI source is missing expected ported behavior: $requiredPattern"
     }
 }
@@ -143,17 +189,21 @@ if ($sourceText -match 'Services\.Placeholders|not implemented yet') {
     throw 'The WinUI source still references placeholder services.'
 }
 
-foreach ($xamlFile in @($appXaml, $mainWindowXaml)) {
-    [xml](Get-Content -Path $xamlFile -Raw) | Out-Null
+foreach ($xamlFile in $xamlFiles) {
+    [xml](Get-Content -Path $xamlFile.FullName -Raw) | Out-Null
 }
 
 $mainWindowText = Get-Content -Path $mainWindowXaml -Raw
 if ($mainWindowText -match '<Grid\s+[^>]*Padding=') {
     throw 'WinUI Grid does not support Padding; use Margin or a padded Border instead.'
 }
-if ($mainWindowText -notmatch 'NavigationView') {
-    throw 'The WinUI shell should include a NavigationView.'
+if ($mainWindowText -notmatch 'NavigationView' -or $mainWindowText -notmatch 'ContentFrame' -or $mainWindowText -notmatch 'StatusInfoBar') {
+    throw 'The WinUI shell should include a NavigationView, shared InfoBar, and Frame.'
 }
+if ($mainWindowText -match 'DeviceListView|RunOffboarding_Click|DashboardResultListView|Visibility="Collapsed"') {
+    throw 'MainWindow.xaml must remain a shell and must not contain page body controls or Visibility-toggled pages.'
+}
+
 foreach ($requiredControl in @(
         'HomePage',
         'DashboardPage',
@@ -166,26 +216,52 @@ foreach ($requiredControl in @(
         'DashboardPlatformText',
         'DashboardResultListView',
         'SelectAllDevicesBox',
+        'DeviceListView',
         'ImportBulkFile_Click',
-        'DownloadBulkTemplate_Click',
+        'DownloadBulkTemplateCommand',
         'BrowseConfig_Click',
         'OpenChangelog_Click',
-        'OpenRepository_Click',
+        'OpenRepositoryCommand',
         'CheckForUpdates_Click',
         'ReviewSelectedIds_Click',
         'RunOffboarding_Click',
         'ViewSelectedGroups_Click',
-        'OpenDashboardResultsInDevices_Click',
-        'ExportDashboardResults_Click',
-        'SetGroupTag_Click',
-        'ExportLastPlaybook_Click',
-        'ExportReport_Click')) {
-    if ($mainWindowText -notmatch $requiredControl) {
-        throw "The WinUI shell is missing required control or handler: $requiredControl"
+        'OpenDashboardResultsInDevicesCommand',
+        'ExportDashboardResultsCommand',
+        'SetGroupTagCommand',
+        'ExportLastPlaybookCommand',
+        'ExportReportCommand')) {
+    if ($allText -notmatch [regex]::Escape($requiredControl)) {
+        throw "The WinUI pages are missing required control, command, or handler: $requiredControl"
     }
 }
-if ($mainWindowText -match '<muxc:Expander') {
+
+if ($xamlText -match '\{Binding') {
+    throw 'The WinUI XAML should use compiled x:Bind instead of reflection Binding.'
+}
+if ($xamlText -match '<muxc:Expander') {
     throw 'The WinUI app should use first-class pages instead of the old expander prototype shell.'
+}
+
+$devicesXaml = Get-Content -Path (Join-Path $projectRoot 'Views/DevicesPage.xaml') -Raw
+$playbooksXaml = Get-Content -Path (Join-Path $projectRoot 'Views/PlaybooksPage.xaml') -Raw
+$dashboardXaml = Get-Content -Path (Join-Path $projectRoot 'Views/DashboardPage.xaml') -Raw
+if ($devicesXaml -match '<ScrollViewer') {
+    throw 'DevicesPage must not wrap the ListView in a ScrollViewer.'
+}
+if ($playbooksXaml -match '<ScrollViewer') {
+    throw 'PlaybooksPage must not wrap the result ListView in a ScrollViewer.'
+}
+if ($devicesXaml -match 'MinHeight="420"' -or $playbooksXaml -match 'MinHeight="360"') {
+    throw 'Virtualized list pages should use star rows instead of old MinHeight hacks.'
+}
+foreach ($templateCheck in @(
+        @{ Text = $devicesXaml; Pattern = 'DataTemplate x:DataType="models:DeviceRecord"' },
+        @{ Text = $dashboardXaml; Pattern = 'DataTemplate x:DataType="models:TextRow"' },
+        @{ Text = $playbooksXaml; Pattern = 'DataTemplate x:DataType="models:TextRow"' })) {
+    if ($templateCheck.Text -notmatch [regex]::Escape($templateCheck.Pattern)) {
+        throw "A ListView DataTemplate is missing a required x:DataType: $($templateCheck.Pattern)"
+    }
 }
 
 $manifestNamespace = @{
@@ -208,6 +284,8 @@ foreach ($requiredPlanTerm in @('Issue #60', 'MSIX', 'WinGet', 'Microsoft Store'
     Project           = Split-Path -Path $projectFile -Leaf
     TargetFramework   = $properties['TargetFramework']
     PackageReferences = $packageReferences.Count
+    Views             = $viewFiles.Count
+    ViewModels        = $viewModelFiles.Count - 1
     LaunchProfiles    = $launchProfiles.Count
     DeployProfiles    = ([regex]::Matches($solutionText, '\.Deploy\.0\s*=')).Count
     SourceFiles       = @(Get-ChildItem -Path $projectRoot -Recurse -Filter '*.cs').Count

@@ -1,0 +1,77 @@
+<Page
+    x:Class="DeviceOffboardingManager.WinUI.Views.SettingsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <ScrollViewer>
+        <Grid x:Name="SettingsPageRoot" RowSpacing="16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <StackPanel Spacing="4">
+                <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
+                <TextBlock Text="Authentication, app registration import, Defender gating, and required permissions." TextWrapping="Wrap" />
+            </StackPanel>
+
+            <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Grid RowSpacing="12" ColumnSpacing="12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+
+                    <ComboBox x:Name="AuthMethodBox" AutomationProperties.AutomationId="AuthMethodBox" Header="Authentication method" SelectedIndex="{x:Bind ViewModel.AuthMethodIndex, Mode=TwoWay}">
+                        <ComboBoxItem Content="Interactive" />
+                        <ComboBoxItem Content="Device code" />
+                        <ComboBoxItem Content="Certificate" />
+                        <ComboBoxItem Content="Client secret" />
+                    </ComboBox>
+                    <TextBox x:Name="TenantIdBox" AutomationProperties.AutomationId="TenantIdBox" Grid.Column="1" Header="Tenant ID" PlaceholderText="Tenant ID or organizations" Text="{x:Bind ViewModel.TenantId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox x:Name="ClientIdBox" AutomationProperties.AutomationId="ClientIdBox" Grid.Row="1" Header="Client ID" PlaceholderText="App registration client ID" Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <TextBox x:Name="CertificateThumbprintBox" AutomationProperties.AutomationId="CertificateThumbprintBox" Grid.Row="1" Grid.Column="1" Header="Certificate thumbprint" Text="{x:Bind ViewModel.CertificateThumbprint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <PasswordBox x:Name="ClientSecretBox" AutomationProperties.AutomationId="ClientSecretBox" Grid.Row="2" Header="Client secret (session only)" Password="{x:Bind ViewModel.ClientSecret, Mode=TwoWay}" />
+                    <ToggleSwitch x:Name="DefenderToggle" AutomationProperties.AutomationId="DefenderToggle" Grid.Row="2" Grid.Column="1" Header="Defender for Endpoint integration" IsOn="{x:Bind ViewModel.DefenderIntegrationEnabled, Mode=TwoWay}" />
+
+                    <TextBox x:Name="ConfigPathBox" AutomationProperties.AutomationId="ConfigPathBox" Grid.Row="3" Grid.ColumnSpan="2" Header="Config JSON path" PlaceholderText="Select or paste an app registration config JSON path for import" Text="{x:Bind ViewModel.ConfigPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                    <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                        <Button Content="Browse" Click="BrowseConfig_Click" AutomationProperties.AutomationId="BtnBrowseConfig" />
+                        <Button Content="Import" Command="{x:Bind ViewModel.ImportConfigCommand}" AutomationProperties.AutomationId="BtnImportConfig" />
+                        <Button Content="Save" Command="{x:Bind ViewModel.SaveSettingsCommand}" AutomationProperties.AutomationId="BtnSaveSettings" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8">
+                        <Button x:Name="ConnectButton" AutomationProperties.AutomationId="ConnectButton" Content="Connect" Command="{x:Bind ViewModel.ConnectCommand}" />
+                        <Button x:Name="DisconnectButton" AutomationProperties.AutomationId="DisconnectButton" Content="Disconnect" Command="{x:Bind ViewModel.DisconnectCommand}" />
+                        <Button Content="Open audit log" Command="{x:Bind ViewModel.OpenAuditLogCommand}" AutomationProperties.AutomationId="BtnOpenAuditLog" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Required permissions" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock x:Name="PermissionsText" AutomationProperties.AutomationId="PermissionsText" Text="{x:Bind ViewModel.PermissionsText, Mode=OneWay}" TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Row="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Distribution readiness" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="v0.4 targets signed MSIX or EXE releases first, then Intune packaging, WinGet, and Microsoft Store submission after functional and privacy review." TextWrapping="Wrap" />
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</Page>
