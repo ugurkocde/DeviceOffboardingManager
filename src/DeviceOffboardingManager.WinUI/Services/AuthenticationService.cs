@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
@@ -22,6 +23,8 @@ public sealed class AuthenticationService : IAuthenticationService
 
     private static readonly string[] AppGraphScopes = { "https://graph.microsoft.com/.default" };
 
+    private static readonly object PublicTokenCacheLock = new();
+
     private static readonly string[][] DefenderScopeSets =
     {
         new[] { "https://api.securitycenter.microsoft.com/.default" },
@@ -44,6 +47,20 @@ public sealed class AuthenticationService : IAuthenticationService
 
     public string? AccountDisplayName { get; private set; }
 
+    private static string CacheDirectory
+    {
+        get
+        {
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "DeviceOffboardingManager");
+            Directory.CreateDirectory(path);
+            return path;
+        }
+    }
+
+    private static string PublicTokenCachePath => Path.Combine(CacheDirectory, "msal.cache.bin");
+
     public async Task<bool> ConnectAsync(AuthenticationRequest request, CancellationToken cancellationToken = default)
     {
         ValidateRequest(request);
@@ -52,7 +69,16 @@ public sealed class AuthenticationService : IAuthenticationService
         _confidentialClient = null;
         _account = null;
 
-        _ = await GetGraphAccessTokenAsync(cancellationToken);
+        try
+        {
+            _ = await GetGraphAccessTokenAsync(cancellationToken);
+        }
+        catch
+        {
+            ClearAuthenticationState();
+            throw;
+        }
+
         AccountDisplayName = request.Method is AuthenticationMethod.Certificate or AuthenticationMethod.ClientSecret
             ? $"AppId:{request.ClientId}"
             : _account?.Username ?? "Delegated session";
@@ -61,14 +87,25 @@ public sealed class AuthenticationService : IAuthenticationService
         return true;
     }
 
-    public Task DisconnectAsync(CancellationToken cancellationToken = default)
+    public async Task DisconnectAsync(CancellationToken cancellationToken = default)
     {
-        _currentRequest = null;
-        _publicClient = null;
-        _confidentialClient = null;
-        _account = null;
-        AccountDisplayName = null;
-        return Task.CompletedTask;
+        if (_publicClient is not null)
+        {
+            try
+            {
+                var accounts = await _publicClient.GetAccountsAsync();
+                foreach (var account in accounts)
+                {
+                    await _publicClient.RemoveAsync(account);
+                }
+            }
+            catch
+            {
+                // Disconnect should clear local state even if cache access is unavailable.
+            }
+        }
+
+        ClearAuthenticationState();
     }
 
     public Task<string> GetGraphAccessTokenAsync(CancellationToken cancellationToken = default)
@@ -114,11 +151,7 @@ public sealed class AuthenticationService : IAuthenticationService
     private async Task<string> AcquireDelegatedTokenAsync(string[] scopes, CancellationToken cancellationToken)
     {
         var request = _currentRequest ?? throw new InvalidOperationException("No auth request is active.");
-        _publicClient ??= PublicClientApplicationBuilder
-            .Create(request.ClientId)
-            .WithTenantId(NormalizeTenant(request.TenantId))
-            .WithRedirectUri("http://localhost")
-            .Build();
+        _publicClient ??= BuildPublicClient(request);
 
         try
         {
@@ -142,14 +175,20 @@ public sealed class AuthenticationService : IAuthenticationService
             result = await _publicClient
                 .AcquireTokenWithDeviceCode(scopes, code =>
                 {
-                    AccountDisplayName = code.Message;
+                    request.StatusMessageCallback?.Invoke(code.Message);
                     return Task.CompletedTask;
                 })
                 .ExecuteAsync(cancellationToken);
         }
         else
         {
-            result = await _publicClient.AcquireTokenInteractive(scopes).ExecuteAsync(cancellationToken);
+            var interactiveBuilder = _publicClient.AcquireTokenInteractive(scopes);
+            if (request.ParentWindowHandle != IntPtr.Zero)
+            {
+                interactiveBuilder = interactiveBuilder.WithParentActivityOrWindow(request.ParentWindowHandle);
+            }
+
+            result = await interactiveBuilder.ExecuteAsync(cancellationToken);
         }
 
         _account = result.Account;
@@ -161,6 +200,68 @@ public sealed class AuthenticationService : IAuthenticationService
         _confidentialClient ??= BuildConfidentialClient();
         var result = await _confidentialClient.AcquireTokenForClient(scopes).ExecuteAsync(cancellationToken);
         return result.AccessToken;
+    }
+
+    private static IPublicClientApplication BuildPublicClient(AuthenticationRequest request)
+    {
+        var publicClient = PublicClientApplicationBuilder
+            .Create(request.ClientId)
+            .WithTenantId(NormalizeTenant(request.TenantId))
+            .WithRedirectUri("http://localhost")
+            .Build();
+
+        publicClient.UserTokenCache.SetBeforeAccess(OnPublicTokenCacheBeforeAccess);
+        publicClient.UserTokenCache.SetAfterAccess(OnPublicTokenCacheAfterAccess);
+        return publicClient;
+    }
+
+    private static void OnPublicTokenCacheBeforeAccess(TokenCacheNotificationArgs args)
+    {
+        lock (PublicTokenCacheLock)
+        {
+            if (!File.Exists(PublicTokenCachePath))
+            {
+                return;
+            }
+
+            try
+            {
+                var protectedBytes = File.ReadAllBytes(PublicTokenCachePath);
+                var cacheBytes = ProtectedData.Unprotect(protectedBytes, null, DataProtectionScope.CurrentUser);
+                args.TokenCache.DeserializeMsalV3(cacheBytes);
+            }
+            catch
+            {
+                TryDeletePublicTokenCache();
+            }
+        }
+    }
+
+    private static void OnPublicTokenCacheAfterAccess(TokenCacheNotificationArgs args)
+    {
+        if (!args.HasStateChanged)
+        {
+            return;
+        }
+
+        lock (PublicTokenCacheLock)
+        {
+            var cacheBytes = args.TokenCache.SerializeMsalV3();
+            var protectedBytes = ProtectedData.Protect(cacheBytes, null, DataProtectionScope.CurrentUser);
+            File.WriteAllBytes(PublicTokenCachePath, protectedBytes);
+        }
+    }
+
+    private static void TryDeletePublicTokenCache()
+    {
+        try
+        {
+            File.Delete(PublicTokenCachePath);
+        }
+        catch
+        {
+            // A stale cache should never block a fresh sign-in attempt.
+        }
     }
 
     private IConfidentialClientApplication BuildConfidentialClient()
@@ -203,6 +304,15 @@ public sealed class AuthenticationService : IAuthenticationService
     private static string NormalizeTenant(string? tenantId)
     {
         return string.IsNullOrWhiteSpace(tenantId) ? "organizations" : tenantId.Trim();
+    }
+
+    private void ClearAuthenticationState()
+    {
+        _currentRequest = null;
+        _publicClient = null;
+        _confidentialClient = null;
+        _account = null;
+        AccountDisplayName = null;
     }
 
     private static void ValidateRequest(AuthenticationRequest request)

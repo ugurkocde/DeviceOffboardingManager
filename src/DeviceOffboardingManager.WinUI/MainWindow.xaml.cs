@@ -161,7 +161,16 @@ public sealed partial class MainWindow : Window
     {
         await RunUiActionAsync("Connecting", async () =>
         {
-            var request = BuildAuthenticationRequest();
+            var request = BuildAuthenticationRequest() with
+            {
+                StatusMessageCallback = message =>
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        SetStatus("Device code sign-in", message, InfoBarSeverity.Warning);
+                    });
+                }
+            };
             await _authenticationService.ConnectAsync(request);
             HomeConnectButton.IsEnabled = false;
             ConnectButton.IsEnabled = false;
@@ -1079,7 +1088,8 @@ public sealed partial class MainWindow : Window
             TenantId = EmptyToNull(TenantIdBox.Text),
             ClientId = EmptyToNull(ClientIdBox.Text),
             CertificateThumbprint = EmptyToNull(CertificateThumbprintBox.Text),
-            ClientSecret = EmptyToNull(ClientSecretBox.Password)
+            ClientSecret = EmptyToNull(ClientSecretBox.Password),
+            ParentWindowHandle = WindowNative.GetWindowHandle(this)
         };
     }
 

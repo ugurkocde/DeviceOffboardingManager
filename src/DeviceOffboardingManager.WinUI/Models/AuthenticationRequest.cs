@@ -11,4 +11,8 @@ public sealed record AuthenticationRequest
     public string? CertificateThumbprint { get; init; }
 
     public string? ClientSecret { get; init; }
+
+    public IntPtr ParentWindowHandle { get; init; }
+
+    public Action<string>? StatusMessageCallback { get; init; }
 }
