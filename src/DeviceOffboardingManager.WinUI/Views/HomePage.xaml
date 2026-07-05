@@ -26,7 +26,7 @@
                 </StackPanel>
             </Grid>
 
-            <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Release posture" Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock Text="Version 0.4 is the native signed-app track. Test with non-production devices first; offboarding, wipe, delete, and Defender actions can be permanent." TextWrapping="Wrap" />
@@ -41,25 +41,25 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Intune" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock Text="Search managed devices, retire or wipe, delete records, report stale devices, and read compliance/agent state." TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Autopilot" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock Text="Correlate identities, delete Autopilot records, and set or clear group tags for selected devices." TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Entra ID" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock Text="Resolve exact device IDs, disable or delete device objects, and preserve IDs in exports and confirmation flows." TextWrapping="Wrap" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Border Grid.Column="3" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
                         <TextBlock Text="Defender" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <TextBlock Text="Optional, settings-gated Defender for Endpoint offboarding that requests Defender tokens only when used." TextWrapping="Wrap" />

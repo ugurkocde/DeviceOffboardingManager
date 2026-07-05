@@ -14,14 +14,14 @@
                 <TextBlock Text="Device Offboarding Manager" Style="{StaticResource TitleTextBlockStyle}" />
                 <TextBlock x:Name="AboutVersionText" AutomationProperties.AutomationId="AboutVersionText" Text="{x:Bind ViewModel.AboutVersionText, Mode=OneWay}" TextWrapping="Wrap" />
             </StackPanel>
-            <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="What this app does" Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock Text="Device Offboarding Manager correlates devices across Intune, Autopilot, Entra ID, and optional Defender for Endpoint, then provides auditable offboarding workflows and recovery-key handling." TextWrapping="Wrap" />
                     <TextBlock Text="This native app replaces the PowerShell module as of 0.4.0 and is the sole supported surface going forward." TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
-            <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Validation" Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock Text="Build on Windows with Visual Studio 2022, WinUI application development, Desktop development with C++, .NET 8 SDK, Developer Mode, and Windows App Runtime installed or available through the Windows App SDK deployment manager." TextWrapping="Wrap" />

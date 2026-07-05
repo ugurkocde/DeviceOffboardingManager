@@ -8,6 +8,7 @@
 - Reworked the WinUI shell into real Frame-navigated pages with MVVM ViewModels (CommunityToolkit.Mvvm), compiled x:Bind bindings, virtualized device lists for large tenants, busy-state command disabling, and removal of unused dependencies.
 - Added native file picker flows for bulk CSV/TXT import with preview and template export, app registration JSON import, About page changelog rendering, repository actions, and release update checks.
 - Added selected-device Entra group membership lookup, richer offboarding summary dialogs, device-list CSV export, and dashboard result handoff into the Devices view.
+- Polished the WinUI shell with a Mica backdrop, DPI-aware 1280x800 default window size, and shared Fluent card styling.
 - Recovery keys and LAPS passwords are now displayed in-app only and are no longer written to the audit log.
 - Replaced placeholder package images with branded app logo assets and an executable icon.
 - Added the Visual Studio `MsixPackage` launch profile required to debug the packaged WinUI app.

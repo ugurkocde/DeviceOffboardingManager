@@ -17,7 +17,7 @@
                 <TextBlock Text="Authentication, app registration import, Defender gating, and required permissions." TextWrapping="Wrap" />
             </StackPanel>
 
-            <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
                 <Grid RowSpacing="12" ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -59,14 +59,14 @@
                 </Grid>
             </Border>
 
-            <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Required permissions" Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock x:Name="PermissionsText" AutomationProperties.AutomationId="PermissionsText" Text="{x:Bind ViewModel.PermissionsText, Mode=OneWay}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 
-            <Border Grid.Row="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
                     <TextBlock Text="Distribution readiness" Style="{StaticResource SubtitleTextBlockStyle}" />
                     <TextBlock Text="v0.4 targets signed MSIX or EXE releases first, then Intune packaging, WinGet, and Microsoft Store submission after functional and privacy review." TextWrapping="Wrap" />

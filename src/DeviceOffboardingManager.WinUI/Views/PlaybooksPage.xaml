@@ -27,7 +27,7 @@
             <Button Grid.Column="2" Content="Run playbook" Command="{x:Bind ViewModel.RunPlaybookCommand}" AutomationProperties.AutomationId="BtnRunPlaybook" VerticalAlignment="Bottom" />
         </Grid>
 
-        <Border Grid.Row="2" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+        <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
             <Grid RowSpacing="12">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />

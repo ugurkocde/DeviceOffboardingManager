@@ -5,7 +5,7 @@
     xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
     Title="Device Offboarding Manager">
 
-    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+    <Grid>
         <muxc:NavigationView
             x:Name="RootNavigation"
             AutomationProperties.AutomationId="RootNavigation"

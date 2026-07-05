@@ -17,7 +17,7 @@
                 <TextBlock Text="Run selected pre-actions and service removals only after reviewing resolved IDs." TextWrapping="Wrap" />
             </StackPanel>
 
-            <Border Grid.Row="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
                 <Grid ColumnSpacing="16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
@@ -39,7 +39,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Border Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Service actions" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <CheckBox x:Name="DeleteEntraBox" AutomationProperties.AutomationId="DeleteEntraBox" Content="Remove from Entra ID" IsChecked="{x:Bind ViewModel.DeleteEntra, Mode=TwoWay}" />
@@ -49,7 +49,7 @@
                         <CheckBox x:Name="OffboardDefenderBox" AutomationProperties.AutomationId="OffboardDefenderBox" Content="Offboard Defender for Endpoint" IsChecked="{x:Bind ViewModel.OffboardDefender, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsDefenderControlEnabled, Mode=OneWay}" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+                <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="12">
                         <TextBlock Text="Pre-actions and recovery" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <ComboBox x:Name="PreActionBox" AutomationProperties.AutomationId="PreActionBox" Header="Intune pre-action" SelectedIndex="{x:Bind ViewModel.PreActionIndex, Mode=TwoWay}">
@@ -66,7 +66,7 @@
                 </Border>
             </Grid>
 
-            <Border Grid.Row="3" Padding="16" BorderThickness="1" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" CornerRadius="{ThemeResource ControlCornerRadius}">
+            <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}">
                 <Grid ColumnSpacing="16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
