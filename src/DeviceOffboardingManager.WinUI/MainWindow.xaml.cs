@@ -8,6 +8,7 @@ using DeviceOffboardingManager.WinUI.Services.Contracts;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Windows.ApplicationModel.DataTransfer;
 using Windows.UI.Text;
 using Windows.Storage.Pickers;
 using WinRT.Interop;
@@ -528,8 +529,9 @@ public sealed partial class MainWindow : Window
 
             var keys = await _recoveryKeyService.GetRecoveryKeysAsync(selected);
             var found = keys.Count(key => !string.IsNullOrWhiteSpace(key.KeyValue));
-            OffboardingStatusText.Text = $"Recovery key lookup complete. Records: {keys.Count:n0}; values found: {found:n0}. Sensitive values were written to the audit log: {_auditLogService.LogFilePath}";
-            SetStatus("Recovery key lookup complete", OffboardingStatusText.Text, found > 0 ? InfoBarSeverity.Warning : InfoBarSeverity.Informational);
+            OffboardingStatusText.Text = $"Recovery key lookup complete. Records: {keys.Count:n0}; values found: {found:n0}. Values are shown once and are not written to logs.";
+            SetStatus("Recovery key lookup complete", OffboardingStatusText.Text, found > 0 ? InfoBarSeverity.Success : InfoBarSeverity.Informational);
+            await ShowRecoveryKeysDialogAsync(keys);
         });
     }
 
@@ -949,6 +951,60 @@ public sealed partial class MainWindow : Window
         };
 
         await dialog.ShowAsync();
+    }
+
+    private async Task ShowRecoveryKeysDialogAsync(IReadOnlyList<RecoveryKeyRecord> records)
+    {
+        var found = records.Where(record => !string.IsNullOrWhiteSpace(record.KeyValue)).ToArray();
+        var rows = records.Select(record =>
+        {
+            var parts = new List<string>
+            {
+                record.DeviceName ?? "(unnamed)",
+                record.KeyType ?? "Key"
+            };
+
+            if (!string.IsNullOrWhiteSpace(record.AccountName))
+            {
+                parts.Add($"Account: {record.AccountName}");
+            }
+
+            parts.Add(!string.IsNullOrWhiteSpace(record.KeyValue)
+                ? record.KeyValue
+                : record.Status ?? "Not found");
+
+            return string.Join(" | ", parts);
+        }).ToArray();
+
+        var content = new StackPanel { Spacing = 12 };
+        content.Children.Add(new TextBlock
+        {
+            Text = $"Records: {records.Count:n0}; values found: {found.Length:n0}.",
+            TextWrapping = TextWrapping.Wrap
+        });
+        content.Children.Add(new ListView
+        {
+            ItemsSource = rows,
+            MaxHeight = 480
+        });
+
+        var dialog = new ContentDialog
+        {
+            Title = "Recovery keys",
+            Content = content,
+            PrimaryButtonText = "Copy all",
+            CloseButtonText = "Close",
+            IsPrimaryButtonEnabled = found.Length > 0,
+            XamlRoot = this.Content.XamlRoot
+        };
+
+        if (await dialog.ShowAsync() == ContentDialogResult.Primary)
+        {
+            var text = string.Join(Environment.NewLine, found.Select(record => $"{record.DeviceName ?? "(unnamed)"} | {record.KeyType ?? "Key"} | {record.KeyValue}"));
+            var package = new DataPackage();
+            package.SetText(text);
+            Clipboard.SetContent(package);
+        }
     }
 
     private async Task ShowOffboardingSummaryDialogAsync(OffboardingSummary summary)

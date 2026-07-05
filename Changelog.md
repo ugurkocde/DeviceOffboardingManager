@@ -7,6 +7,7 @@
 - Reworked the WinUI prototype into a page-based shell with Home, Dashboard, Devices, Offboarding, Playbooks, Settings, and About views, including dashboard drilldowns, dashboard CSV export, platform/ownership/stale distribution, and device filtering.
 - Added native file picker flows for bulk CSV/TXT import with preview and template export, app registration JSON import, About page changelog rendering, repository actions, and release update checks.
 - Added selected-device Entra group membership lookup, richer offboarding summary dialogs, device-list CSV export, and dashboard result handoff into the Devices view.
+- Recovery keys and LAPS passwords are now displayed in-app only and are no longer written to the audit log.
 - Replaced placeholder package images with branded app logo assets and an executable icon.
 - Added the Visual Studio `MsixPackage` launch profile required to debug the packaged WinUI app.
 - Added the v0.4 migration plan for signed releases, Intune packaging, WinGet, and Microsoft Store readiness.

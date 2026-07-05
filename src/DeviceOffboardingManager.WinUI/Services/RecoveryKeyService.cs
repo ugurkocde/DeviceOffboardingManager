@@ -90,7 +90,11 @@ public sealed class RecoveryKeyService : IRecoveryKeyService
 
             var keyDetails = await _graph.SendAsync(HttpMethod.Get, $"/informationProtection/bitlocker/recoveryKeys/{keyId}?$select=key", cancellationToken: cancellationToken);
             var key = keyDetails.GetStringValue("key");
-            await _auditLog.WriteAsync($"SENSITIVE: BitLocker recovery key for {device.DeviceName}: {key}", "AUDIT", cancellationToken);
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                await _auditLog.WriteAsync($"Retrieved BitLocker recovery key for {device.DeviceName}.", "AUDIT", cancellationToken);
+            }
+
             return new RecoveryKeyRecord { DeviceName = device.DeviceName, KeyType = "BitLocker", KeyValue = key, Status = string.IsNullOrWhiteSpace(key) ? "Key metadata found but key value missing." : "Found" };
         }
         catch (Exception ex)
@@ -114,7 +118,11 @@ public sealed class RecoveryKeyService : IRecoveryKeyService
                 $"/deviceManagement/managedDevices('{device.IntuneDeviceId}')/getFileVaultKey",
                 cancellationToken: cancellationToken);
             var key = response.GetStringValue("value");
-            await _auditLog.WriteAsync($"SENSITIVE: FileVault recovery key for {device.DeviceName}: {key}", "AUDIT", cancellationToken);
+            if (!string.IsNullOrWhiteSpace(key))
+            {
+                await _auditLog.WriteAsync($"Retrieved FileVault recovery key for {device.DeviceName}.", "AUDIT", cancellationToken);
+            }
+
             return new RecoveryKeyRecord { DeviceName = device.DeviceName, KeyType = "FileVault", KeyValue = key, Status = string.IsNullOrWhiteSpace(key) ? "No FileVault recovery key found." : "Found" };
         }
         catch (Exception ex)
@@ -151,7 +159,11 @@ public sealed class RecoveryKeyService : IRecoveryKeyService
                 ? null
                 : Encoding.UTF8.GetString(Convert.FromBase64String(passwordBase64));
             var accountName = latest.GetStringValue("accountName");
-            await _auditLog.WriteAsync($"SENSITIVE: LAPS password for {device.DeviceName} account '{accountName}': {password}", "AUDIT", cancellationToken);
+            if (!string.IsNullOrWhiteSpace(password))
+            {
+                await _auditLog.WriteAsync($"Retrieved LAPS password for {device.DeviceName} (account '{accountName}').", "AUDIT", cancellationToken);
+            }
+
             return new RecoveryKeyRecord { DeviceName = device.DeviceName, KeyType = "LAPS", AccountName = accountName, KeyValue = password, Status = string.IsNullOrWhiteSpace(password) ? "Password metadata found but value missing." : "Found" };
         }
         catch (Exception ex)
