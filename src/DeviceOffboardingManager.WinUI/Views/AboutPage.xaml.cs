@@ -2,7 +2,7 @@ using DeviceOffboardingManager.WinUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
-using Windows.UI.Text;
+using Microsoft.UI.Text;
 
 namespace DeviceOffboardingManager.WinUI.Views;
 
