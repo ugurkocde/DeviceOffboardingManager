@@ -1,10 +1,36 @@
-<Page
-    x:Class="DeviceOffboardingManager.WinUI.Views.OffboardingPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page x:Class="DeviceOffboardingManager.WinUI.Views.OffboardingPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ScrollViewer>
         <Grid x:Name="OffboardingPageRoot" RowSpacing="16">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="WindowWidthStates">
+                    <VisualState x:Name="Wide">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="800" />
+                        </VisualState.StateTriggers>
+                    </VisualState>
+                    <VisualState x:Name="Narrow">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="SelectedDeviceActions.(Grid.Row)" Value="1" />
+                            <Setter Target="SelectedDeviceActions.(Grid.Column)" Value="0" />
+                            <Setter Target="SelectedDeviceActions.Orientation" Value="Vertical" />
+                            <Setter Target="SelectedDeviceActions.HorizontalAlignment" Value="Left" />
+                            <Setter Target="RecoveryActionsCard.(Grid.Row)" Value="1" />
+                            <Setter Target="RecoveryActionsCard.(Grid.Column)" Value="0" />
+                            <Setter Target="RecoveryActionsCard.(Grid.ColumnSpan)" Value="2" />
+                            <Setter Target="ServiceActionsCard.(Grid.ColumnSpan)" Value="2" />
+                            <Setter Target="OffboardingFooterActions.(Grid.Row)" Value="1" />
+                            <Setter Target="OffboardingFooterActions.(Grid.Column)" Value="0" />
+                            <Setter Target="OffboardingFooterActions.Orientation" Value="Vertical" />
+                            <Setter Target="OffboardingFooterActions.HorizontalAlignment" Value="Left" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -13,23 +39,27 @@
             </Grid.RowDefinitions>
 
             <StackPanel Spacing="4">
-                <TextBlock Text="Offboarding" Style="{StaticResource TitleTextBlockStyle}" />
-                <TextBlock Text="Run selected pre-actions and service removals only after reviewing resolved IDs." TextWrapping="Wrap" />
+                <TextBlock Text="Offboarding" Style="{StaticResource TitleTextBlockStyle}" x:Uid="OffboardingPage_TextBlockOffboarding" />
+                <TextBlock Text="Run selected pre-actions and service removals only after reviewing resolved IDs." TextWrapping="Wrap" x:Uid="OffboardingPage_TextBlockRunSelectedPreActionsAnd" />
             </StackPanel>
 
             <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
-                <Grid ColumnSpacing="16">
+                <Grid ColumnSpacing="16" RowSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Selected devices" Style="{StaticResource SubtitleTextBlockStyle}" />
+                        <TextBlock Text="Selected devices" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="OffboardingPage_TextBlockSelectedDevices" />
                         <TextBlock x:Name="SelectedDeviceCountText" AutomationProperties.AutomationId="SelectedDeviceCountText" Text="{x:Bind ViewModel.SelectedDeviceCountText, Mode=OneWay}" TextWrapping="Wrap" />
                     </StackPanel>
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                        <Button Content="Review IDs" Click="ReviewSelectedIds_Click" AutomationProperties.AutomationId="BtnReviewSelectedIds" />
-                        <Button Content="Export selected" Command="{x:Bind ViewModel.ExportSelectedCommand}" AutomationProperties.AutomationId="BtnExportSelected" />
+                    <StackPanel x:Name="SelectedDeviceActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                        <Button Content="Review IDs" Click="ReviewSelectedIds_Click" AutomationProperties.AutomationId="BtnReviewSelectedIds" x:Uid="OffboardingPage_BtnReviewSelectedIds" />
+                        <Button Content="Export selected" Command="{x:Bind ViewModel.ExportSelectedCommand}" AutomationProperties.AutomationId="BtnExportSelected" x:Uid="OffboardingPage_BtnExportSelected" />
                     </StackPanel>
                 </Grid>
             </Border>
@@ -39,43 +69,52 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Style="{StaticResource CardBorderStyle}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Border x:Name="ServiceActionsCard" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Service actions" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <CheckBox x:Name="DeleteEntraBox" AutomationProperties.AutomationId="DeleteEntraBox" Content="Remove from Entra ID" IsChecked="{x:Bind ViewModel.DeleteEntra, Mode=TwoWay}" />
-                        <CheckBox x:Name="DisableEntraBox" AutomationProperties.AutomationId="DisableEntraBox" Content="Disable in Entra ID instead of removal" IsChecked="{x:Bind ViewModel.DisableEntra, Mode=TwoWay}" />
-                        <CheckBox x:Name="DeleteIntuneBox" AutomationProperties.AutomationId="DeleteIntuneBox" Content="Remove from Intune" IsChecked="{x:Bind ViewModel.DeleteIntune, Mode=TwoWay}" />
-                        <CheckBox x:Name="DeleteAutopilotBox" AutomationProperties.AutomationId="DeleteAutopilotBox" Content="Remove from Autopilot" IsChecked="{x:Bind ViewModel.DeleteAutopilot, Mode=TwoWay}" />
-                        <CheckBox x:Name="OffboardDefenderBox" AutomationProperties.AutomationId="OffboardDefenderBox" Content="Offboard Defender for Endpoint" IsChecked="{x:Bind ViewModel.OffboardDefender, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsDefenderControlEnabled, Mode=OneWay}" />
+                        <TextBlock Text="Service actions" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="OffboardingPage_TextBlockServiceActions" />
+                        <CheckBox x:Name="DeleteEntraBox" AutomationProperties.AutomationId="DeleteEntraBox" Content="Remove from Entra ID" IsChecked="{x:Bind ViewModel.DeleteEntra, Mode=TwoWay}" x:Uid="OffboardingPage_DeleteEntraBox" />
+                        <CheckBox x:Name="DisableEntraBox" AutomationProperties.AutomationId="DisableEntraBox" Content="Disable in Entra ID instead of removal" IsChecked="{x:Bind ViewModel.DisableEntra, Mode=TwoWay}" x:Uid="OffboardingPage_DisableEntraBox" />
+                        <CheckBox x:Name="DeleteIntuneBox" AutomationProperties.AutomationId="DeleteIntuneBox" Content="Remove from Intune" IsChecked="{x:Bind ViewModel.DeleteIntune, Mode=TwoWay}" x:Uid="OffboardingPage_DeleteIntuneBox" />
+                        <CheckBox x:Name="DeleteAutopilotBox" AutomationProperties.AutomationId="DeleteAutopilotBox" Content="Remove from Autopilot" IsChecked="{x:Bind ViewModel.DeleteAutopilot, Mode=TwoWay}" x:Uid="OffboardingPage_DeleteAutopilotBox" />
+                        <CheckBox x:Name="OffboardDefenderBox" AutomationProperties.AutomationId="OffboardDefenderBox" Content="Offboard Defender for Endpoint" IsChecked="{x:Bind ViewModel.OffboardDefender, Mode=TwoWay}" IsEnabled="{x:Bind ViewModel.IsDefenderControlEnabled, Mode=OneWay}" x:Uid="OffboardingPage_OffboardDefenderBox" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
+                <Border x:Name="RecoveryActionsCard" Grid.Column="1" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="12">
-                        <TextBlock Text="Pre-actions and recovery" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <ComboBox x:Name="PreActionBox" AutomationProperties.AutomationId="PreActionBox" Header="Intune pre-action" SelectedIndex="{x:Bind ViewModel.PreActionIndex, Mode=TwoWay}">
-                            <ComboBoxItem Content="None" />
-                            <ComboBoxItem Content="Retire Intune device" />
-                            <ComboBoxItem Content="Wipe Intune device" />
+                        <TextBlock Text="Pre-actions and recovery" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="OffboardingPage_TextBlockPreActionsAndRecovery" />
+                        <ComboBox x:Name="PreActionBox" AutomationProperties.AutomationId="PreActionBox" Header="Intune pre-action" SelectedIndex="{x:Bind ViewModel.PreActionIndex, Mode=TwoWay}" x:Uid="OffboardingPage_PreActionBox">
+                            <ComboBoxItem Content="None" x:Uid="OffboardingPage_ComboBoxItemNone" />
+                            <ComboBoxItem Content="Retire Intune device" x:Uid="OffboardingPage_ComboBoxItemRetireIntuneDevice" />
+                            <ComboBoxItem Content="Wipe Intune device" x:Uid="OffboardingPage_ComboBoxItemWipeIntuneDevice" />
                         </ComboBox>
-                        <TextBox x:Name="GroupTagBox" AutomationProperties.AutomationId="GroupTagBox" Header="Autopilot group tag" PlaceholderText="New tag or empty to clear" Text="{x:Bind ViewModel.GroupTag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <TextBox x:Name="GroupTagBox" AutomationProperties.AutomationId="GroupTagBox" Header="Autopilot group tag" PlaceholderText="New tag or empty to clear" Text="{x:Bind ViewModel.GroupTag, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="OffboardingPage_GroupTagBox" />
                         <StackPanel Orientation="Horizontal" Spacing="8">
-                            <Button Content="Set group tag" Command="{x:Bind ViewModel.SetGroupTagCommand}" AutomationProperties.AutomationId="BtnSetGroupTag" />
-                            <Button Content="Fetch recovery keys" Click="FetchRecoveryKeys_Click" AutomationProperties.AutomationId="BtnFetchRecoveryKeys" />
+                            <Button Content="Set group tag" Command="{x:Bind ViewModel.SetGroupTagCommand}" AutomationProperties.AutomationId="BtnSetGroupTag" x:Uid="OffboardingPage_BtnSetGroupTag" />
+                            <Button Content="Fetch recovery keys" Click="FetchRecoveryKeys_Click" AutomationProperties.AutomationId="BtnFetchRecoveryKeys" x:Uid="OffboardingPage_BtnFetchRecoveryKeys" />
                         </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
 
             <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}">
-                <Grid ColumnSpacing="16">
+                <Grid ColumnSpacing="16" RowSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
                     <TextBlock x:Name="OffboardingStatusText" AutomationProperties.AutomationId="OffboardingStatusText" Text="{x:Bind ViewModel.OffboardingStatusText, Mode=OneWay}" TextWrapping="Wrap" VerticalAlignment="Center" />
-                    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                        <Button Content="Run offboarding" Click="RunOffboarding_Click" AutomationProperties.AutomationId="BtnRunOffboarding" />
-                        <Button Content="Export HTML report" Command="{x:Bind ViewModel.ExportReportCommand}" AutomationProperties.AutomationId="BtnExportHtmlReport" />
+                    <StackPanel x:Name="OffboardingFooterActions" Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                        <ProgressRing Width="20" Height="20" IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" AutomationProperties.AutomationId="OffboardingBusyIndicator" AutomationProperties.Name="Offboarding operation in progress" x:Uid="OffboardingPage_OffboardingBusyIndicator" />
+                        <Button Content="Run offboarding" Click="RunOffboarding_Click" AutomationProperties.AutomationId="BtnRunOffboarding" AccessKey="R" x:Uid="OffboardingPage_BtnRunOffboarding" />
+                        <Button Content="Export HTML report" Command="{x:Bind ViewModel.ExportReportCommand}" AutomationProperties.AutomationId="BtnExportHtmlReport" x:Uid="OffboardingPage_BtnExportHtmlReport" />
                     </StackPanel>
                 </Grid>
             </Border>

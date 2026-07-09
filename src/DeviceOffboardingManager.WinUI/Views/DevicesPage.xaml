@@ -1,10 +1,53 @@
-<Page
-    x:Class="DeviceOffboardingManager.WinUI.Views.DevicesPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:models="using:DeviceOffboardingManager.WinUI.Models">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page x:Class="DeviceOffboardingManager.WinUI.Views.DevicesPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:models="using:DeviceOffboardingManager.WinUI.Models">
 
     <Grid x:Name="DevicesPageRoot" RowSpacing="12">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WindowWidthStates">
+                <VisualState x:Name="Wide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1008" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="Narrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="SearchModeBox.(Grid.ColumnSpan)" Value="3" />
+                        <Setter Target="SearchTextBox.(Grid.Row)" Value="1" />
+                        <Setter Target="SearchTextBox.(Grid.Column)" Value="0" />
+                        <Setter Target="SearchTextBox.(Grid.ColumnSpan)" Value="3" />
+                        <Setter Target="SearchActions.(Grid.Row)" Value="2" />
+                        <Setter Target="SearchActions.(Grid.Column)" Value="0" />
+                        <Setter Target="SearchActions.(Grid.ColumnSpan)" Value="3" />
+                        <Setter Target="SearchActions.Orientation" Value="Vertical" />
+                        <Setter Target="SearchActions.HorizontalAlignment" Value="Left" />
+                        <Setter Target="SelectAllDevicesBox.(Grid.ColumnSpan)" Value="7" />
+                        <Setter Target="FilterDeviceNameBox.(Grid.Row)" Value="1" />
+                        <Setter Target="FilterDeviceNameBox.(Grid.Column)" Value="0" />
+                        <Setter Target="FilterDeviceNameBox.(Grid.ColumnSpan)" Value="3" />
+                        <Setter Target="FilterSerialBox.(Grid.Row)" Value="1" />
+                        <Setter Target="FilterSerialBox.(Grid.Column)" Value="3" />
+                        <Setter Target="FilterSerialBox.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="FilterOsBox.(Grid.Row)" Value="2" />
+                        <Setter Target="FilterOsBox.(Grid.Column)" Value="0" />
+                        <Setter Target="FilterOsBox.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="FilterUserBox.(Grid.Row)" Value="2" />
+                        <Setter Target="FilterUserBox.(Grid.Column)" Value="2" />
+                        <Setter Target="FilterUserBox.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="FilterComplianceBox.(Grid.Row)" Value="2" />
+                        <Setter Target="FilterComplianceBox.(Grid.Column)" Value="4" />
+                        <Setter Target="FilterComplianceBox.(Grid.ColumnSpan)" Value="3" />
+                        <Setter Target="FilterActions.(Grid.Row)" Value="3" />
+                        <Setter Target="FilterActions.(Grid.Column)" Value="0" />
+                        <Setter Target="FilterActions.(Grid.ColumnSpan)" Value="7" />
+                        <Setter Target="FilterActions.Orientation" Value="Vertical" />
+                        <Setter Target="FilterActions.HorizontalAlignment" Value="Left" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -14,8 +57,8 @@
         </Grid.RowDefinitions>
 
         <StackPanel Spacing="4">
-            <TextBlock Text="Devices" Style="{StaticResource TitleTextBlockStyle}" />
-            <TextBlock Text="Search, correlate, filter, select, and export device records before offboarding." TextWrapping="Wrap" />
+            <TextBlock Text="Devices" Style="{StaticResource TitleTextBlockStyle}" x:Uid="DevicesPage_TextBlockDevices" />
+            <TextBlock Text="Search, correlate, filter, select, and export device records before offboarding." TextWrapping="Wrap" x:Uid="DevicesPage_TextBlockSearchCorrelateFilterSelectAnd" />
         </StackPanel>
 
         <Grid Grid.Row="1" ColumnSpacing="12">
@@ -24,18 +67,24 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <ComboBox x:Name="SearchModeBox" AutomationProperties.AutomationId="SearchModeBox" Header="Search mode" SelectedIndex="{x:Bind ViewModel.SearchModeIndex, Mode=TwoWay}">
-                <ComboBoxItem Content="Device Name" />
-                <ComboBoxItem Content="Serial Number" />
-                <ComboBoxItem Content="Device ID" />
-                <ComboBoxItem Content="Contains" />
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <ComboBox x:Name="SearchModeBox" AutomationProperties.AutomationId="SearchModeBox" Header="Search mode" SelectedIndex="{x:Bind ViewModel.SearchModeIndex, Mode=TwoWay}" x:Uid="DevicesPage_SearchModeBox">
+                <ComboBoxItem Content="Device Name" x:Uid="DevicesPage_ComboBoxItemDeviceName" />
+                <ComboBoxItem Content="Serial Number" x:Uid="DevicesPage_ComboBoxItemSerialNumber" />
+                <ComboBoxItem Content="Device ID" x:Uid="DevicesPage_ComboBoxItemDeviceID" />
+                <ComboBoxItem Content="Contains" x:Uid="DevicesPage_ComboBoxItemContains" />
             </ComboBox>
-            <TextBox x:Name="SearchTextBox" AutomationProperties.AutomationId="SearchTextBox" Grid.Column="1" Header="Search terms" PlaceholderText="Comma or line separated device names, serials, or IDs" AcceptsReturn="True" TextWrapping="Wrap" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                <Button x:Name="SearchButton" AutomationProperties.AutomationId="SearchButton" Content="Search" Command="{x:Bind ViewModel.SearchCommand}" />
-                <Button x:Name="ImportBulkButton" AutomationProperties.AutomationId="ImportBulkButton" Content="Import file" Click="ImportBulkFile_Click" />
-                <Button x:Name="BulkTemplateButton" AutomationProperties.AutomationId="BulkTemplateButton" Content="Save template" Command="{x:Bind ViewModel.DownloadBulkTemplateCommand}" />
-                <Button x:Name="ClearSearchButton" AutomationProperties.AutomationId="ClearSearchButton" Content="Clear" Command="{x:Bind ViewModel.ClearSearchCommand}" />
+            <TextBox x:Name="SearchTextBox" AutomationProperties.AutomationId="SearchTextBox" Grid.Column="1" Header="Search terms" PlaceholderText="Comma or line separated device names, serials, or IDs" AcceptsReturn="True" TextWrapping="Wrap" Text="{x:Bind ViewModel.SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="DevicesPage_SearchTextBox" />
+            <StackPanel x:Name="SearchActions" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                <ProgressRing Width="20" Height="20" IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" AutomationProperties.AutomationId="DevicesBusyIndicator" AutomationProperties.Name="Device operation in progress" x:Uid="DevicesPage_DevicesBusyIndicator" />
+                <Button x:Name="SearchButton" AutomationProperties.AutomationId="SearchButton" Content="Search" Command="{x:Bind ViewModel.SearchCommand}" AccessKey="S" x:Uid="DevicesPage_SearchButton" />
+                <Button x:Name="ImportBulkButton" AutomationProperties.AutomationId="ImportBulkButton" Content="Import file" Click="ImportBulkFile_Click" x:Uid="DevicesPage_ImportBulkButton" />
+                <Button x:Name="BulkTemplateButton" AutomationProperties.AutomationId="BulkTemplateButton" Content="Save template" Command="{x:Bind ViewModel.DownloadBulkTemplateCommand}" x:Uid="DevicesPage_BulkTemplateButton" />
+                <Button x:Name="ClearSearchButton" AutomationProperties.AutomationId="ClearSearchButton" Content="Clear" Command="{x:Bind ViewModel.ClearSearchCommand}" x:Uid="DevicesPage_ClearSearchButton" />
             </StackPanel>
         </Grid>
 
@@ -49,16 +98,22 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <CheckBox x:Name="SelectAllDevicesBox" AutomationProperties.AutomationId="SelectAllDevicesBox" Content="All" Click="SelectAllDevices_Click" VerticalAlignment="Bottom" />
-            <TextBox x:Name="FilterDeviceNameBox" AutomationProperties.AutomationId="FilterDeviceNameBox" Grid.Column="1" Header="Device" Text="{x:Bind ViewModel.FilterDeviceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox x:Name="FilterSerialBox" AutomationProperties.AutomationId="FilterSerialBox" Grid.Column="2" Header="Serial" Text="{x:Bind ViewModel.FilterSerial, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox x:Name="FilterOsBox" AutomationProperties.AutomationId="FilterOsBox" Grid.Column="3" Header="OS" Text="{x:Bind ViewModel.FilterOs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox x:Name="FilterUserBox" AutomationProperties.AutomationId="FilterUserBox" Grid.Column="4" Header="User" Text="{x:Bind ViewModel.FilterUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <TextBox x:Name="FilterComplianceBox" AutomationProperties.AutomationId="FilterComplianceBox" Grid.Column="5" Header="Compliance" Text="{x:Bind ViewModel.FilterCompliance, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-            <StackPanel Grid.Column="6" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                <Button Content="Reset filters" Command="{x:Bind ViewModel.ResetFiltersCommand}" AutomationProperties.AutomationId="BtnResetFilters" />
-                <Button Content="View groups" Click="ViewSelectedGroups_Click" AutomationProperties.AutomationId="BtnViewSelectedGroups" />
-                <Button Content="Export CSV" Command="{x:Bind ViewModel.ExportCsvCommand}" AutomationProperties.AutomationId="BtnExportDevicesCsv" />
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <CheckBox x:Name="SelectAllDevicesBox" AutomationProperties.AutomationId="SelectAllDevicesBox" Content="All" Click="SelectAllDevices_Click" VerticalAlignment="Bottom" x:Uid="DevicesPage_SelectAllDevicesBox" />
+            <TextBox x:Name="FilterDeviceNameBox" AutomationProperties.AutomationId="FilterDeviceNameBox" Grid.Column="1" Header="Device" Text="{x:Bind ViewModel.FilterDeviceName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="DevicesPage_FilterDeviceNameBox" />
+            <TextBox x:Name="FilterSerialBox" AutomationProperties.AutomationId="FilterSerialBox" Grid.Column="2" Header="Serial" Text="{x:Bind ViewModel.FilterSerial, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="DevicesPage_FilterSerialBox" />
+            <TextBox x:Name="FilterOsBox" AutomationProperties.AutomationId="FilterOsBox" Grid.Column="3" Header="OS" Text="{x:Bind ViewModel.FilterOs, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="DevicesPage_FilterOsBox" />
+            <TextBox x:Name="FilterUserBox" AutomationProperties.AutomationId="FilterUserBox" Grid.Column="4" Header="User" Text="{x:Bind ViewModel.FilterUser, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="DevicesPage_FilterUserBox" />
+            <TextBox x:Name="FilterComplianceBox" AutomationProperties.AutomationId="FilterComplianceBox" Grid.Column="5" Header="Compliance" Text="{x:Bind ViewModel.FilterCompliance, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="DevicesPage_FilterComplianceBox" />
+            <StackPanel x:Name="FilterActions" Grid.Column="6" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                <Button Content="Reset filters" Command="{x:Bind ViewModel.ResetFiltersCommand}" AutomationProperties.AutomationId="BtnResetFilters" x:Uid="DevicesPage_BtnResetFilters" />
+                <Button Content="View groups" Click="ViewSelectedGroups_Click" AutomationProperties.AutomationId="BtnViewSelectedGroups" x:Uid="DevicesPage_BtnViewSelectedGroups" />
+                <Button Content="Export CSV" Command="{x:Bind ViewModel.ExportCsvCommand}" AutomationProperties.AutomationId="BtnExportDevicesCsv" x:Uid="DevicesPage_BtnExportDevicesCsv" />
             </StackPanel>
         </Grid>
 
@@ -77,13 +132,13 @@
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="1" Text="Device" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Grid.Column="2" Text="Serial" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Grid.Column="3" Text="OS" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Grid.Column="4" Text="User" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Grid.Column="5" Text="Compliance" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Grid.Column="6" Text="Services" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                    <TextBlock Grid.Column="7" Text="IDs" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Grid.Column="1" Text="Device" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DevicesPage_TextBlockDevice" />
+                    <TextBlock Grid.Column="2" Text="Serial" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DevicesPage_TextBlockSerial" />
+                    <TextBlock Grid.Column="3" Text="OS" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DevicesPage_TextBlockOS" />
+                    <TextBlock Grid.Column="4" Text="User" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DevicesPage_TextBlockUser" />
+                    <TextBlock Grid.Column="5" Text="Compliance" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DevicesPage_TextBlockCompliance" />
+                    <TextBlock Grid.Column="6" Text="Services" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DevicesPage_TextBlockServices" />
+                    <TextBlock Grid.Column="7" Text="IDs" Style="{StaticResource BodyStrongTextBlockStyle}" x:Uid="DevicesPage_TextBlockIDs" />
                 </Grid>
             </ListView.Header>
             <ListView.ItemTemplate>
@@ -99,14 +154,14 @@
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <CheckBox AutomationProperties.AutomationId="DeviceRowSelectionBox" AutomationProperties.Name="{x:Bind DeviceName, Mode=OneWay}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" />
+                        <CheckBox AutomationProperties.AutomationId="{x:Bind SelectionAutomationId, Mode=OneWay}" AutomationProperties.Name="{x:Bind DeviceName, Mode=OneWay}" IsChecked="{x:Bind IsSelected, Mode=TwoWay}" />
                         <TextBlock Grid.Column="1" Text="{x:Bind DeviceName, Mode=OneWay}" TextWrapping="Wrap" />
                         <TextBlock Grid.Column="2" Text="{x:Bind SerialNumber, Mode=OneWay}" TextWrapping="Wrap" />
                         <TextBlock Grid.Column="3" Text="{x:Bind OperatingSystem, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Column="4" Text="{x:Bind PrimaryUser, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Column="5" Text="{x:Bind ComplianceState, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Column="6" Text="{x:Bind ServiceSummary, Mode=OneWay}" TextWrapping="Wrap" />
-                        <TextBlock Grid.Column="7" Text="{x:Bind EntraDeviceObjectId, Mode=OneWay}" TextWrapping="Wrap" />
+                        <TextBlock Grid.Column="4" Text="{x:Bind PrimaryUser, Mode=OneWay}" TextWrapping="Wrap" x:Phase="1" />
+                        <TextBlock Grid.Column="5" Text="{x:Bind ComplianceState, Mode=OneWay}" TextWrapping="Wrap" x:Phase="1" />
+                        <TextBlock Grid.Column="6" Text="{x:Bind ServiceSummary, Mode=OneWay}" TextWrapping="Wrap" x:Phase="1" />
+                        <TextBlock Grid.Column="7" Text="{x:Bind EntraDeviceObjectId, Mode=OneWay}" TextWrapping="Wrap" x:Phase="2" />
                     </Grid>
                 </DataTemplate>
             </ListView.ItemTemplate>

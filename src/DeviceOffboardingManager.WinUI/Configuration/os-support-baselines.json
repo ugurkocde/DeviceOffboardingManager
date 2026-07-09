@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "updatedUtc": "2026-07-09T00:00:00Z",
+  "platforms": {
+    "Windows": {
+      "currentVersionPrefixes": [
+        "10.0.28000",
+        "10.0.26200",
+        "10.0.26100"
+      ],
+      "endOfLifeVersionPrefixes": [
+        "10.0.190"
+      ]
+    },
+    "macOS": {
+      "currentVersionPrefixes": [
+        "26."
+      ],
+      "endOfLifeVersionPrefixes": [
+        "13.",
+        "12.",
+        "11."
+      ]
+    }
+  }
+}

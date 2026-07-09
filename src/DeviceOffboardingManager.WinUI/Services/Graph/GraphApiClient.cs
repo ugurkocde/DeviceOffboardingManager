@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
@@ -15,12 +16,16 @@ public sealed class GraphApiClient
 
     private readonly IAuthenticationService _authenticationService;
     private readonly IAuditLogService _auditLog;
-    private readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient;
 
-    public GraphApiClient(IAuthenticationService authenticationService, IAuditLogService auditLog)
+    public GraphApiClient(
+        IAuthenticationService authenticationService,
+        IAuditLogService auditLog,
+        HttpClient httpClient)
     {
         _authenticationService = authenticationService;
         _auditLog = auditLog;
+        _httpClient = httpClient;
     }
 
     public async Task<JsonNode?> SendAsync(
@@ -113,51 +118,93 @@ public sealed class GraphApiClient
         IReadOnlyList<GraphBatchRequest> requests,
         CancellationToken cancellationToken = default)
     {
-        var responses = new List<GraphBatchResponse>();
-        foreach (var chunk in requests.Chunk(20))
+        if (requests.Select(request => request.Id).Distinct(StringComparer.Ordinal).Count() != requests.Count)
         {
-            var batchRequests = chunk.Select(request =>
-            {
-                var payload = new Dictionary<string, object?>
-                {
-                    ["id"] = request.Id,
-                    ["method"] = request.Method,
-                    ["url"] = request.Url
-                };
-
-                if (request.Headers is not null && request.Headers.Count > 0)
-                {
-                    payload["headers"] = request.Headers;
-                }
-
-                if (request.Body is not null)
-                {
-                    payload["body"] = request.Body;
-                }
-
-                return payload;
-            }).ToArray();
-
-            var body = new
-            {
-                requests = batchRequests
-            };
-
-            var response = await SendAsync(HttpMethod.Post, "https://graph.microsoft.com/beta/$batch", body, cancellationToken: cancellationToken);
-            if (response?["responses"] is not JsonArray batchResponses)
-            {
-                continue;
-            }
-
-            responses.AddRange(batchResponses
-                .Where(item => item is not null)
-                .Select(item => new GraphBatchResponse(
-                    item!["id"]?.GetValue<string>() ?? string.Empty,
-                    item!["status"]?.GetValue<int>() ?? 0,
-                    item!["body"])));
+            throw new ArgumentException("Graph batch request IDs must be unique.", nameof(requests));
         }
 
-        return responses;
+        var completed = new Dictionary<string, GraphBatchResponse>(StringComparer.Ordinal);
+        foreach (var chunk in requests.Chunk(20))
+        {
+            var pending = chunk.ToList();
+            for (var attempt = 1; pending.Count > 0; attempt++)
+            {
+                var batchRequests = pending.Select(request =>
+                {
+                    var payload = new Dictionary<string, object?>
+                    {
+                        ["id"] = request.Id,
+                        ["method"] = request.Method,
+                        ["url"] = request.Url
+                    };
+
+                    if (request.Headers is not null && request.Headers.Count > 0)
+                    {
+                        payload["headers"] = request.Headers;
+                    }
+
+                    if (request.Body is not null)
+                    {
+                        payload["body"] = request.Body;
+                    }
+
+                    return payload;
+                }).ToArray();
+
+                var response = await SendAsync(
+                    HttpMethod.Post,
+                    "https://graph.microsoft.com/beta/$batch",
+                    new { requests = batchRequests },
+                    cancellationToken: cancellationToken);
+                if (response?["responses"] is not JsonArray batchResponses)
+                {
+                    throw new InvalidOperationException("Graph batch response did not contain a responses collection.");
+                }
+
+                var parsedResponses = batchResponses
+                    .Where(item => item is not null)
+                    .Select(ParseBatchResponse)
+                    .ToDictionary(item => item.Id, StringComparer.Ordinal);
+                var retry = new List<GraphBatchRequest>();
+                var retryDelay = TimeSpan.Zero;
+
+                foreach (var request in pending)
+                {
+                    if (!parsedResponses.TryGetValue(request.Id, out var parsed))
+                    {
+                        completed[request.Id] = new GraphBatchResponse(
+                            request.Id,
+                            0,
+                            new JsonObject { ["error"] = "No subresponse was returned for this request." },
+                            new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase));
+                        continue;
+                    }
+
+                    if (ShouldRetryBatchStatus(parsed.Status) && attempt < 4)
+                    {
+                        retry.Add(request);
+                        retryDelay = Max(retryDelay, GetBatchRetryDelay(parsed, attempt));
+                        continue;
+                    }
+
+                    completed[request.Id] = parsed;
+                }
+
+                if (retry.Count == 0)
+                {
+                    break;
+                }
+
+                await _auditLog.WriteAsync(
+                    $"Graph batch contained {retry.Count:n0} transient subrequest failure(s); retrying in {retryDelay.TotalSeconds:n0}s.",
+                    "WARN",
+                    cancellationToken);
+                await Task.Delay(retryDelay, cancellationToken);
+                pending = retry;
+            }
+        }
+
+        return requests.Select(request => completed[request.Id]).ToArray();
     }
 
     private static Uri ResolveUri(string url)
@@ -173,6 +220,11 @@ public sealed class GraphApiClient
         return statusCode == HttpStatusCode.TooManyRequests || code >= 500;
     }
 
+    private static bool ShouldRetryBatchStatus(int statusCode)
+    {
+        return statusCode == (int)HttpStatusCode.TooManyRequests || statusCode >= 500;
+    }
+
     private static TimeSpan GetRetryDelay(HttpResponseMessage response, int attempt)
     {
         if (response.Headers.RetryAfter?.Delta is { } delta)
@@ -180,6 +232,49 @@ public sealed class GraphApiClient
             return delta;
         }
 
+        if (response.Headers.RetryAfter?.Date is { } date)
+        {
+            return Max(TimeSpan.Zero, date - DateTimeOffset.UtcNow);
+        }
+
         return TimeSpan.FromSeconds(Math.Pow(2, attempt));
+    }
+
+    private static GraphBatchResponse ParseBatchResponse(JsonNode item)
+    {
+        var headers = item["headers"] is JsonObject headerObject
+            ? headerObject.ToDictionary(
+                property => property.Key,
+                property => property.Value?.ToString() ?? string.Empty,
+                StringComparer.OrdinalIgnoreCase)
+            : new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        return new GraphBatchResponse(
+            item["id"]?.GetValue<string>() ?? string.Empty,
+            item["status"]?.GetValue<int>() ?? 0,
+            item["body"],
+            headers);
+    }
+
+    private static TimeSpan GetBatchRetryDelay(GraphBatchResponse response, int attempt)
+    {
+        if (response.Headers.TryGetValue("Retry-After", out var retryAfter)
+            && double.TryParse(retryAfter, NumberStyles.Number, CultureInfo.InvariantCulture, out var seconds)
+            && seconds >= 0)
+        {
+            return TimeSpan.FromSeconds(seconds);
+        }
+
+        if (DateTimeOffset.TryParse(retryAfter, CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal, out var retryDate))
+        {
+            return Max(TimeSpan.Zero, retryDate - DateTimeOffset.UtcNow);
+        }
+
+        return TimeSpan.FromSeconds(Math.Pow(2, attempt));
+    }
+
+    private static TimeSpan Max(TimeSpan left, TimeSpan right)
+    {
+        return left >= right ? left : right;
     }
 }

@@ -1,10 +1,77 @@
-<Page
-    x:Class="DeviceOffboardingManager.WinUI.Views.DashboardPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:models="using:DeviceOffboardingManager.WinUI.Models">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page x:Class="DeviceOffboardingManager.WinUI.Views.DashboardPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:models="using:DeviceOffboardingManager.WinUI.Models">
 
+    <ScrollViewer>
     <Grid x:Name="DashboardPageRoot" RowSpacing="16">
+        <VisualStateManager.VisualStateGroups>
+            <VisualStateGroup x:Name="WindowWidthStates">
+                <VisualState x:Name="Wide">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="1008" />
+                    </VisualState.StateTriggers>
+                </VisualState>
+                <VisualState x:Name="Medium">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="700" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="PrimaryIntuneCard.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="PrimaryAutopilotCard.(Grid.Column)" Value="2" />
+                        <Setter Target="PrimaryAutopilotCard.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="PrimaryEntraCard.(Grid.Row)" Value="1" />
+                        <Setter Target="PrimaryEntraCard.(Grid.Column)" Value="0" />
+                        <Setter Target="PrimaryEntraCard.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="PrimaryStaleCard.(Grid.Row)" Value="1" />
+                        <Setter Target="PrimaryStaleCard.(Grid.Column)" Value="2" />
+                        <Setter Target="PrimaryStaleCard.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="SecondaryStale30Card.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="SecondaryStale180Card.(Grid.Column)" Value="2" />
+                        <Setter Target="SecondaryStale180Card.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="SecondaryCorporateCard.(Grid.Row)" Value="1" />
+                        <Setter Target="SecondaryCorporateCard.(Grid.Column)" Value="0" />
+                        <Setter Target="SecondaryCorporateCard.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="SecondaryPersonalCard.(Grid.Row)" Value="1" />
+                        <Setter Target="SecondaryPersonalCard.(Grid.Column)" Value="2" />
+                        <Setter Target="SecondaryPersonalCard.(Grid.ColumnSpan)" Value="2" />
+                    </VisualState.Setters>
+                </VisualState>
+                <VisualState x:Name="Narrow">
+                    <VisualState.StateTriggers>
+                        <AdaptiveTrigger MinWindowWidth="0" />
+                    </VisualState.StateTriggers>
+                    <VisualState.Setters>
+                        <Setter Target="DashboardHeaderActions.(Grid.Row)" Value="1" />
+                        <Setter Target="DashboardHeaderActions.(Grid.Column)" Value="0" />
+                        <Setter Target="DashboardHeaderActions.Orientation" Value="Vertical" />
+                        <Setter Target="DashboardHeaderActions.HorizontalAlignment" Value="Left" />
+                        <Setter Target="PrimaryIntuneCard.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="PrimaryAutopilotCard.(Grid.Row)" Value="1" />
+                        <Setter Target="PrimaryAutopilotCard.(Grid.Column)" Value="0" />
+                        <Setter Target="PrimaryAutopilotCard.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="PrimaryEntraCard.(Grid.Row)" Value="2" />
+                        <Setter Target="PrimaryEntraCard.(Grid.Column)" Value="0" />
+                        <Setter Target="PrimaryEntraCard.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="PrimaryStaleCard.(Grid.Row)" Value="3" />
+                        <Setter Target="PrimaryStaleCard.(Grid.Column)" Value="0" />
+                        <Setter Target="PrimaryStaleCard.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="SecondaryStale30Card.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="SecondaryStale180Card.(Grid.Row)" Value="1" />
+                        <Setter Target="SecondaryStale180Card.(Grid.Column)" Value="0" />
+                        <Setter Target="SecondaryStale180Card.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="SecondaryCorporateCard.(Grid.Row)" Value="2" />
+                        <Setter Target="SecondaryCorporateCard.(Grid.Column)" Value="0" />
+                        <Setter Target="SecondaryCorporateCard.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="SecondaryPersonalCard.(Grid.Row)" Value="3" />
+                        <Setter Target="SecondaryPersonalCard.(Grid.Column)" Value="0" />
+                        <Setter Target="SecondaryPersonalCard.(Grid.ColumnSpan)" Value="4" />
+                        <Setter Target="DashboardDistributionCard.(Grid.ColumnSpan)" Value="2" />
+                        <Setter Target="DashboardResultsCard.(Grid.Row)" Value="1" />
+                        <Setter Target="DashboardResultsCard.(Grid.Column)" Value="0" />
+                        <Setter Target="DashboardResultsCard.(Grid.ColumnSpan)" Value="2" />
+                    </VisualState.Setters>
+                </VisualState>
+            </VisualStateGroup>
+        </VisualStateManager.VisualStateGroups>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -13,25 +80,30 @@
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
-        <Grid ColumnSpacing="16">
+        <Grid ColumnSpacing="16" RowSpacing="12">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
             <StackPanel Spacing="4">
-                <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}" />
-                <TextBlock Text="Tenant-wide device posture for Intune, Autopilot, Entra ID, stale devices, and ownership." TextWrapping="Wrap" />
+                <TextBlock Text="Dashboard" Style="{StaticResource TitleTextBlockStyle}" x:Uid="DashboardPage_TextBlockDashboard" />
+                <TextBlock Text="Tenant-wide device posture for Intune, Autopilot, Entra ID, stale devices, and ownership." TextWrapping="Wrap" x:Uid="DashboardPage_TextBlockTenantWideDevicePostureFor" />
             </StackPanel>
-            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                <ComboBox x:Name="DashboardPlatformFilter" AutomationProperties.AutomationId="DashboardPlatformFilter" Header="Platform" SelectedIndex="{x:Bind ViewModel.PlatformFilterIndex, Mode=TwoWay}" Width="180">
-                    <ComboBoxItem Content="All platforms" />
-                    <ComboBoxItem Content="Windows" />
-                    <ComboBoxItem Content="macOS" />
-                    <ComboBoxItem Content="iOS" />
-                    <ComboBoxItem Content="Android" />
-                    <ComboBoxItem Content="Linux" />
+            <StackPanel x:Name="DashboardHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                <ProgressRing Width="20" Height="20" IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" AutomationProperties.AutomationId="DashboardBusyIndicator" AutomationProperties.Name="Dashboard operation in progress" x:Uid="DashboardPage_DashboardBusyIndicator" />
+                <ComboBox x:Name="DashboardPlatformFilter" AutomationProperties.AutomationId="DashboardPlatformFilter" Header="Platform" SelectedIndex="{x:Bind ViewModel.PlatformFilterIndex, Mode=TwoWay}" Width="180" x:Uid="DashboardPage_DashboardPlatformFilter">
+                    <ComboBoxItem Content="All platforms" x:Uid="DashboardPage_ComboBoxItemAllPlatforms" />
+                    <ComboBoxItem Content="Windows" x:Uid="DashboardPage_ComboBoxItemWindows" />
+                    <ComboBoxItem Content="macOS" x:Uid="DashboardPage_ComboBoxItemMacOS" />
+                    <ComboBoxItem Content="iOS" x:Uid="DashboardPage_ComboBoxItemIOS" />
+                    <ComboBoxItem Content="Android" x:Uid="DashboardPage_ComboBoxItemAndroid" />
+                    <ComboBoxItem Content="Linux" x:Uid="DashboardPage_ComboBoxItemLinux" />
                 </ComboBox>
-                <Button x:Name="DashboardRefreshButton" AutomationProperties.AutomationId="DashboardRefreshButton" Content="Refresh" Command="{x:Bind ViewModel.RefreshCommand}" VerticalAlignment="Bottom" />
+                <Button x:Name="DashboardRefreshButton" AutomationProperties.AutomationId="DashboardRefreshButton" Content="Refresh" Command="{x:Bind ViewModel.RefreshCommand}" VerticalAlignment="Bottom" AccessKey="R" x:Uid="DashboardPage_DashboardRefreshButton" />
             </StackPanel>
         </Grid>
 
@@ -42,32 +114,38 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Border Style="{StaticResource CardBorderStyle}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border x:Name="PrimaryIntuneCard" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Intune" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Intune" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockIntune" />
                     <TextBlock x:Name="IntuneCountText" AutomationProperties.AutomationId="IntuneCountText" Text="{x:Bind ViewModel.IntuneCountText, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
-                    <Button Content="View" Tag="intune" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="intune" AutomationProperties.AutomationId="BtnViewIntune" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="intune" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="intune" AutomationProperties.AutomationId="BtnViewIntune" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewIntune" />
                 </StackPanel>
             </Border>
-            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
+            <Border x:Name="PrimaryAutopilotCard" Grid.Column="1" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Autopilot" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Autopilot" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockAutopilot" />
                     <TextBlock x:Name="AutopilotCountText" AutomationProperties.AutomationId="AutopilotCountText" Text="{x:Bind ViewModel.AutopilotCountText, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
-                    <Button Content="View" Tag="autopilot" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="autopilot" AutomationProperties.AutomationId="BtnViewAutopilot" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="autopilot" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="autopilot" AutomationProperties.AutomationId="BtnViewAutopilot" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewAutopilot" />
                 </StackPanel>
             </Border>
-            <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+            <Border x:Name="PrimaryEntraCard" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Entra ID" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Entra ID" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockEntraID" />
                     <TextBlock x:Name="EntraCountText" AutomationProperties.AutomationId="EntraCountText" Text="{x:Bind ViewModel.EntraCountText, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
-                    <Button Content="View" Tag="entra" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="entra" AutomationProperties.AutomationId="BtnViewEntra" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="entra" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="entra" AutomationProperties.AutomationId="BtnViewEntra" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewEntra" />
                 </StackPanel>
             </Border>
-            <Border Grid.Column="3" Style="{StaticResource CardBorderStyle}">
+            <Border x:Name="PrimaryStaleCard" Grid.Column="3" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Stale 90 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Stale 90 days" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockStale90Days" />
                     <TextBlock x:Name="Stale90Text" AutomationProperties.AutomationId="Stale90Text" Text="{x:Bind ViewModel.Stale90Text, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
-                    <Button Content="View" Tag="stale90" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale90" AutomationProperties.AutomationId="BtnViewStale90" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="stale90" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale90" AutomationProperties.AutomationId="BtnViewStale90" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewStale90" />
                 </StackPanel>
             </Border>
         </Grid>
@@ -79,32 +157,38 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Border Style="{StaticResource CardBorderStyle}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border x:Name="SecondaryStale30Card" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Stale 30 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Stale 30 days" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockStale30Days" />
                     <TextBlock x:Name="Stale30Text" AutomationProperties.AutomationId="Stale30Text" Text="{x:Bind ViewModel.Stale30Text, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <Button Content="View" Tag="stale30" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale30" AutomationProperties.AutomationId="BtnViewStale30" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="stale30" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale30" AutomationProperties.AutomationId="BtnViewStale30" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewStale30" />
                 </StackPanel>
             </Border>
-            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
+            <Border x:Name="SecondaryStale180Card" Grid.Column="1" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Stale 180 days" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Stale 180 days" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockStale180Days" />
                     <TextBlock x:Name="Stale180Text" AutomationProperties.AutomationId="Stale180Text" Text="{x:Bind ViewModel.Stale180Text, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <Button Content="View" Tag="stale180" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale180" AutomationProperties.AutomationId="BtnViewStale180" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="stale180" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="stale180" AutomationProperties.AutomationId="BtnViewStale180" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewStale180" />
                 </StackPanel>
             </Border>
-            <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+            <Border x:Name="SecondaryCorporateCard" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Corporate" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Corporate" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockCorporate" />
                     <TextBlock x:Name="CorporateCountText" AutomationProperties.AutomationId="CorporateCountText" Text="{x:Bind ViewModel.CorporateCountText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <Button Content="View" Tag="corporate" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="corporate" AutomationProperties.AutomationId="BtnViewCorporate" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="corporate" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="corporate" AutomationProperties.AutomationId="BtnViewCorporate" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewCorporate" />
                 </StackPanel>
             </Border>
-            <Border Grid.Column="3" Style="{StaticResource CardBorderStyle}">
+            <Border x:Name="SecondaryPersonalCard" Grid.Column="3" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Personal" Style="{StaticResource CaptionTextBlockStyle}" />
+                    <TextBlock Text="Personal" Style="{StaticResource CaptionTextBlockStyle}" x:Uid="DashboardPage_TextBlockPersonal" />
                     <TextBlock x:Name="PersonalCountText" AutomationProperties.AutomationId="PersonalCountText" Text="{x:Bind ViewModel.PersonalCountText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <Button Content="View" Tag="personal" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="personal" AutomationProperties.AutomationId="BtnViewPersonal" HorizontalAlignment="Left" />
+                    <Button Content="View" Tag="personal" Command="{x:Bind ViewModel.LoadDashboardResultsCommand}" CommandParameter="personal" AutomationProperties.AutomationId="BtnViewPersonal" HorizontalAlignment="Left" x:Uid="DashboardPage_BtnViewPersonal" />
                 </StackPanel>
             </Border>
         </Grid>
@@ -114,20 +198,24 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="*" />
             </Grid.ColumnDefinitions>
-            <Border Style="{StaticResource CardBorderStyle}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Border x:Name="DashboardDistributionCard" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Distribution" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="Distribution" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="DashboardPage_TextBlockDistribution" />
                     <TextBlock x:Name="DashboardPlatformText" AutomationProperties.AutomationId="DashboardPlatformText" Text="{x:Bind ViewModel.DashboardPlatformText, Mode=OneWay}" TextWrapping="Wrap" />
                     <TextBlock x:Name="DashboardOwnershipText" AutomationProperties.AutomationId="DashboardOwnershipText" Text="{x:Bind ViewModel.DashboardOwnershipText, Mode=OneWay}" TextWrapping="Wrap" />
-                    <ProgressBar x:Name="CorporateDevicesProgress" AutomationProperties.AutomationId="CorporateDevicesProgress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.CorporateDevicesProgress, Mode=OneWay}" />
-                    <ProgressBar x:Name="PersonalDevicesProgress" AutomationProperties.AutomationId="PersonalDevicesProgress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.PersonalDevicesProgress, Mode=OneWay}" />
+                    <ProgressBar x:Name="CorporateDevicesProgress" AutomationProperties.AutomationId="CorporateDevicesProgress" AutomationProperties.Name="Corporate device percentage" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.CorporateDevicesProgress, Mode=OneWay}" x:Uid="DashboardPage_CorporateDevicesProgress" />
+                    <ProgressBar x:Name="PersonalDevicesProgress" AutomationProperties.AutomationId="PersonalDevicesProgress" AutomationProperties.Name="Personal device percentage" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.PersonalDevicesProgress, Mode=OneWay}" x:Uid="DashboardPage_PersonalDevicesProgress" />
                     <TextBlock x:Name="DashboardStaleText" AutomationProperties.AutomationId="DashboardStaleText" Text="{x:Bind ViewModel.DashboardStaleText, Mode=OneWay}" TextWrapping="Wrap" />
-                    <ProgressBar x:Name="StaleDevices30Progress" AutomationProperties.AutomationId="StaleDevices30Progress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices30Progress, Mode=OneWay}" />
-                    <ProgressBar x:Name="StaleDevices90Progress" AutomationProperties.AutomationId="StaleDevices90Progress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices90Progress, Mode=OneWay}" />
-                    <ProgressBar x:Name="StaleDevices180Progress" AutomationProperties.AutomationId="StaleDevices180Progress" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices180Progress, Mode=OneWay}" />
+                    <ProgressBar x:Name="StaleDevices30Progress" AutomationProperties.AutomationId="StaleDevices30Progress" AutomationProperties.Name="Devices stale for 30 days percentage" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices30Progress, Mode=OneWay}" x:Uid="DashboardPage_StaleDevices30Progress" />
+                    <ProgressBar x:Name="StaleDevices90Progress" AutomationProperties.AutomationId="StaleDevices90Progress" AutomationProperties.Name="Devices stale for 90 days percentage" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices90Progress, Mode=OneWay}" x:Uid="DashboardPage_StaleDevices90Progress" />
+                    <ProgressBar x:Name="StaleDevices180Progress" AutomationProperties.AutomationId="StaleDevices180Progress" AutomationProperties.Name="Devices stale for 180 days percentage" Minimum="0" Maximum="100" Value="{x:Bind ViewModel.StaleDevices180Progress, Mode=OneWay}" x:Uid="DashboardPage_StaleDevices180Progress" />
                 </StackPanel>
             </Border>
-            <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
+            <Border x:Name="DashboardResultsCard" Grid.Column="1" Style="{StaticResource CardBorderStyle}">
                 <Grid RowSpacing="8">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -141,8 +229,8 @@
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="DashboardResultTitleText" AutomationProperties.AutomationId="DashboardResultTitleText" Text="{x:Bind ViewModel.DashboardResultTitleText, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" />
                         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
-                            <Button Content="Open in devices" Command="{x:Bind ViewModel.OpenDashboardResultsInDevicesCommand}" AutomationProperties.AutomationId="BtnOpenDashboardResultsInDevices" />
-                            <Button Content="Export" Command="{x:Bind ViewModel.ExportDashboardResultsCommand}" AutomationProperties.AutomationId="BtnExportDashboardResults" />
+                            <Button Content="Open in devices" Command="{x:Bind ViewModel.OpenDashboardResultsInDevicesCommand}" AutomationProperties.AutomationId="BtnOpenDashboardResultsInDevices" x:Uid="DashboardPage_BtnOpenDashboardResultsInDevices" />
+                            <Button Content="Export" Command="{x:Bind ViewModel.ExportDashboardResultsCommand}" AutomationProperties.AutomationId="BtnExportDashboardResults" x:Uid="DashboardPage_BtnExportDashboardResults" />
                         </StackPanel>
                     </Grid>
                     <TextBlock x:Name="DashboardResultSummaryText" AutomationProperties.AutomationId="DashboardResultSummaryText" Grid.Row="1" Text="{x:Bind ViewModel.DashboardResultSummaryText, Mode=OneWay}" TextWrapping="Wrap" />
@@ -159,13 +247,14 @@
 
         <Border Grid.Row="4" Style="{StaticResource CardBorderStyle}">
             <StackPanel Spacing="8">
-                <TextBlock Text="Readiness" Style="{StaticResource SubtitleTextBlockStyle}" />
+                <TextBlock Text="Readiness" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="DashboardPage_TextBlockReadiness" />
                 <TextBlock x:Name="DashboardReadinessText" AutomationProperties.AutomationId="DashboardReadinessText" Text="{x:Bind ViewModel.DashboardReadinessText, Mode=OneWay}" TextWrapping="Wrap" />
                 <StackPanel Orientation="Horizontal" Spacing="8">
-                    <Button Content="Open settings" Tag="settings" Command="{x:Bind ViewModel.OpenSettingsCommand}" AutomationProperties.AutomationId="BtnDashboardSettings" />
-                    <Button Content="Go to devices" Tag="devices" Command="{x:Bind ViewModel.GoToDevicesCommand}" AutomationProperties.AutomationId="BtnDashboardDevices" />
+                    <Button Content="Open settings" Tag="settings" Command="{x:Bind ViewModel.OpenSettingsCommand}" AutomationProperties.AutomationId="BtnDashboardSettings" x:Uid="DashboardPage_BtnDashboardSettings" />
+                    <Button Content="Go to devices" Tag="devices" Command="{x:Bind ViewModel.GoToDevicesCommand}" AutomationProperties.AutomationId="BtnDashboardDevices" x:Uid="DashboardPage_BtnDashboardDevices" />
                 </StackPanel>
             </StackPanel>
         </Border>
     </Grid>
+    </ScrollViewer>
 </Page>

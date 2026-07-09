@@ -1,10 +1,51 @@
-<Page
-    x:Class="DeviceOffboardingManager.WinUI.Views.SettingsPage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page x:Class="DeviceOffboardingManager.WinUI.Views.SettingsPage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ScrollViewer>
         <Grid x:Name="SettingsPageRoot" RowSpacing="16">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="WindowWidthStates">
+                    <VisualState x:Name="Wide">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="800" />
+                        </VisualState.StateTriggers>
+                    </VisualState>
+                    <VisualState x:Name="Narrow">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="AuthMethodBox.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="TenantIdBox.(Grid.Row)" Value="1" />
+                            <Setter Target="TenantIdBox.(Grid.Column)" Value="0" />
+                            <Setter Target="TenantIdBox.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="ClientIdBox.(Grid.Row)" Value="2" />
+                            <Setter Target="ClientIdBox.(Grid.Column)" Value="0" />
+                            <Setter Target="ClientIdBox.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="CertificateThumbprintBox.(Grid.Row)" Value="3" />
+                            <Setter Target="CertificateThumbprintBox.(Grid.Column)" Value="0" />
+                            <Setter Target="CertificateThumbprintBox.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="ClientSecretBox.(Grid.Row)" Value="4" />
+                            <Setter Target="ClientSecretBox.(Grid.Column)" Value="0" />
+                            <Setter Target="ClientSecretBox.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="DefenderToggle.(Grid.Row)" Value="5" />
+                            <Setter Target="DefenderToggle.(Grid.Column)" Value="0" />
+                            <Setter Target="DefenderToggle.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="ConfigPathBox.(Grid.Row)" Value="6" />
+                            <Setter Target="ConfigPathBox.(Grid.Column)" Value="0" />
+                            <Setter Target="ConfigPathBox.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="ConfigActions.(Grid.Row)" Value="7" />
+                            <Setter Target="ConfigActions.(Grid.Column)" Value="0" />
+                            <Setter Target="ConfigActions.(Grid.ColumnSpan)" Value="3" />
+                            <Setter Target="ConfigActions.Orientation" Value="Vertical" />
+                            <Setter Target="ConfigActions.HorizontalAlignment" Value="Left" />
+                            <Setter Target="ConnectionActions.(Grid.Row)" Value="8" />
+                            <Setter Target="ConnectionActions.Orientation" Value="Vertical" />
+                            <Setter Target="ConnectionActions.HorizontalAlignment" Value="Left" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
@@ -13,12 +54,12 @@
             </Grid.RowDefinitions>
 
             <StackPanel Spacing="4">
-                <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" />
-                <TextBlock Text="Authentication, app registration import, Defender gating, and required permissions." TextWrapping="Wrap" />
+                <TextBlock Text="Settings" Style="{StaticResource TitleTextBlockStyle}" x:Uid="SettingsPage_TextBlockSettings" />
+                <TextBlock Text="Authentication, app registration import, Defender gating, and required permissions." TextWrapping="Wrap" x:Uid="SettingsPage_TextBlockAuthenticationAppRegistrationImportDefender" />
             </StackPanel>
 
             <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
-                <Grid RowSpacing="12" ColumnSpacing="12">
+                <Grid x:Name="SettingsFormGrid" RowSpacing="12" ColumnSpacing="12">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="*" />
@@ -30,46 +71,51 @@
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
 
-                    <ComboBox x:Name="AuthMethodBox" AutomationProperties.AutomationId="AuthMethodBox" Header="Authentication method" SelectedIndex="{x:Bind ViewModel.AuthMethodIndex, Mode=TwoWay}">
-                        <ComboBoxItem Content="Interactive" />
-                        <ComboBoxItem Content="Device code" />
-                        <ComboBoxItem Content="Certificate" />
-                        <ComboBoxItem Content="Client secret" />
+                    <ComboBox x:Name="AuthMethodBox" AutomationProperties.AutomationId="AuthMethodBox" Header="Authentication method" SelectedIndex="{x:Bind ViewModel.AuthMethodIndex, Mode=TwoWay}" x:Uid="SettingsPage_AuthMethodBox">
+                        <ComboBoxItem Content="Interactive" x:Uid="SettingsPage_ComboBoxItemInteractive" />
+                        <ComboBoxItem Content="Device code" x:Uid="SettingsPage_ComboBoxItemDeviceCode" />
+                        <ComboBoxItem Content="Certificate" x:Uid="SettingsPage_ComboBoxItemCertificate" />
+                        <ComboBoxItem Content="Client secret" x:Uid="SettingsPage_ComboBoxItemClientSecret" />
                     </ComboBox>
-                    <TextBox x:Name="TenantIdBox" AutomationProperties.AutomationId="TenantIdBox" Grid.Column="1" Header="Tenant ID" PlaceholderText="Tenant ID or organizations" Text="{x:Bind ViewModel.TenantId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBox x:Name="ClientIdBox" AutomationProperties.AutomationId="ClientIdBox" Grid.Row="1" Header="Client ID" PlaceholderText="App registration client ID" Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <TextBox x:Name="CertificateThumbprintBox" AutomationProperties.AutomationId="CertificateThumbprintBox" Grid.Row="1" Grid.Column="1" Header="Certificate thumbprint" Text="{x:Bind ViewModel.CertificateThumbprint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <PasswordBox x:Name="ClientSecretBox" AutomationProperties.AutomationId="ClientSecretBox" Grid.Row="2" Header="Client secret (session only)" Password="{x:Bind ViewModel.ClientSecret, Mode=TwoWay}" />
-                    <ToggleSwitch x:Name="DefenderToggle" AutomationProperties.AutomationId="DefenderToggle" Grid.Row="2" Grid.Column="1" Header="Defender for Endpoint integration" IsOn="{x:Bind ViewModel.DefenderIntegrationEnabled, Mode=TwoWay}" />
+                    <TextBox x:Name="TenantIdBox" AutomationProperties.AutomationId="TenantIdBox" Grid.Column="1" Header="Tenant ID" PlaceholderText="Tenant ID or organizations" Text="{x:Bind ViewModel.TenantId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="SettingsPage_TenantIdBox" />
+                    <TextBox x:Name="ClientIdBox" AutomationProperties.AutomationId="ClientIdBox" Grid.Row="1" Header="Client ID" PlaceholderText="App registration client ID" Text="{x:Bind ViewModel.ClientId, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="SettingsPage_ClientIdBox" />
+                    <TextBox x:Name="CertificateThumbprintBox" AutomationProperties.AutomationId="CertificateThumbprintBox" Grid.Row="1" Grid.Column="1" Header="Certificate thumbprint" Text="{x:Bind ViewModel.CertificateThumbprint, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="SettingsPage_CertificateThumbprintBox" />
+                    <PasswordBox x:Name="ClientSecretBox" AutomationProperties.AutomationId="ClientSecretBox" Grid.Row="2" Header="Client secret (session only)" Password="{x:Bind ViewModel.ClientSecret, Mode=TwoWay}" x:Uid="SettingsPage_ClientSecretBox" />
+                    <ToggleSwitch x:Name="DefenderToggle" AutomationProperties.AutomationId="DefenderToggle" Grid.Row="2" Grid.Column="1" Header="Defender for Endpoint integration" IsOn="{x:Bind ViewModel.DefenderIntegrationEnabled, Mode=TwoWay}" x:Uid="SettingsPage_DefenderToggle" />
 
-                    <TextBox x:Name="ConfigPathBox" AutomationProperties.AutomationId="ConfigPathBox" Grid.Row="3" Grid.ColumnSpan="2" Header="Config JSON path" PlaceholderText="Select or paste an app registration config JSON path for import" Text="{x:Bind ViewModel.ConfigPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
-                    <StackPanel Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                        <Button Content="Browse" Click="BrowseConfig_Click" AutomationProperties.AutomationId="BtnBrowseConfig" />
-                        <Button Content="Import" Command="{x:Bind ViewModel.ImportConfigCommand}" AutomationProperties.AutomationId="BtnImportConfig" />
-                        <Button Content="Save" Command="{x:Bind ViewModel.SaveSettingsCommand}" AutomationProperties.AutomationId="BtnSaveSettings" />
+                    <TextBox x:Name="ConfigPathBox" AutomationProperties.AutomationId="ConfigPathBox" Grid.Row="3" Grid.ColumnSpan="2" Header="Config JSON path" PlaceholderText="Select or paste an app registration config JSON path for import" Text="{x:Bind ViewModel.ConfigPath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" x:Uid="SettingsPage_ConfigPathBox" />
+                    <StackPanel x:Name="ConfigActions" Grid.Row="3" Grid.Column="2" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                        <Button Content="Browse" Click="BrowseConfig_Click" AutomationProperties.AutomationId="BtnBrowseConfig" x:Uid="SettingsPage_BtnBrowseConfig" />
+                        <Button Content="Import" Command="{x:Bind ViewModel.ImportConfigCommand}" AutomationProperties.AutomationId="BtnImportConfig" x:Uid="SettingsPage_BtnImportConfig" />
+                        <Button Content="Save" Command="{x:Bind ViewModel.SaveSettingsCommand}" AutomationProperties.AutomationId="BtnSaveSettings" x:Uid="SettingsPage_BtnSaveSettings" />
                     </StackPanel>
 
-                    <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8">
-                        <Button x:Name="ConnectButton" AutomationProperties.AutomationId="ConnectButton" Content="Connect" Command="{x:Bind ViewModel.ConnectCommand}" />
-                        <Button x:Name="DisconnectButton" AutomationProperties.AutomationId="DisconnectButton" Content="Disconnect" Command="{x:Bind ViewModel.DisconnectCommand}" />
-                        <Button Content="Open audit log" Command="{x:Bind ViewModel.OpenAuditLogCommand}" AutomationProperties.AutomationId="BtnOpenAuditLog" />
+                    <StackPanel x:Name="ConnectionActions" Grid.Row="4" Grid.ColumnSpan="3" Orientation="Horizontal" Spacing="8">
+                        <ProgressRing Width="20" Height="20" IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" AutomationProperties.AutomationId="SettingsBusyIndicator" AutomationProperties.Name="Settings operation in progress" x:Uid="SettingsPage_SettingsBusyIndicator" />
+                        <Button x:Name="ConnectButton" AutomationProperties.AutomationId="ConnectButton" Content="Connect" Command="{x:Bind ViewModel.ConnectCommand}" AccessKey="C" x:Uid="SettingsPage_ConnectButton" />
+                        <Button x:Name="DisconnectButton" AutomationProperties.AutomationId="DisconnectButton" Content="Disconnect" Command="{x:Bind ViewModel.DisconnectCommand}" x:Uid="SettingsPage_DisconnectButton" />
+                        <Button Content="Open audit log" Command="{x:Bind ViewModel.OpenAuditLogCommand}" AutomationProperties.AutomationId="BtnOpenAuditLog" x:Uid="SettingsPage_BtnOpenAuditLog" />
                     </StackPanel>
                 </Grid>
             </Border>
 
             <Border Grid.Row="2" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Required permissions" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock Text="Required permissions" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="SettingsPage_TextBlockRequiredPermissions" />
                     <TextBlock x:Name="PermissionsText" AutomationProperties.AutomationId="PermissionsText" Text="{x:Bind ViewModel.PermissionsText, Mode=OneWay}" TextWrapping="Wrap" />
                 </StackPanel>
             </Border>
 
             <Border Grid.Row="3" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Distribution readiness" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="v0.4 targets signed MSIX or EXE releases first, then Intune packaging, WinGet, and Microsoft Store submission after functional and privacy review." TextWrapping="Wrap" />
+                    <TextBlock Text="Distribution readiness" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="SettingsPage_TextBlockDistributionReadiness" />
+                    <TextBlock Text="v0.4 targets signed MSIX or EXE releases first, then Intune packaging, WinGet, and Microsoft Store submission after functional and privacy review." TextWrapping="Wrap" x:Uid="SettingsPage_TextBlockV04TargetsSignedMSIX" />
                 </StackPanel>
             </Border>
         </Grid>

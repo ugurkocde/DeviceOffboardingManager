@@ -1,5 +1,6 @@
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 using DeviceOffboardingManager.WinUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -28,7 +29,10 @@ public sealed partial class OffboardingPage : Page
             var selected = ViewModel.GetSelectedDevices();
             if (selected.Count == 0)
             {
-                _statusService.Report("No devices selected", "Select at least one device before reviewing IDs.", StatusSeverity.Warning);
+                _statusService.Report(
+                    AppResources.Get("NoDevicesSelectedTitle", "No devices selected"),
+                    AppResources.Get("NoDevicesSelectedMessage", "Select at least one device before reviewing IDs."),
+                    StatusSeverity.Warning);
                 return;
             }
 
@@ -37,22 +41,31 @@ public sealed partial class OffboardingPage : Page
                 Text = string.Join(
                     Environment.NewLine + Environment.NewLine,
                     selected.Select(device =>
-                        $"{device.DeviceName ?? "(unnamed)"}{Environment.NewLine}Serial: {device.SerialNumber ?? "(none)"}{Environment.NewLine}Entra object: {device.EntraDeviceId ?? "(none)"}{Environment.NewLine}Entra deviceId: {device.EntraDeviceObjectId ?? "(none)"}{Environment.NewLine}Intune: {device.IntuneDeviceId ?? "(none)"}{Environment.NewLine}Autopilot: {device.AutopilotIdentityId ?? "(none)"}")),
+                        AppResources.Format(
+                            "ResolvedDeviceIdsFormat",
+                            "{0}{6}Serial: {1}{6}Entra object: {2}{6}Entra deviceId: {3}{6}Intune: {4}{6}Autopilot: {5}",
+                            device.DeviceName ?? AppResources.Get("UnnamedFallback", "(unnamed)"),
+                            device.SerialNumber ?? AppResources.Get("NoneFallback", "(none)"),
+                            device.EntraDeviceId ?? AppResources.Get("NoneFallback", "(none)"),
+                            device.EntraDeviceObjectId ?? AppResources.Get("NoneFallback", "(none)"),
+                            device.IntuneDeviceId ?? AppResources.Get("NoneFallback", "(none)"),
+                            device.AutopilotIdentityId ?? AppResources.Get("NoneFallback", "(none)"),
+                            Environment.NewLine))),
                 TextWrapping = TextWrapping.Wrap
             };
 
             var dialog = new ContentDialog
             {
-                Title = "Resolved device IDs",
+                Title = AppResources.Get("ResolvedDeviceIdsTitle", "Resolved device IDs"),
                 Content = new ScrollViewer { Content = content, MaxHeight = 520 },
-                CloseButtonText = "Close",
+                CloseButtonText = AppResources.Get("CloseButton", "Close"),
                 XamlRoot = XamlRoot
             };
             await dialog.ShowAsync();
         }
         catch (Exception ex)
         {
-            await ViewModel.ReportExceptionAsync("Reviewing selected IDs", ex);
+            await ViewModel.ReportExceptionAsync(AppResources.Get("ReviewingSelectedIds", "Reviewing selected IDs"), ex);
         }
     }
 
@@ -69,10 +82,13 @@ public sealed partial class OffboardingPage : Page
 
             var dialog = new ContentDialog
             {
-                Title = "Confirm offboarding",
-                Content = $"Run selected actions for {selected.Count:n0} device(s)? Review Graph IDs before continuing. Offboarding operations may be permanent.",
-                PrimaryButtonText = "Run",
-                CloseButtonText = "Cancel",
+                Title = AppResources.Get("ConfirmOffboardingTitle", "Confirm offboarding"),
+                Content = AppResources.Format(
+                    "ConfirmOffboardingBodyFormat",
+                    "Run selected actions for {0:N0} device(s)? Review Graph IDs before continuing. Offboarding operations may be permanent.",
+                    selected.Count),
+                PrimaryButtonText = AppResources.Get("RunButton", "Run"),
+                CloseButtonText = AppResources.Get("CancelButton", "Cancel"),
                 DefaultButton = ContentDialogButton.Close,
                 XamlRoot = XamlRoot
             };
@@ -91,7 +107,7 @@ public sealed partial class OffboardingPage : Page
         }
         catch (Exception ex)
         {
-            await ViewModel.ReportExceptionAsync("Running offboarding", ex);
+            await ViewModel.ReportExceptionAsync(AppResources.Get("RunningOffboarding", "Running offboarding"), ex);
         }
     }
 
@@ -107,7 +123,7 @@ public sealed partial class OffboardingPage : Page
         }
         catch (Exception ex)
         {
-            await ViewModel.ReportExceptionAsync("Fetching recovery keys", ex);
+            await ViewModel.ReportExceptionAsync(AppResources.Get("FetchingRecoveryKeys", "Fetching recovery keys"), ex);
         }
     }
 
@@ -118,18 +134,18 @@ public sealed partial class OffboardingPage : Page
         {
             var parts = new List<string>
             {
-                record.DeviceName ?? "(unnamed)",
-                record.KeyType ?? "Key"
+                record.DeviceName ?? AppResources.Get("UnnamedFallback", "(unnamed)"),
+                record.KeyType ?? AppResources.Get("KeyFallback", "Key")
             };
 
             if (!string.IsNullOrWhiteSpace(record.AccountName))
             {
-                parts.Add($"Account: {record.AccountName}");
+                parts.Add(AppResources.Format("AccountFormat", "Account: {0}", record.AccountName));
             }
 
             parts.Add(!string.IsNullOrWhiteSpace(record.KeyValue)
                 ? record.KeyValue
-                : record.Status ?? "Not found");
+                : record.Status ?? AppResources.Get("NotFound", "Not found"));
 
             return string.Join(" | ", parts);
         }).ToArray();
@@ -137,7 +153,7 @@ public sealed partial class OffboardingPage : Page
         var content = new StackPanel { Spacing = 12 };
         content.Children.Add(new TextBlock
         {
-            Text = $"Records: {records.Count:n0}; values found: {found.Length:n0}.",
+            Text = AppResources.Format("RecoveryRecordsFormat", "Records: {0:N0}; values found: {1:N0}.", records.Count, found.Length),
             TextWrapping = TextWrapping.Wrap
         });
         content.Children.Add(new ListView
@@ -148,17 +164,22 @@ public sealed partial class OffboardingPage : Page
 
         var dialog = new ContentDialog
         {
-            Title = "Recovery keys",
+            Title = AppResources.Get("RecoveryKeysTitle", "Recovery keys"),
             Content = content,
-            PrimaryButtonText = "Copy all",
-            CloseButtonText = "Close",
+            PrimaryButtonText = AppResources.Get("CopyAllButton", "Copy all"),
+            CloseButtonText = AppResources.Get("CloseButton", "Close"),
             IsPrimaryButtonEnabled = found.Length > 0,
             XamlRoot = XamlRoot
         };
 
         if (await dialog.ShowAsync() == ContentDialogResult.Primary)
         {
-            var text = string.Join(Environment.NewLine, found.Select(record => $"{record.DeviceName ?? "(unnamed)"} | {record.KeyType ?? "Key"} | {record.KeyValue}"));
+            var text = string.Join(Environment.NewLine, found.Select(record => AppResources.Format(
+                "RecoveryClipboardRowFormat",
+                "{0} | {1} | {2}",
+                record.DeviceName ?? AppResources.Get("UnnamedFallback", "(unnamed)"),
+                record.KeyType ?? AppResources.Get("KeyFallback", "Key"),
+                record.KeyValue)));
             var package = new DataPackage();
             package.SetText(text);
             Clipboard.SetContent(package);
@@ -167,13 +188,26 @@ public sealed partial class OffboardingPage : Page
 
     private async Task ShowOffboardingSummaryDialogAsync(OffboardingSummary summary)
     {
-        var rows = summary.Results.Select(result =>
-            $"{result.DeviceName ?? "(unnamed)"} | Serial: {result.SerialNumber ?? "(none)"} | Pre: {DescribeOperation(result.PreAction)} | Entra: {DescribeOperation(result.Entra)} | Intune: {DescribeOperation(result.Intune)} | Autopilot: {DescribeOperation(result.Autopilot)} | Defender: {DescribeOperation(result.Defender)}").ToArray();
+        var rows = summary.Results.Select(result => AppResources.Format(
+            "OffboardingSummaryRowFormat",
+            "{0} | Serial: {1} | Pre: {2} | Entra: {3} | Intune: {4} | Autopilot: {5} | Defender: {6}",
+            result.DeviceName ?? AppResources.Get("UnnamedFallback", "(unnamed)"),
+            result.SerialNumber ?? AppResources.Get("NoneFallback", "(none)"),
+            DescribeOperation(result.PreAction),
+            DescribeOperation(result.Entra),
+            DescribeOperation(result.Intune),
+            DescribeOperation(result.Autopilot),
+            DescribeOperation(result.Defender))).ToArray();
 
         var content = new StackPanel { Spacing = 12 };
         content.Children.Add(new TextBlock
         {
-            Text = $"Devices: {summary.TotalDevices:n0}; successful: {summary.SuccessfulDevices:n0}; failed/partial: {summary.FailedDevices:n0}.",
+            Text = AppResources.Format(
+                "OffboardingSummaryCountFormat",
+                "Devices: {0:N0}; successful: {1:N0}; failed/partial: {2:N0}.",
+                summary.TotalDevices,
+                summary.SuccessfulDevices,
+                summary.FailedDevices),
             TextWrapping = TextWrapping.Wrap
         });
         content.Children.Add(new ListView
@@ -184,10 +218,10 @@ public sealed partial class OffboardingPage : Page
 
         var dialog = new ContentDialog
         {
-            Title = "Offboarding summary",
+            Title = AppResources.Get("OffboardingSummaryTitle", "Offboarding summary"),
             Content = content,
-            PrimaryButtonText = "Export HTML report",
-            CloseButtonText = "Close",
+            PrimaryButtonText = AppResources.Get("ExportHtmlButton", "Export HTML report"),
+            CloseButtonText = AppResources.Get("CloseButton", "Close"),
             XamlRoot = XamlRoot
         };
 
@@ -199,16 +233,18 @@ public sealed partial class OffboardingPage : Page
 
     private static string DescribeOperation(ServiceOperationResult result)
     {
-        if (!result.Found && string.IsNullOrWhiteSpace(result.Error))
+        if (result.State == ServiceOperationState.Skipped)
         {
-            return "Skipped";
+            return AppResources.Get("OperationSkipped", "Skipped");
         }
 
-        if (!result.Found)
+        if (result.State == ServiceOperationState.MissingTarget)
         {
-            return $"Not found: {result.Error}";
+            return AppResources.Format("OperationMissingTargetFormat", "Missing target: {0}", result.Error);
         }
 
-        return result.Success ? result.Action ?? "Success" : $"Failed: {result.Error}";
+        return result.State == ServiceOperationState.Succeeded
+            ? result.Action ?? AppResources.Get("OperationSuccess", "Success")
+            : AppResources.Format("OperationFailedFormat", "Failed: {0}", result.Error);
     }
 }

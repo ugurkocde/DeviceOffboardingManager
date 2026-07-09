@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using DeviceOffboardingManager.WinUI.Models;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.Services;
 
@@ -19,7 +20,7 @@ public sealed class DeviceListState
 
     public IReadOnlyList<DeviceRecord> LastDashboardDevices { get; private set; } = Array.Empty<DeviceRecord>();
 
-    public string LastDashboardTitle { get; private set; } = "Dashboard drilldown";
+    public string LastDashboardTitle { get; private set; } = AppResources.Get("DashboardDrilldown", "Dashboard drilldown");
 
     public OffboardingSummary? LastOffboardingSummary { get; set; }
 
@@ -120,23 +121,35 @@ public sealed class DeviceListState
 
     public string GetSearchStatusText()
     {
-        return $"{VisibleDevices.Count:n0} visible of {AllDevices.Count:n0} loaded device(s).";
+        return AppResources.Format(
+            "VisibleDevicesFormat",
+            "{0:N0} visible of {1:N0} loaded device(s).",
+            VisibleDevices.Count,
+            AllDevices.Count);
     }
 
     public string GetSelectedSummaryText()
     {
         var selected = GetSelectedDevices();
         return selected.Count == 0
-            ? "No devices selected."
-            : $"{selected.Count:n0} selected device(s). Visible: {VisibleDevices.Count:n0}; loaded: {AllDevices.Count:n0}.";
+            ? AppResources.Get("NoDevicesSelectedShort", "No devices selected.")
+            : AppResources.Format(
+                "SelectedDevicesFormat",
+                "{0:N0} selected device(s). Visible: {1:N0}; loaded: {2:N0}.",
+                selected.Count,
+                VisibleDevices.Count,
+                AllDevices.Count);
     }
 
     public string GetOffboardingStatusText()
     {
         var selected = GetSelectedDevices();
         return selected.Count == 0
-            ? "Select devices before running actions."
-            : $"{selected.Count:n0} selected device(s) ready for offboarding review.";
+            ? AppResources.Get("SelectDevicesBeforeActions", "Select devices before running actions.")
+            : AppResources.Format(
+                "SelectedReadyFormat",
+                "{0:N0} selected device(s) ready for offboarding review.",
+                selected.Count);
     }
 
     public void SetDashboardResults(string title, IReadOnlyList<DeviceRecord> devices)

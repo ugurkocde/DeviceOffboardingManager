@@ -291,8 +291,8 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
             new GraphBatchRequest("intune", "GET", OData.Query("/deviceManagement/managedDevices", ("$filter", $"deviceName eq '{literal}'"), ("$select", IntuneSelect)))
         }, cancellationToken);
 
-        var entraDevices = GetBatchValue(batch, "entra");
-        var intuneDevices = GetBatchValue(batch, "intune");
+        var entraDevices = await GetBatchValuesAsync(batch, "entra", cancellationToken);
+        var intuneDevices = await GetBatchValuesAsync(batch, "intune", cancellationToken);
         var autopilotDevices = allAutopilotDevices
             .Where(device => OData.SameIdentifier(device.GetStringValue("displayName"), term))
             .ToArray();
@@ -312,8 +312,8 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
             new GraphBatchRequest("autopilot", "GET", OData.Query("/deviceManagement/windowsAutopilotDeviceIdentities", ("$filter", $"contains(serialNumber,'{literal}')")))
         }, cancellationToken);
 
-        var intuneDevices = GetBatchValue(batch, "intune");
-        var autopilotDevices = GetBatchValue(batch, "autopilot");
+        var intuneDevices = await GetBatchValuesAsync(batch, "intune", cancellationToken);
+        var autopilotDevices = await GetBatchValuesAsync(batch, "autopilot", cancellationToken);
         var records = new List<DeviceRecord>();
 
         foreach (var intuneDevice in intuneDevices)
@@ -400,7 +400,10 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
             (device.GetStringValue("displayName")?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)
             || (device.GetStringValue("serialNumber")?.Contains(term, StringComparison.OrdinalIgnoreCase) ?? false)).ToArray();
 
-        return await CombineDevicesAsync(GetBatchValue(batch, "entra"), GetBatchValue(batch, "intune"), autopilotDevices, cancellationToken);
+        var consistencyHeaders = new Dictionary<string, string> { ["ConsistencyLevel"] = "eventual" };
+        var entraDevices = await GetBatchValuesAsync(batch, "entra", cancellationToken, consistencyHeaders);
+        var intuneDevices = await GetBatchValuesAsync(batch, "intune", cancellationToken);
+        return await CombineDevicesAsync(entraDevices, intuneDevices, autopilotDevices, cancellationToken);
     }
 
     private async Task<IReadOnlyList<DeviceRecord>> CombineDevicesAsync(
@@ -673,12 +676,34 @@ public sealed class DeviceInventoryService : IDeviceInventoryService
         return matches.Length == 1 ? matches[0] : null;
     }
 
-    private static IReadOnlyList<JsonNode> GetBatchValue(IReadOnlyList<GraphBatchResponse> responses, string id)
+    private async Task<IReadOnlyList<JsonNode>> GetBatchValuesAsync(
+        IReadOnlyList<GraphBatchResponse> responses,
+        string id,
+        CancellationToken cancellationToken,
+        IReadOnlyDictionary<string, string>? headers = null)
     {
         var response = responses.FirstOrDefault(item => item.Id == id);
-        return response?.Body?["value"] is JsonArray array
-            ? array.Where(item => item is not null).Cast<JsonNode>().ToArray()
-            : Array.Empty<JsonNode>();
+        if (response is null)
+        {
+            throw new InvalidOperationException($"Graph batch did not return subrequest '{id}'.");
+        }
+
+        if (response.Status is < 200 or >= 300)
+        {
+            throw new InvalidOperationException(
+                $"Graph batch subrequest '{id}' failed with HTTP {response.Status}: {response.Body?.ToJsonString()}");
+        }
+
+        var values = response.Body?["value"] is JsonArray array
+            ? array.Where(item => item is not null).Cast<JsonNode>().ToList()
+            : new List<JsonNode>();
+        var nextLink = response.Body?["@odata.nextLink"]?.GetValue<string>();
+        if (!string.IsNullOrWhiteSpace(nextLink))
+        {
+            values.AddRange(await _graph.GetPagedAsync(nextLink, headers, cancellationToken));
+        }
+
+        return values;
     }
 
     private static void AddDistinct(List<DeviceRecord> target, IEnumerable<DeviceRecord> source)

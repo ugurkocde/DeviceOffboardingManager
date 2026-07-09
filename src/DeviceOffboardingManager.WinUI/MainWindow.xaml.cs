@@ -2,9 +2,11 @@ using System.Runtime.InteropServices;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 using DeviceOffboardingManager.WinUI.Views;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Automation;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 using Windows.Graphics;
@@ -26,13 +28,25 @@ public sealed partial class MainWindow : Window
         _navigationService = App.Services.GetRequiredService<ShellNavigationService>();
 
         InitializeComponent();
-        SystemBackdrop = new MicaBackdrop();
-        Title = $"Device Offboarding Manager {AppInfo.Version}";
+        if (RootNavigation.SettingsItem is NavigationViewItem settingsItem)
+        {
+            AutomationProperties.SetAutomationId(settingsItem, "NavSettings");
+            AutomationProperties.SetName(settingsItem, AppResources.Get("SettingsNavigationName", "Settings"));
+        }
+        try
+        {
+            SystemBackdrop = new MicaBackdrop();
+        }
+        catch
+        {
+            // Older supported Windows builds fall back to the default window background.
+        }
+        Title = AppResources.Format("WindowTitleFormat", "Device Offboarding Manager {0}", AppInfo.Version);
 
         var hwnd = WindowNative.GetWindowHandle(this);
         App.Services.GetRequiredService<WindowHandleProvider>().MainWindowHandle = hwnd;
 
-        var scale = GetDpiForWindow(hwnd) / 96.0;
+        var scale = Math.Max(GetDpiForWindow(hwnd), 96) / 96.0;
         AppWindow.Resize(new SizeInt32((int)(1280 * scale), (int)(800 * scale)));
 
         _statusService.StatusReported += OnStatusReported;

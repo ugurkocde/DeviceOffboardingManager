@@ -25,6 +25,9 @@ public partial class App : Application
     {
         var services = new ServiceCollection();
 
+        var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"DeviceOffboardingManager-WinUI/{Models.AppInfo.Version}");
+        services.AddSingleton(httpClient);
         services.AddSingleton<Services.Contracts.IStatusService, Services.StatusService>();
         services.AddSingleton<Services.ConnectionState>();
         services.AddSingleton<Services.DeviceListState>();
@@ -32,6 +35,7 @@ public partial class App : Application
         services.AddSingleton<Services.WindowHandleProvider>();
         services.AddSingleton<Services.Contracts.IAuditLogService, Services.AuditLogService>();
         services.AddSingleton<Services.Contracts.ISettingsService, Services.SettingsService>();
+        services.AddSingleton<Services.Contracts.IOsSupportBaselineProvider, Services.OsSupportBaselineProvider>();
         services.AddSingleton<Services.Contracts.IAuthenticationService, Services.AuthenticationService>();
         services.AddSingleton<Services.Graph.GraphApiClient>();
         services.AddSingleton<Services.Defender.DefenderApiClient>();

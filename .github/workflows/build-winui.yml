@@ -4,6 +4,13 @@ on:
   pull_request:
     paths:
       - 'src/DeviceOffboardingManager.WinUI/**'
+      - 'tests/DeviceOffboardingManager.WinUI.Tests/**'
+      - 'tests/Verify-WinUIScaffold.ps1'
+      - 'tests/ui-tests.ps1'
+      - 'tools/Install-WinUIAnalyzer.ps1'
+      - 'tools/Generate-XamlResources.ps1'
+      - 'tools/dynamic-resources.json'
+      - 'Directory.Build.props'
       - 'DeviceOffboardingManager.WinUI.sln'
       - '.github/workflows/build-winui.yml'
   push:
@@ -11,6 +18,13 @@ on:
       - codex/v0.4-winui-app
     paths:
       - 'src/DeviceOffboardingManager.WinUI/**'
+      - 'tests/DeviceOffboardingManager.WinUI.Tests/**'
+      - 'tests/Verify-WinUIScaffold.ps1'
+      - 'tests/ui-tests.ps1'
+      - 'tools/Install-WinUIAnalyzer.ps1'
+      - 'tools/Generate-XamlResources.ps1'
+      - 'tools/dynamic-resources.json'
+      - 'Directory.Build.props'
       - 'DeviceOffboardingManager.WinUI.sln'
       - '.github/workflows/build-winui.yml'
 
@@ -24,15 +38,46 @@ jobs:
         platform: [x64, arm64]
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
         with:
-          dotnet-version: '8.0.x'
+          dotnet-version: '10.0.x'
+
+      - name: Install pinned WinUI analyzer
+        shell: pwsh
+        run: ./tools/Install-WinUIAnalyzer.ps1
+
+      - name: Verify scaffold and resources
+        shell: pwsh
+        run: ./tests/Verify-WinUIScaffold.ps1
 
       - name: Restore
-        run: dotnet restore .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -p:Platform=${{ matrix.platform }}
+        run: dotnet restore .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -p:Platform=${{ matrix.platform }} -p:WinUIAnalyzerPath="$PWD\artifacts\winui-analyzer"
 
       - name: Build
-        run: dotnet build .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} --no-restore
+        run: dotnet build .\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj -c Release -p:Platform=${{ matrix.platform }} -p:WinUIAnalyzerPath="$PWD\artifacts\winui-analyzer" --no-restore
+
+  test:
+    name: Unit tests (x64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Install pinned WinUI analyzer
+        shell: pwsh
+        run: ./tools/Install-WinUIAnalyzer.ps1
+
+      - name: Verify scaffold and resources
+        shell: pwsh
+        run: ./tests/Verify-WinUIScaffold.ps1
+
+      - name: Test
+        run: dotnet test .\tests\DeviceOffboardingManager.WinUI.Tests\DeviceOffboardingManager.WinUI.Tests.csproj -c Release -p:Platform=x64 -p:WinUIAnalyzerPath="$PWD\artifacts\winui-analyzer" --collect:"XPlat Code Coverage"

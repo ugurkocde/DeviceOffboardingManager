@@ -1,36 +1,83 @@
-<Page
-    x:Class="DeviceOffboardingManager.WinUI.Views.HomePage"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Page x:Class="DeviceOffboardingManager.WinUI.Views.HomePage" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <ScrollViewer>
         <Grid x:Name="HomePageRoot" RowSpacing="16">
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="WindowWidthStates">
+                    <VisualState x:Name="Wide">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="1008" />
+                        </VisualState.StateTriggers>
+                    </VisualState>
+                    <VisualState x:Name="Medium">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="700" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="HomeIntuneCard.(Grid.ColumnSpan)" Value="2" />
+                            <Setter Target="HomeAutopilotCard.(Grid.Column)" Value="2" />
+                            <Setter Target="HomeAutopilotCard.(Grid.ColumnSpan)" Value="2" />
+                            <Setter Target="HomeEntraCard.(Grid.Row)" Value="1" />
+                            <Setter Target="HomeEntraCard.(Grid.Column)" Value="0" />
+                            <Setter Target="HomeEntraCard.(Grid.ColumnSpan)" Value="2" />
+                            <Setter Target="HomeDefenderCard.(Grid.Row)" Value="1" />
+                            <Setter Target="HomeDefenderCard.(Grid.Column)" Value="2" />
+                            <Setter Target="HomeDefenderCard.(Grid.ColumnSpan)" Value="2" />
+                        </VisualState.Setters>
+                    </VisualState>
+                    <VisualState x:Name="Narrow">
+                        <VisualState.StateTriggers>
+                            <AdaptiveTrigger MinWindowWidth="0" />
+                        </VisualState.StateTriggers>
+                        <VisualState.Setters>
+                            <Setter Target="HomeHeaderActions.(Grid.Row)" Value="1" />
+                            <Setter Target="HomeHeaderActions.(Grid.Column)" Value="0" />
+                            <Setter Target="HomeIntuneCard.(Grid.ColumnSpan)" Value="4" />
+                            <Setter Target="HomeAutopilotCard.(Grid.Row)" Value="1" />
+                            <Setter Target="HomeAutopilotCard.(Grid.Column)" Value="0" />
+                            <Setter Target="HomeAutopilotCard.(Grid.ColumnSpan)" Value="4" />
+                            <Setter Target="HomeEntraCard.(Grid.Row)" Value="2" />
+                            <Setter Target="HomeEntraCard.(Grid.Column)" Value="0" />
+                            <Setter Target="HomeEntraCard.(Grid.ColumnSpan)" Value="4" />
+                            <Setter Target="HomeDefenderCard.(Grid.Row)" Value="3" />
+                            <Setter Target="HomeDefenderCard.(Grid.Column)" Value="0" />
+                            <Setter Target="HomeDefenderCard.(Grid.ColumnSpan)" Value="4" />
+                        </VisualState.Setters>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <Grid ColumnSpacing="16">
+            <Grid ColumnSpacing="16" RowSpacing="12">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
                 <StackPanel Spacing="4">
-                    <TextBlock Text="Device Offboarding Manager" Style="{StaticResource TitleTextBlockStyle}" />
-                    <TextBlock Text="Native Windows app for Intune, Autopilot, Entra ID, and optional Defender for Endpoint offboarding." TextWrapping="Wrap" />
+                    <TextBlock Text="Device Offboarding Manager" Style="{StaticResource TitleTextBlockStyle}" x:Uid="HomePage_TextBlockDeviceOffboardingManager" />
+                    <TextBlock Text="Native Windows app for Intune, Autopilot, Entra ID, and optional Defender for Endpoint offboarding." TextWrapping="Wrap" x:Uid="HomePage_TextBlockNativeWindowsAppForIntune" />
                 </StackPanel>
-                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
-                    <Button x:Name="HomeConnectButton" Content="Connect" Command="{x:Bind ViewModel.ConnectCommand}" AutomationProperties.AutomationId="BtnHomeConnect" />
-                    <Button Content="Search devices" Tag="devices" Command="{x:Bind ViewModel.GoToDevicesCommand}" AutomationProperties.AutomationId="BtnHomeDevices" />
+                <StackPanel x:Name="HomeHeaderActions" Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Bottom">
+                    <ProgressRing Width="20" Height="20" IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}" AutomationProperties.AutomationId="HomeBusyIndicator" AutomationProperties.Name="Connection in progress" x:Uid="HomePage_HomeBusyIndicator" />
+                    <Button x:Name="HomeConnectButton" Content="Connect" Command="{x:Bind ViewModel.ConnectCommand}" AutomationProperties.AutomationId="BtnHomeConnect" AccessKey="C" x:Uid="HomePage_HomeConnectButton" />
+                    <Button Content="Search devices" Tag="devices" Command="{x:Bind ViewModel.GoToDevicesCommand}" AutomationProperties.AutomationId="BtnHomeDevices" x:Uid="HomePage_BtnHomeDevices" />
                 </StackPanel>
             </Grid>
 
             <Border Grid.Row="1" Style="{StaticResource CardBorderStyle}">
                 <StackPanel Spacing="8">
-                    <TextBlock Text="Release posture" Style="{StaticResource SubtitleTextBlockStyle}" />
-                    <TextBlock Text="Version 0.4 is the native signed-app track. Test with non-production devices first; offboarding, wipe, delete, and Defender actions can be permanent." TextWrapping="Wrap" />
-                    <TextBlock Text="The WinUI app replaces the PowerShell module as of 0.4.0. v0.3 is the final module release. Distribution continues toward MSIX, Intune, WinGet, and Microsoft Store." TextWrapping="Wrap" />
+                    <TextBlock Text="Release posture" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="HomePage_TextBlockReleasePosture" />
+                    <TextBlock Text="Version 0.4 is the native signed-app track. Test with non-production devices first; offboarding, wipe, delete, and Defender actions can be permanent." TextWrapping="Wrap" x:Uid="HomePage_TextBlockVersion04IsThe" />
+                    <TextBlock Text="The WinUI app replaces the PowerShell module as of 0.4.0. v0.3 is the final module release. Distribution continues toward MSIX, Intune, WinGet, and Microsoft Store." TextWrapping="Wrap" x:Uid="HomePage_TextBlockTheWinUIAppReplacesThe" />
                 </StackPanel>
             </Border>
 
@@ -41,28 +88,34 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Border Style="{StaticResource CardBorderStyle}">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <Border x:Name="HomeIntuneCard" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Intune" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock Text="Search managed devices, retire or wipe, delete records, report stale devices, and read compliance/agent state." TextWrapping="Wrap" />
+                        <TextBlock Text="Intune" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="HomePage_TextBlockIntune" />
+                        <TextBlock Text="Search managed devices, retire or wipe, delete records, report stale devices, and read compliance/agent state." TextWrapping="Wrap" x:Uid="HomePage_TextBlockSearchManagedDevicesRetireOr" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Style="{StaticResource CardBorderStyle}">
+                <Border x:Name="HomeAutopilotCard" Grid.Column="1" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Autopilot" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock Text="Correlate identities, delete Autopilot records, and set or clear group tags for selected devices." TextWrapping="Wrap" />
+                        <TextBlock Text="Autopilot" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="HomePage_TextBlockAutopilot" />
+                        <TextBlock Text="Correlate identities, delete Autopilot records, and set or clear group tags for selected devices." TextWrapping="Wrap" x:Uid="HomePage_TextBlockCorrelateIdentitiesDeleteAutopilotRecords" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="2" Style="{StaticResource CardBorderStyle}">
+                <Border x:Name="HomeEntraCard" Grid.Column="2" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Entra ID" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock Text="Resolve exact device IDs, disable or delete device objects, and preserve IDs in exports and confirmation flows." TextWrapping="Wrap" />
+                        <TextBlock Text="Entra ID" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="HomePage_TextBlockEntraID" />
+                        <TextBlock Text="Resolve exact device IDs, disable or delete device objects, and preserve IDs in exports and confirmation flows." TextWrapping="Wrap" x:Uid="HomePage_TextBlockResolveExactDeviceIDsDisable" />
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="3" Style="{StaticResource CardBorderStyle}">
+                <Border x:Name="HomeDefenderCard" Grid.Column="3" Style="{StaticResource CardBorderStyle}">
                     <StackPanel Spacing="4">
-                        <TextBlock Text="Defender" Style="{StaticResource SubtitleTextBlockStyle}" />
-                        <TextBlock Text="Optional, settings-gated Defender for Endpoint offboarding that requests Defender tokens only when used." TextWrapping="Wrap" />
+                        <TextBlock Text="Defender" Style="{StaticResource SubtitleTextBlockStyle}" x:Uid="HomePage_TextBlockDefender" />
+                        <TextBlock Text="Optional, settings-gated Defender for Endpoint offboarding that requests Defender tokens only when used." TextWrapping="Wrap" x:Uid="HomePage_TextBlockOptionalSettingsGatedDefenderFor" />
                     </StackPanel>
                 </Border>
             </Grid>

@@ -2,6 +2,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
@@ -28,14 +29,14 @@ public sealed partial class HomeViewModel : AppViewModelBase
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDisconnected))]
-    private bool isConnected;
+    public partial bool IsConnected { get; set; }
 
     public bool IsDisconnected => !IsConnected;
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
     {
-        await RunAsync("Connecting", _settingsViewModel.ConnectWithCurrentSettingsAsync);
+        await RunAsync(AppResources.Get("Connecting", "Connecting"), _settingsViewModel.ConnectWithCurrentSettingsAsync);
     }
 
     [RelayCommand]

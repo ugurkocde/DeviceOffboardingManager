@@ -1,49 +1,39 @@
-<Window
-    x:Class="DeviceOffboardingManager.WinUI.MainWindow"
-    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-    xmlns:muxc="using:Microsoft.UI.Xaml.Controls"
-    Title="Device Offboarding Manager">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Window x:Class="DeviceOffboardingManager.WinUI.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:muxc="using:Microsoft.UI.Xaml.Controls" Title="Device Offboarding Manager" x:Uid="MainWindow_WindowDeviceOffboardingManager">
 
     <Grid>
-        <muxc:NavigationView
-            x:Name="RootNavigation"
-            AutomationProperties.AutomationId="RootNavigation"
-            IsBackButtonVisible="Collapsed"
-            IsSettingsVisible="True"
-            PaneDisplayMode="Left"
-            SelectionChanged="RootNavigation_SelectionChanged">
+        <muxc:NavigationView x:Name="RootNavigation" AutomationProperties.AutomationId="RootNavigation" IsBackButtonVisible="Collapsed" IsSettingsVisible="True" PaneDisplayMode="Auto" CompactModeThresholdWidth="700" ExpandedModeThresholdWidth="1008" SelectionChanged="RootNavigation_SelectionChanged">
             <muxc:NavigationView.MenuItems>
-                <muxc:NavigationViewItem x:Name="NavHome" Content="Home" Tag="home" AutomationProperties.AutomationId="NavHome">
+                <muxc:NavigationViewItem x:Name="NavHome" Content="Home" Tag="home" AutomationProperties.AutomationId="NavHome" x:Uid="MainWindow_NavHome">
                     <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE80F;" />
+                        <FontIcon Glyph="" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem x:Name="NavDashboard" Content="Dashboard" Tag="dashboard" AutomationProperties.AutomationId="NavDashboard">
+                <muxc:NavigationViewItem x:Name="NavDashboard" Content="Dashboard" Tag="dashboard" AutomationProperties.AutomationId="NavDashboard" x:Uid="MainWindow_NavDashboard">
                     <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE9D2;" />
+                        <FontIcon Glyph="" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem x:Name="NavDevices" Content="Devices" Tag="devices" AutomationProperties.AutomationId="NavDevices">
+                <muxc:NavigationViewItem x:Name="NavDevices" Content="Devices" Tag="devices" AutomationProperties.AutomationId="NavDevices" x:Uid="MainWindow_NavDevices">
                     <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE975;" />
+                        <FontIcon Glyph="" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem x:Name="NavOffboarding" Content="Offboarding" Tag="offboarding" AutomationProperties.AutomationId="NavOffboarding">
+                <muxc:NavigationViewItem x:Name="NavOffboarding" Content="Offboarding" Tag="offboarding" AutomationProperties.AutomationId="NavOffboarding" x:Uid="MainWindow_NavOffboarding">
                     <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE74D;" />
+                        <FontIcon Glyph="" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
-                <muxc:NavigationViewItem x:Name="NavPlaybooks" Content="Playbooks" Tag="playbooks" AutomationProperties.AutomationId="NavPlaybooks">
+                <muxc:NavigationViewItem x:Name="NavPlaybooks" Content="Playbooks" Tag="playbooks" AutomationProperties.AutomationId="NavPlaybooks" x:Uid="MainWindow_NavPlaybooks">
                     <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE8F1;" />
+                        <FontIcon Glyph="" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
             </muxc:NavigationView.MenuItems>
             <muxc:NavigationView.FooterMenuItems>
-                <muxc:NavigationViewItem x:Name="NavAbout" Content="About" Tag="about" AutomationProperties.AutomationId="NavAbout">
+                <muxc:NavigationViewItem x:Name="NavAbout" Content="About" Tag="about" AutomationProperties.AutomationId="NavAbout" x:Uid="MainWindow_NavAbout">
                     <muxc:NavigationViewItem.Icon>
-                        <FontIcon Glyph="&#xE946;" />
+                        <FontIcon Glyph="" />
                     </muxc:NavigationViewItem.Icon>
                 </muxc:NavigationViewItem>
             </muxc:NavigationView.FooterMenuItems>
@@ -54,20 +44,9 @@
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
-                <muxc:InfoBar
-                    x:Name="StatusInfoBar"
-                    AutomationProperties.AutomationId="StatusInfoBar"
-                    IsOpen="True"
-                    Severity="Informational"
-                    Title="Not connected"
-                    Message="Configure authentication, connect to Microsoft Graph, then search devices." />
+                <muxc:InfoBar x:Name="StatusInfoBar" AutomationProperties.AutomationId="StatusInfoBar" IsOpen="True" Severity="Informational" Title="Not connected" Message="Configure authentication, connect to Microsoft Graph, then search devices." x:Uid="MainWindow_StatusInfoBar" />
 
-                <Frame
-                    x:Name="ContentFrame"
-                    AutomationProperties.AutomationId="ContentFrame"
-                    Grid.Row="1"
-                    MaxWidth="1280"
-                    HorizontalAlignment="Stretch" />
+                <Frame x:Name="ContentFrame" AutomationProperties.AutomationId="ContentFrame" Grid.Row="1" MaxWidth="1280" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" />
             </Grid>
         </muxc:NavigationView>
     </Grid>

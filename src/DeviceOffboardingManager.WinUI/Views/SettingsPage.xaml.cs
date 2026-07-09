@@ -1,6 +1,7 @@
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 using DeviceOffboardingManager.WinUI.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
@@ -33,12 +34,12 @@ public sealed partial class SettingsPage : Page
             if (!string.IsNullOrWhiteSpace(path))
             {
                 ViewModel.ConfigPath = path;
-                _statusService.Report("Config selected", path, StatusSeverity.Informational);
+                _statusService.Report(AppResources.Get("ConfigSelectedTitle", "Config selected"), path, StatusSeverity.Informational);
             }
         }
         catch (Exception ex)
         {
-            await ViewModel.ReportExceptionAsync("Selecting config", ex);
+            await ViewModel.ReportExceptionAsync(AppResources.Get("SelectingConfig", "Selecting config"), ex);
         }
     }
 

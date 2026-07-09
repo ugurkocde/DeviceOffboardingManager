@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
@@ -15,6 +16,8 @@ public sealed partial class DevicesViewModel : AppViewModelBase
     private readonly IReportExportService _reportExportService;
     private readonly IStatusService _statusService;
     private readonly DeviceListState _deviceListState;
+    private CancellationTokenSource? _filterDebounce;
+    private bool _suppressFilterDebounce;
 
     public DevicesViewModel(
         IAuthenticationService authenticationService,
@@ -37,33 +40,33 @@ public sealed partial class DevicesViewModel : AppViewModelBase
     public ObservableCollection<DeviceRecord> VisibleDevices => _deviceListState.VisibleDevices;
 
     [ObservableProperty]
-    private int searchModeIndex;
+    public partial int SearchModeIndex { get; set; }
 
     [ObservableProperty]
-    private string searchText = string.Empty;
+    public partial string SearchText { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string filterDeviceName = string.Empty;
+    public partial string FilterDeviceName { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string filterSerial = string.Empty;
+    public partial string FilterSerial { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string filterOs = string.Empty;
+    public partial string FilterOs { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string filterUser = string.Empty;
+    public partial string FilterUser { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string filterCompliance = string.Empty;
+    public partial string FilterCompliance { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string searchStatusText = "No devices searched yet.";
+    public partial string SearchStatusText { get; set; } = AppResources.Get("NoDevicesSearched", "No devices searched yet.");
 
     [RelayCommand]
     private async Task SearchAsync()
     {
-        await RunAsync("Searching devices", SearchCurrentTermsAsync);
+        await RunAsync(AppResources.Get("SearchingDevices", "Searching devices"), SearchCurrentTermsAsync);
     }
 
     [RelayCommand]
@@ -71,41 +74,53 @@ public sealed partial class DevicesViewModel : AppViewModelBase
     {
         SearchText = string.Empty;
         _deviceListState.ClearDeviceList();
-        SearchStatusText = "No devices searched yet.";
-        _statusService.Report("Device list cleared", "Search terms and results were cleared.", StatusSeverity.Informational);
+        SearchStatusText = AppResources.Get("NoDevicesSearched", "No devices searched yet.");
+        _statusService.Report(
+            AppResources.Get("DeviceListClearedTitle", "Device list cleared"),
+            AppResources.Get("DeviceListClearedMessage", "Search terms and results were cleared."),
+            StatusSeverity.Informational);
     }
 
     [RelayCommand]
     private void ResetFilters()
     {
-        FilterDeviceName = string.Empty;
-        FilterSerial = string.Empty;
-        FilterOs = string.Empty;
-        FilterUser = string.Empty;
-        FilterCompliance = string.Empty;
-        ApplyFilters();
+        _suppressFilterDebounce = true;
+        try
+        {
+            FilterDeviceName = string.Empty;
+            FilterSerial = string.Empty;
+            FilterOs = string.Empty;
+            FilterUser = string.Empty;
+            FilterCompliance = string.Empty;
+        }
+        finally
+        {
+            _suppressFilterDebounce = false;
+        }
+
+        ApplyFiltersImmediately();
     }
 
     [RelayCommand]
     private async Task ExportCsvAsync()
     {
-        await RunAsync("Exporting CSV", async () =>
+        await RunAsync(AppResources.Get("ExportingCsv", "Exporting CSV"), async () =>
         {
             var devices = _deviceListState.GetSelectedOrVisibleDevices();
             if (devices.Count == 0)
             {
-                throw new InvalidOperationException("No devices are available to export.");
+                throw new InvalidOperationException(AppResources.Get("NoDevicesAvailable", "No devices are available to export."));
             }
 
             var path = await _reportExportService.ExportDeviceCsvAsync(devices);
-            _statusService.Report("CSV exported", path, StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("CsvExportedTitle", "CSV exported"), path, StatusSeverity.Success);
         });
     }
 
     [RelayCommand]
     private async Task DownloadBulkTemplateAsync()
     {
-        await RunAsync("Saving import template", async () =>
+        await RunAsync(AppResources.Get("SavingImportTemplate", "Saving import template"), async () =>
         {
             var path = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
@@ -120,7 +135,7 @@ public sealed partial class DevicesViewModel : AppViewModelBase
             });
 
             await File.WriteAllTextAsync(path, template, Encoding.UTF8);
-            _statusService.Report("Template saved", path, StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("TemplateSavedTitle", "Template saved"), path, StatusSeverity.Success);
         });
     }
 
@@ -131,7 +146,7 @@ public sealed partial class DevicesViewModel : AppViewModelBase
 
     public async Task ImportSearchTermsAsync(IReadOnlyList<string> terms)
     {
-        await RunAsync("Importing search terms", async () =>
+        await RunAsync(AppResources.Get("ImportingSearchTerms", "Importing search terms"), async () =>
         {
             SearchText = string.Join(Environment.NewLine, terms);
             if (_authenticationService.IsConnected)
@@ -140,24 +155,34 @@ public sealed partial class DevicesViewModel : AppViewModelBase
             }
             else
             {
-                _statusService.Report("Bulk terms imported", $"Imported {terms.Count:n0} search term(s). Connect before searching.", StatusSeverity.Success);
+                _statusService.Report(
+                    AppResources.Get("BulkTermsImportedTitle", "Bulk terms imported"),
+                    AppResources.Format("BulkImportImportedFormat", "Imported {0:N0} search term(s). Connect before searching.", terms.Count),
+                    StatusSeverity.Success);
             }
         });
     }
 
     public async Task<(DeviceRecord Device, IReadOnlyList<GroupMembershipRecord> Groups)?> LoadSelectedGroupsForDialogAsync()
     {
-        return await RunAsync("Loading group memberships", async () =>
+        return await RunAsync(AppResources.Get("LoadingGroupMemberships", "Loading group memberships"), async () =>
         {
             EnsureConnected();
             var selected = _deviceListState.GetSelectedDevices();
             if (selected.Count != 1)
             {
-                throw new InvalidOperationException("Select exactly one device with a resolved Entra object ID.");
+                throw new InvalidOperationException(AppResources.Get("SelectExactlyOneDevice", "Select exactly one device with a resolved Entra object ID."));
             }
 
             var groups = await _deviceInventoryService.GetDeviceGroupMembershipsAsync(selected[0]);
-            _statusService.Report("Group memberships loaded", $"{groups.Count:n0} group(s) found for {selected[0].DeviceName ?? "the selected device"}.", StatusSeverity.Success);
+            _statusService.Report(
+                AppResources.Get("GroupMembershipsLoaded", "Group memberships loaded"),
+                AppResources.Format(
+                    "GroupMembershipsLoadedFormat",
+                    "{0:N0} group(s) found for {1}.",
+                    groups.Count,
+                    selected[0].DeviceName ?? AppResources.Get("SelectedDeviceFallback", "the selected device")),
+                StatusSeverity.Success);
             return (selected[0], groups);
         });
     }
@@ -203,27 +228,27 @@ public sealed partial class DevicesViewModel : AppViewModelBase
 
     partial void OnFilterDeviceNameChanged(string value)
     {
-        ApplyFilters();
+        QueueFilterUpdate();
     }
 
     partial void OnFilterSerialChanged(string value)
     {
-        ApplyFilters();
+        QueueFilterUpdate();
     }
 
     partial void OnFilterOsChanged(string value)
     {
-        ApplyFilters();
+        QueueFilterUpdate();
     }
 
     partial void OnFilterUserChanged(string value)
     {
-        ApplyFilters();
+        QueueFilterUpdate();
     }
 
     partial void OnFilterComplianceChanged(string value)
     {
-        ApplyFilters();
+        QueueFilterUpdate();
     }
 
     private async Task SearchCurrentTermsAsync()
@@ -232,13 +257,19 @@ public sealed partial class DevicesViewModel : AppViewModelBase
         var terms = ParseSearchTerms(SearchText);
         if (terms.Count == 0)
         {
-            throw new InvalidOperationException("Enter at least one search term.");
+            throw new InvalidOperationException(AppResources.Get("SearchTermsRequired", "Enter at least one search term."));
         }
 
         var result = await _deviceInventoryService.SearchDevicesAsync(terms, GetSearchOption());
         _deviceListState.ReplaceDeviceList(result.Devices);
-        SearchStatusText = $"{result.Devices.Count:n0} device(s) found. Intune: {result.IntuneCount:n0}; Autopilot: {result.AutopilotCount:n0}; Entra ID: {result.EntraCount:n0}.";
-        _statusService.Report("Search complete", SearchStatusText, StatusSeverity.Success);
+        SearchStatusText = AppResources.Format(
+            "SearchCompleteFormat",
+            "{0:N0} device(s) found. Intune: {1:N0}; Autopilot: {2:N0}; Entra ID: {3:N0}.",
+            result.Devices.Count,
+            result.IntuneCount,
+            result.AutopilotCount,
+            result.EntraCount);
+        _statusService.Report(AppResources.Get("SearchComplete", "Search complete"), SearchStatusText, StatusSeverity.Success);
     }
 
     private void ApplyFilters()
@@ -249,6 +280,40 @@ public sealed partial class DevicesViewModel : AppViewModelBase
             FilterOs,
             FilterUser,
             FilterCompliance);
+    }
+
+    private void ApplyFiltersImmediately()
+    {
+        _filterDebounce?.Cancel();
+        _filterDebounce?.Dispose();
+        _filterDebounce = null;
+        ApplyFilters();
+    }
+
+    private void QueueFilterUpdate()
+    {
+        if (_suppressFilterDebounce)
+        {
+            return;
+        }
+
+        _filterDebounce?.Cancel();
+        _filterDebounce?.Dispose();
+        _filterDebounce = new CancellationTokenSource();
+        _ = ApplyFiltersAfterDelayAsync(_filterDebounce.Token);
+    }
+
+    private async Task ApplyFiltersAfterDelayAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            await Task.Delay(200, cancellationToken);
+            ApplyFilters();
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer filter value superseded this update.
+        }
     }
 
     private void RefreshSearchStatusFromState()
@@ -274,7 +339,7 @@ public sealed partial class DevicesViewModel : AppViewModelBase
     {
         if (!_authenticationService.IsConnected)
         {
-            throw new InvalidOperationException("Connect to Microsoft Graph first.");
+            throw new InvalidOperationException(AppResources.Get("ConnectFirst", "Connect to Microsoft Graph first."));
         }
     }
 

@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
@@ -46,80 +47,83 @@ public sealed partial class OffboardingViewModel : AppViewModelBase
     }
 
     [ObservableProperty]
-    private string selectedDeviceCountText = "No devices selected.";
+    public partial string SelectedDeviceCountText { get; set; } = AppResources.Get("NoDevicesSelectedShort", "No devices selected.");
 
     [ObservableProperty]
-    private string offboardingStatusText = "Select devices before running actions.";
+    public partial string OffboardingStatusText { get; set; } = AppResources.Get("SelectDevicesBeforeActions", "Select devices before running actions.");
 
     [ObservableProperty]
-    private bool deleteEntra = true;
+    public partial bool DeleteEntra { get; set; } = true;
 
     [ObservableProperty]
-    private bool disableEntra;
+    public partial bool DisableEntra { get; set; }
 
     [ObservableProperty]
-    private bool deleteIntune = true;
+    public partial bool DeleteIntune { get; set; } = true;
 
     [ObservableProperty]
-    private bool deleteAutopilot = true;
+    public partial bool DeleteAutopilot { get; set; } = true;
 
     [ObservableProperty]
-    private bool offboardDefender;
+    public partial bool OffboardDefender { get; set; }
 
     [ObservableProperty]
-    private bool isDefenderControlEnabled;
+    public partial bool IsDefenderControlEnabled { get; set; }
 
     [ObservableProperty]
-    private int preActionIndex;
+    public partial int PreActionIndex { get; set; }
 
     [ObservableProperty]
-    private string groupTag = string.Empty;
+    public partial string GroupTag { get; set; } = string.Empty;
 
     [RelayCommand]
     private async Task ExportSelectedAsync()
     {
-        await RunAsync("Exporting CSV", async () =>
+        await RunAsync(AppResources.Get("ExportingCsv", "Exporting CSV"), async () =>
         {
             var devices = _deviceListState.GetSelectedOrVisibleDevices();
             if (devices.Count == 0)
             {
-                throw new InvalidOperationException("No devices are available to export.");
+                throw new InvalidOperationException(AppResources.Get("NoDevicesAvailable", "No devices are available to export."));
             }
 
             var path = await _reportExportService.ExportDeviceCsvAsync(devices);
-            _statusService.Report("CSV exported", path, StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("CsvExportedTitle", "CSV exported"), path, StatusSeverity.Success);
         });
     }
 
     [RelayCommand]
     private async Task SetGroupTagAsync()
     {
-        await RunAsync("Setting group tag", async () =>
+        await RunAsync(AppResources.Get("SettingGroupTag", "Setting group tag"), async () =>
         {
             EnsureConnected();
             var selected = _deviceListState.GetSelectedDevices();
             if (selected.Count == 0)
             {
-                throw new InvalidOperationException("Select at least one device.");
+                throw new InvalidOperationException(AppResources.Get("SelectOneDevice", "Select at least one device."));
             }
 
             var result = await _deviceInventoryService.SetAutopilotGroupTagAsync(selected, GroupTag);
-            _statusService.Report("Group tag update complete", $"Updated: {result.Updated:n0}; Failed: {result.Failed:n0}.", result.Failed == 0 ? StatusSeverity.Success : StatusSeverity.Warning);
+            _statusService.Report(
+                AppResources.Get("GroupTagComplete", "Group tag update complete"),
+                AppResources.Format("GroupTagCompleteFormat", "Updated: {0:N0}; Failed: {1:N0}.", result.Updated, result.Failed),
+                result.Failed == 0 ? StatusSeverity.Success : StatusSeverity.Warning);
         });
     }
 
     [RelayCommand]
     private async Task ExportReportAsync()
     {
-        await RunAsync("Exporting report", async () =>
+        await RunAsync(AppResources.Get("ExportingReport", "Exporting report"), async () =>
         {
             if (_deviceListState.LastOffboardingSummary is null)
             {
-                throw new InvalidOperationException("Run an offboarding operation before exporting the HTML report.");
+                throw new InvalidOperationException(AppResources.Get("RunOffboardingBeforeExport", "Run an offboarding operation before exporting the HTML report."));
             }
 
             var path = await _reportExportService.ExportOffboardingHtmlAsync(_deviceListState.LastOffboardingSummary);
-            _statusService.Report("Report exported", path, StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("ReportExportedTitle", "Report exported"), path, StatusSeverity.Success);
         });
     }
 
@@ -130,54 +134,72 @@ public sealed partial class OffboardingViewModel : AppViewModelBase
 
     public async Task<IReadOnlyList<RecoveryKeyRecord>?> FetchRecoveryKeysForDialogAsync()
     {
-        return await RunAsync("Fetching recovery keys", async () =>
+        return await RunAsync(AppResources.Get("FetchingRecoveryKeys", "Fetching recovery keys"), async () =>
         {
             EnsureConnected();
             var selected = _deviceListState.GetSelectedDevices();
             if (selected.Count == 0)
             {
-                throw new InvalidOperationException("Select at least one device.");
+                throw new InvalidOperationException(AppResources.Get("SelectOneDevice", "Select at least one device."));
             }
 
             var keys = await _recoveryKeyService.GetRecoveryKeysAsync(selected);
             var found = keys.Count(key => !string.IsNullOrWhiteSpace(key.KeyValue));
-            OffboardingStatusText = $"Recovery key lookup complete. Records: {keys.Count:n0}; values found: {found:n0}. Values are shown once and are not written to logs.";
-            _statusService.Report("Recovery key lookup complete", OffboardingStatusText, found > 0 ? StatusSeverity.Success : StatusSeverity.Informational);
+            OffboardingStatusText = AppResources.Format(
+                "RecoveryLookupCompleteFormat",
+                "Recovery key lookup complete. Records: {0:N0}; values found: {1:N0}. Values are shown once and are not written to logs.",
+                keys.Count,
+                found);
+            _statusService.Report(
+                AppResources.Get("RecoveryLookupComplete", "Recovery key lookup complete"),
+                OffboardingStatusText,
+                found > 0 ? StatusSeverity.Success : StatusSeverity.Informational);
             return keys;
         });
     }
 
     public async Task<OffboardingSummary?> RunConfirmedOffboardingAsync()
     {
-        return await RunAsync("Running offboarding", async () =>
+        return await RunAsync(AppResources.Get("RunningOffboarding", "Running offboarding"), async () =>
         {
             EnsureConnected();
             var selected = _deviceListState.GetSelectedDevices();
             if (selected.Count == 0)
             {
-                throw new InvalidOperationException("Select at least one device.");
+                throw new InvalidOperationException(AppResources.Get("SelectOneDevice", "Select at least one device."));
             }
 
             var summary = await _offboardingService.OffboardAsync(selected, BuildOffboardingOptions());
             _deviceListState.LastOffboardingSummary = summary;
-            OffboardingStatusText = $"Offboarding complete. Devices: {summary.TotalDevices:n0}; successful: {summary.SuccessfulDevices:n0}; failed/partial: {summary.FailedDevices:n0}.";
-            _statusService.Report("Offboarding complete", OffboardingStatusText, summary.FailedDevices == 0 ? StatusSeverity.Success : StatusSeverity.Warning);
+            OffboardingStatusText = AppResources.Format(
+                "OffboardingCompleteFormat",
+                "Offboarding complete. Devices: {0:N0}; successful: {1:N0}; failed/partial: {2:N0}.",
+                summary.TotalDevices,
+                summary.SuccessfulDevices,
+                summary.FailedDevices);
+            _statusService.Report(
+                AppResources.Get("OffboardingComplete", "Offboarding complete"),
+                OffboardingStatusText,
+                summary.FailedDevices == 0 ? StatusSeverity.Success : StatusSeverity.Warning);
             return summary;
         });
     }
 
     public async Task ExportSummaryAsync(OffboardingSummary summary)
     {
-        await RunAsync("Exporting report", async () =>
+        await RunAsync(AppResources.Get("ExportingReport", "Exporting report"), async () =>
         {
             var path = await _reportExportService.ExportOffboardingHtmlAsync(summary);
-            _statusService.Report("Report exported", path, StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("ReportExportedTitle", "Report exported"), path, StatusSeverity.Success);
         });
     }
 
     public void ReportOffboardingCanceled()
     {
-        _statusService.Report("Offboarding canceled", "No changes were made.", StatusSeverity.Informational);
+        _statusService.Report(
+            AppResources.Get("OffboardingCanceledTitle", "Offboarding canceled"),
+            AppResources.Get("OffboardingCanceledMessage", "No changes were made."),
+            StatusSeverity.Informational);
     }
 
     private OffboardingOptions BuildOffboardingOptions()
@@ -221,7 +243,7 @@ public sealed partial class OffboardingViewModel : AppViewModelBase
     {
         if (!_authenticationService.IsConnected)
         {
-            throw new InvalidOperationException("Connect to Microsoft Graph first.");
+            throw new InvalidOperationException(AppResources.Get("ConnectFirst", "Connect to Microsoft Graph first."));
         }
     }
 }

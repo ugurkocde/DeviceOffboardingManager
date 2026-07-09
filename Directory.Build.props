@@ -1,0 +1,22 @@
+<Project>
+  <PropertyGroup>
+    <VersionPrefix>0.4.0</VersionPrefix>
+    <Version>$(VersionPrefix)</Version>
+    <AssemblyVersion>$(VersionPrefix).0</AssemblyVersion>
+    <FileVersion>$(VersionPrefix).0</FileVersion>
+    <AppxPackageVersion>$(VersionPrefix).0</AppxPackageVersion>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <LangVersion>14.0</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(MSBuildProjectName)' == 'DeviceOffboardingManager.WinUI' and '$(WinUIAnalyzerPath)' != '' and Exists('$(WinUIAnalyzerPath)\Microsoft.WindowsAppSDK.Analyzers.dll')">
+    <Analyzer Include="$(WinUIAnalyzerPath)\Microsoft.WindowsAppSDK.Analyzers.dll" />
+  </ItemGroup>
+
+  <Import
+    Project="$(WinUIAnalyzerPath)\Microsoft.WindowsAppSDK.Analyzers.targets"
+    Condition="'$(MSBuildProjectName)' == 'DeviceOffboardingManager.WinUI' and '$(WinUIAnalyzerPath)' != '' and Exists('$(WinUIAnalyzerPath)\Microsoft.WindowsAppSDK.Analyzers.targets')" />
+</Project>

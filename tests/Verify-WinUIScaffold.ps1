@@ -12,6 +12,13 @@ $launchSettings = Join-Path $projectRoot 'Properties/launchSettings.json'
 $mainWindowXaml = Join-Path $projectRoot 'MainWindow.xaml'
 $appXaml = Join-Path $projectRoot 'App.xaml'
 $migrationPlan = Join-Path $repoRoot 'docs/v0.4-winui-migration-plan.md'
+$directoryBuildProps = Join-Path $repoRoot 'Directory.Build.props'
+$unitTestProject = Join-Path $repoRoot 'tests/DeviceOffboardingManager.WinUI.Tests/DeviceOffboardingManager.WinUI.Tests.csproj'
+$osBaselineConfig = Join-Path $projectRoot 'Configuration/os-support-baselines.json'
+$resourceFile = Join-Path $projectRoot 'Strings/en-us/Resources.resw'
+$uiTestScript = Join-Path $repoRoot 'tests/ui-tests.ps1'
+$resourceGenerator = Join-Path $repoRoot 'tools/Generate-XamlResources.ps1'
+$analyzerInstaller = Join-Path $repoRoot 'tools/Install-WinUIAnalyzer.ps1'
 
 $viewFiles = @(
     'Views/HomePage.xaml',
@@ -41,6 +48,13 @@ $requiredFiles = @(
     $launchSettings,
     $mainWindowXaml,
     $appXaml,
+    $directoryBuildProps,
+    $unitTestProject,
+    $osBaselineConfig,
+    $resourceFile,
+    $uiTestScript,
+    $resourceGenerator,
+    $analyzerInstaller,
     (Join-Path $projectRoot 'App.xaml.cs'),
     (Join-Path $projectRoot 'MainWindow.xaml.cs'),
     (Join-Path $projectRoot 'app.manifest'),
@@ -50,6 +64,9 @@ $requiredFiles = @(
     (Join-Path $projectRoot 'Models/DeviceOffboardingSettings.cs'),
     (Join-Path $projectRoot 'Models/DeviceRecord.cs'),
     (Join-Path $projectRoot 'Models/OffboardingOptions.cs'),
+    (Join-Path $projectRoot 'Models/ServiceOperationState.cs'),
+    (Join-Path $projectRoot 'Utilities/AppResources.cs'),
+    (Join-Path $projectRoot 'Utilities/CsvEncoder.cs'),
     (Join-Path $projectRoot 'Models/StatusReport.cs'),
     (Join-Path $projectRoot 'Models/TextRow.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IAuthenticationService.cs'),
@@ -57,6 +74,7 @@ $requiredFiles = @(
     (Join-Path $projectRoot 'Services/Contracts/IOffboardingService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/ISettingsService.cs'),
     (Join-Path $projectRoot 'Services/Contracts/IStatusService.cs'),
+    (Join-Path $projectRoot 'Services/Contracts/IOsSupportBaselineProvider.cs'),
     (Join-Path $projectRoot 'Services/AuthenticationService.cs'),
     (Join-Path $projectRoot 'Services/DeviceInventoryService.cs'),
     (Join-Path $projectRoot 'Services/DeviceListState.cs'),
@@ -65,6 +83,7 @@ $requiredFiles = @(
     (Join-Path $projectRoot 'Services/PlaybookService.cs'),
     (Join-Path $projectRoot 'Services/SettingsService.cs'),
     (Join-Path $projectRoot 'Services/StatusService.cs'),
+    (Join-Path $projectRoot 'Services/OsSupportBaselineProvider.cs'),
     (Join-Path $projectRoot 'Services/ShellNavigationService.cs'),
     (Join-Path $projectRoot 'Services/Graph/GraphApiClient.cs'),
     (Join-Path $projectRoot 'Services/Defender/DefenderApiClient.cs'),
@@ -91,7 +110,7 @@ $solutionText = Get-Content -Path $solutionFile -Raw
 if ($solutionText -notmatch [regex]::Escape('src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj')) {
     throw 'The WinUI solution does not reference the WinUI project.'
 }
-foreach ($solutionPlatform in @('Debug|x64', 'Debug|x86', 'Debug|ARM64', 'Release|x64', 'Release|x86', 'Release|ARM64')) {
+foreach ($solutionPlatform in @('Debug|x64', 'Debug|ARM64', 'Release|x64', 'Release|ARM64')) {
     if ($solutionText -notmatch [regex]::Escape("$solutionPlatform.Deploy.0 = $solutionPlatform")) {
         throw "The WinUI solution must enable deployment for $solutionPlatform."
     }
@@ -124,6 +143,9 @@ if ($properties['WindowsAppSdkDeploymentManagerInitialize'] -eq 'false') {
 }
 if ($properties['TargetFramework'] -notmatch '^net[0-9]+\.0-windows10\.0\.19041\.0$') {
     throw "Unexpected WinUI target framework: $($properties['TargetFramework'])"
+}
+if ($properties['TargetFramework'] -ne 'net10.0-windows10.0.19041.0') {
+    throw "The WinUI project must use the supported .NET 10 target: $($properties['TargetFramework'])"
 }
 
 $packageReferences = @(
@@ -190,7 +212,22 @@ if ($sourceText -match 'Services\.Placeholders|not implemented yet') {
 }
 
 foreach ($xamlFile in $xamlFiles) {
-    [xml](Get-Content -Path $xamlFile.FullName -Raw) | Out-Null
+    [xml]$xamlDocument = Get-Content -Path $xamlFile.FullName -Raw
+    $xamlDocument | Out-Null
+
+    $xamlNamespace = 'http://schemas.microsoft.com/winfx/2006/xaml'
+    foreach ($element in $xamlDocument.SelectNodes('//*')) {
+        $hasLocalizableLiteral = @('Title', 'Text', 'Content', 'Header', 'PlaceholderText', 'Message', 'AutomationProperties.Name', 'ToolTipService.ToolTip') |
+            Where-Object {
+                $element.HasAttribute($_) -and
+                -not [string]::IsNullOrWhiteSpace($element.GetAttribute($_)) -and
+                -not $element.GetAttribute($_).StartsWith('{') -and
+                $element.GetAttribute($_) -ne '--'
+            }
+        if ($hasLocalizableLiteral -and [string]::IsNullOrWhiteSpace($element.GetAttribute('Uid', $xamlNamespace))) {
+            throw "Localizable XAML in $($xamlFile.Name) is missing x:Uid on $($element.LocalName)."
+        }
+    }
 }
 
 $mainWindowText = Get-Content -Path $mainWindowXaml -Raw
@@ -199,6 +236,9 @@ if ($mainWindowText -match '<Grid\s+[^>]*Padding=') {
 }
 if ($mainWindowText -notmatch 'NavigationView' -or $mainWindowText -notmatch 'ContentFrame' -or $mainWindowText -notmatch 'StatusInfoBar') {
     throw 'The WinUI shell should include a NavigationView, shared InfoBar, and Frame.'
+}
+if ($mainWindowText -notmatch 'CompactModeThresholdWidth="700"' -or $mainWindowText -notmatch 'ExpandedModeThresholdWidth="1008"') {
+    throw 'The WinUI shell must retain the compact and expanded responsive breakpoints.'
 }
 if ($mainWindowText -match 'DeviceListView|RunOffboarding_Click|DashboardResultListView|Visibility="Collapsed"') {
     throw 'MainWindow.xaml must remain a shell and must not contain page body controls or Visibility-toggled pages.'
@@ -238,6 +278,45 @@ foreach ($requiredControl in @(
 
 if ($xamlText -match '\{Binding') {
     throw 'The WinUI XAML should use compiled x:Bind instead of reflection Binding.'
+}
+if ($sourceText -match '\[ObservableProperty\]\s+(?:\[[^\]]+\]\s+)*private\s') {
+    throw 'ViewModels must use ObservableProperty partial properties, not annotated fields.'
+}
+if ($sourceText -notmatch 'ServiceOperationState\.MissingTarget' -or $sourceText -notmatch 'ShouldRetryBatchStatus') {
+    throw 'The WinUI source is missing offboarding state or Graph batch retry hardening.'
+}
+if ($xamlText -notmatch 'AdaptiveTrigger' -or $xamlText -notmatch 'AutomationProperties\.AutomationId') {
+    throw 'The WinUI pages must include responsive states and UI automation identifiers.'
+}
+
+[xml]$resourceXml = Get-Content -Path $resourceFile -Raw
+$resourceNames = @($resourceXml.root.data | ForEach-Object { $_.name })
+foreach ($requiredResource in @('ConnectFirst', 'WorkingMessage', 'OffboardingCompleteFormat', 'DashboardReadinessDisconnected')) {
+    if ($resourceNames -notcontains $requiredResource) {
+        throw "The English resource file is missing required resource: $requiredResource"
+    }
+}
+
+$uiTestText = Get-Content -Path $uiTestScript -Raw
+foreach ($automationId in @('NavDashboard', 'NavDevices', 'NavOffboarding', 'NavPlaybooks', 'NavSettings', 'NavAbout')) {
+    if ($uiTestText -notmatch [regex]::Escape($automationId)) {
+        throw "The UI test suite does not cover navigation target: $automationId"
+    }
+}
+
+$packageWorkflow = Get-Content -Path (Join-Path $repoRoot '.github/workflows/package-winui.yml') -Raw
+foreach ($releaseGuard in @('MSIX_PUBLISHER', 'signtool.FullName verify', 'https://timestamp.digicert.com', 'msix-unsigned-validation-only')) {
+    if ($packageWorkflow -notmatch [regex]::Escape($releaseGuard)) {
+        throw "The packaging workflow is missing release hardening: $releaseGuard"
+    }
+}
+
+[xml]$manifestXml = Get-Content -Path $packageManifest -Raw
+$manifestVersion = $manifestXml.Package.Identity.Version
+[xml]$buildPropsXml = Get-Content -Path $directoryBuildProps -Raw
+$versionPrefix = @($buildPropsXml.Project.PropertyGroup.VersionPrefix)[0]
+if ($manifestVersion -ne "$versionPrefix.0") {
+    throw "Package manifest version $manifestVersion does not match VersionPrefix $versionPrefix."
 }
 if ($xamlText -match '<muxc:Expander') {
     throw 'The WinUI app should use first-class pages instead of the old expander prototype shell.'

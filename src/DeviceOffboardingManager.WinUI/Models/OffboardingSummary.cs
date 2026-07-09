@@ -6,9 +6,14 @@ public sealed record OffboardingSummary
 
     public int TotalDevices => Results.Count;
 
-    public int SuccessfulDevices => Results.Count(r => GetServiceResults(r).Any(s => s.Found) && GetServiceResults(r).Where(s => s.Found).All(s => s.Success));
+    public int SuccessfulDevices => Results.Count(result =>
+    {
+        var requested = GetServiceResults(result).Where(operation => operation.WasRequested).ToArray();
+        return requested.Length > 0 && requested.All(operation => operation.State == ServiceOperationState.Succeeded);
+    });
 
-    public int FailedDevices => Results.Count(r => GetServiceResults(r).Any(s => s.Found && !s.Success));
+    public int FailedDevices => Results.Count(result =>
+        GetServiceResults(result).Any(operation => operation.State is ServiceOperationState.MissingTarget or ServiceOperationState.Failed));
 
     private static IEnumerable<ServiceOperationResult> GetServiceResults(DeviceOffboardingResult result)
     {

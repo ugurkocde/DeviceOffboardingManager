@@ -10,27 +10,32 @@ public sealed class PlaybookService : IPlaybookService
 {
     private readonly GraphApiClient _graph;
     private readonly IAuditLogService _auditLog;
+    private readonly IOsSupportBaselineProvider _osSupportBaselines;
 
-    public PlaybookService(GraphApiClient graph, IAuditLogService auditLog)
+    public PlaybookService(
+        GraphApiClient graph,
+        IAuditLogService auditLog,
+        IOsSupportBaselineProvider osSupportBaselines)
     {
         _graph = graph;
         _auditLog = auditLog;
+        _osSupportBaselines = osSupportBaselines;
     }
 
     public IReadOnlyList<PlaybookDefinition> Definitions { get; } =
         new[]
         {
-            new PlaybookDefinition("autopilot-not-intune", "Autopilot not in Intune", "List Autopilot identities whose serial number is not present in Intune."),
-            new PlaybookDefinition("intune-not-autopilot", "Intune not in Autopilot", "List Intune devices whose serial number is not present in Autopilot."),
-            new PlaybookDefinition("corporate-devices", "Corporate devices", "List Intune devices marked as corporate."),
-            new PlaybookDefinition("personal-devices", "Personal devices", "List Intune devices marked as personal."),
-            new PlaybookDefinition("stale-devices", "Stale devices", "List Intune devices stale for 90 days."),
-            new PlaybookDefinition("specific-os", "Specific OS devices", "List Intune devices by operating system.", true, "Windows, macOS, iOS, Android, or Linux"),
-            new PlaybookDefinition("not-latest-os", "Outdated OS devices", "List devices that appear to be below the latest known OS baseline."),
-            new PlaybookDefinition("eol-os", "End-of-life OS devices", "List devices that appear to run end-of-life operating systems."),
-            new PlaybookDefinition("bitlocker", "BitLocker key report", "List BitLocker recovery key metadata."),
-            new PlaybookDefinition("filevault", "FileVault key availability", "Check FileVault key availability for macOS Intune devices."),
-            new PlaybookDefinition("corporate-identifiers", "Corporate identifier stale report", "List imported corporate identifiers and enrollment state.")
+            new PlaybookDefinition("autopilot-not-intune", AppResources.Get("PlaybookAutopilotNotIntune", "Autopilot not in Intune"), AppResources.Get("PlaybookAutopilotNotIntuneDescription", "List Autopilot identities whose serial number is not present in Intune.")),
+            new PlaybookDefinition("intune-not-autopilot", AppResources.Get("PlaybookIntuneNotAutopilot", "Intune not in Autopilot"), AppResources.Get("PlaybookIntuneNotAutopilotDescription", "List Intune devices whose serial number is not present in Autopilot.")),
+            new PlaybookDefinition("corporate-devices", AppResources.Get("PlaybookCorporateDevices", "Corporate devices"), AppResources.Get("PlaybookCorporateDevicesDescription", "List Intune devices marked as corporate.")),
+            new PlaybookDefinition("personal-devices", AppResources.Get("PlaybookPersonalDevices", "Personal devices"), AppResources.Get("PlaybookPersonalDevicesDescription", "List Intune devices marked as personal.")),
+            new PlaybookDefinition("stale-devices", AppResources.Get("PlaybookStaleDevices", "Stale devices"), AppResources.Get("PlaybookStaleDevicesDescription", "List Intune devices stale for 90 days.")),
+            new PlaybookDefinition("specific-os", AppResources.Get("PlaybookSpecificOs", "Specific OS devices"), AppResources.Get("PlaybookSpecificOsDescription", "List Intune devices by operating system."), true, AppResources.Get("PlaybookSpecificOsParameter", "Windows, macOS, iOS, Android, or Linux")),
+            new PlaybookDefinition("not-latest-os", AppResources.Get("PlaybookOutdatedOs", "Outdated OS devices"), AppResources.Get("PlaybookOutdatedOsDescription", "List devices that appear to be below the latest known OS baseline.")),
+            new PlaybookDefinition("eol-os", AppResources.Get("PlaybookEolOs", "End-of-life OS devices"), AppResources.Get("PlaybookEolOsDescription", "List devices that appear to run end-of-life operating systems.")),
+            new PlaybookDefinition("bitlocker", AppResources.Get("PlaybookBitLocker", "BitLocker key report"), AppResources.Get("PlaybookBitLockerDescription", "List BitLocker recovery key metadata.")),
+            new PlaybookDefinition("filevault", AppResources.Get("PlaybookFileVault", "FileVault key availability"), AppResources.Get("PlaybookFileVaultDescription", "Check FileVault key availability for macOS Intune devices.")),
+            new PlaybookDefinition("corporate-identifiers", AppResources.Get("PlaybookCorporateIdentifiers", "Corporate identifier stale report"), AppResources.Get("PlaybookCorporateIdentifiersDescription", "List imported corporate identifiers and enrollment state."))
         };
 
     public async Task<PlaybookRunResult> RunAsync(string playbookId, string? parameter = null, CancellationToken cancellationToken = default)
@@ -82,7 +87,7 @@ public sealed class PlaybookService : IPlaybookService
     {
         var devices = await _graph.GetPagedAsync(OData.Query("/deviceManagement/managedDevices", ("$select", "deviceName,serialNumber,operatingSystem,osVersion,lastSyncDateTime")), cancellationToken: cancellationToken);
         return devices
-            .Where(device => IsOutdated(device.GetStringValue("operatingSystem"), device.GetStringValue("osVersion")))
+            .Where(device => _osSupportBaselines.IsOutdated(device.GetStringValue("operatingSystem"), device.GetStringValue("osVersion")))
             .Select(ToDictionary)
             .ToArray();
     }
@@ -91,7 +96,7 @@ public sealed class PlaybookService : IPlaybookService
     {
         var devices = await _graph.GetPagedAsync(OData.Query("/deviceManagement/managedDevices", ("$select", "deviceName,serialNumber,operatingSystem,osVersion,lastSyncDateTime")), cancellationToken: cancellationToken);
         return devices
-            .Where(device => IsEndOfLife(device.GetStringValue("operatingSystem"), device.GetStringValue("osVersion")))
+            .Where(device => _osSupportBaselines.IsEndOfLife(device.GetStringValue("operatingSystem"), device.GetStringValue("osVersion")))
             .Select(ToDictionary)
             .ToArray();
     }
@@ -114,9 +119,10 @@ public sealed class PlaybookService : IPlaybookService
                 var response = await _graph.SendAsync(HttpMethod.Get, $"/deviceManagement/managedDevices('{device.GetStringValue("id")}')/getFileVaultKey", cancellationToken: cancellationToken);
                 row["hasFileVaultKey"] = string.IsNullOrWhiteSpace(response.GetStringValue("value")) ? "No" : "Yes";
             }
-            catch
+            catch (Exception ex)
             {
-                row["hasFileVaultKey"] = "No";
+                row["hasFileVaultKey"] = "Error";
+                row["error"] = ex.Message;
             }
 
             rows.Add(row);
@@ -138,28 +144,21 @@ public sealed class PlaybookService : IPlaybookService
             return new Dictionary<string, string?> { ["value"] = node.ToJsonString() };
         }
 
-        return obj.ToDictionary(property => property.Key, property => property.Value?.ToJsonString().Trim('"'));
+        return obj.ToDictionary(property => property.Key, property => GetDisplayValue(property.Value));
     }
 
-    private static bool IsOutdated(string? operatingSystem, string? version)
+    private static string? GetDisplayValue(JsonNode? value)
     {
-        if (string.IsNullOrWhiteSpace(version))
+        if (value is null)
         {
-            return false;
+            return null;
         }
 
-        return operatingSystem?.Contains("Windows", StringComparison.OrdinalIgnoreCase) == true && !version.StartsWith("10.0.26100", StringComparison.OrdinalIgnoreCase)
-            || operatingSystem?.Contains("macOS", StringComparison.OrdinalIgnoreCase) == true && !version.StartsWith("15.", StringComparison.OrdinalIgnoreCase);
-    }
-
-    private static bool IsEndOfLife(string? operatingSystem, string? version)
-    {
-        if (string.IsNullOrWhiteSpace(version))
+        if (value is JsonValue jsonValue && jsonValue.TryGetValue<string>(out var text))
         {
-            return false;
+            return text;
         }
 
-        return operatingSystem?.Contains("Windows", StringComparison.OrdinalIgnoreCase) == true && version.StartsWith("10.0.190", StringComparison.OrdinalIgnoreCase)
-            || operatingSystem?.Contains("macOS", StringComparison.OrdinalIgnoreCase) == true && (version.StartsWith("12.", StringComparison.OrdinalIgnoreCase) || version.StartsWith("11.", StringComparison.OrdinalIgnoreCase));
+        return value.ToJsonString();
     }
 }

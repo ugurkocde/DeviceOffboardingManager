@@ -2,6 +2,7 @@ using System.Net;
 using System.Text;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.Services;
 
@@ -26,17 +27,17 @@ public sealed class ReportExportService : IReportExportService
         {
             builder.AppendLine(string.Join(",", new[]
             {
-                Csv(device.DeviceName),
-                Csv(device.SerialNumber),
-                Csv(device.OperatingSystem),
-                Csv(device.PrimaryUser),
-                Csv(device.ComplianceState),
-                Csv(device.EntraDeviceId),
-                Csv(device.EntraDeviceObjectId),
-                Csv(device.IntuneDeviceId),
-                Csv(device.AutopilotIdentityId),
-                Csv(device.MdeDeviceId),
-                Csv(device.ManagementAgent)
+                CsvEncoder.EscapeCell(device.DeviceName),
+                CsvEncoder.EscapeCell(device.SerialNumber),
+                CsvEncoder.EscapeCell(device.OperatingSystem),
+                CsvEncoder.EscapeCell(device.PrimaryUser),
+                CsvEncoder.EscapeCell(device.ComplianceState),
+                CsvEncoder.EscapeCell(device.EntraDeviceId),
+                CsvEncoder.EscapeCell(device.EntraDeviceObjectId),
+                CsvEncoder.EscapeCell(device.IntuneDeviceId),
+                CsvEncoder.EscapeCell(device.AutopilotIdentityId),
+                CsvEncoder.EscapeCell(device.MdeDeviceId),
+                CsvEncoder.EscapeCell(device.ManagementAgent)
             }));
         }
 
@@ -79,25 +80,19 @@ public sealed class ReportExportService : IReportExportService
 
     private static string RenderStatus(ServiceOperationResult result)
     {
-        if (!result.Found && string.IsNullOrWhiteSpace(result.Error))
+        if (result.State == ServiceOperationState.Skipped)
         {
             return "<td class=\"na\">Skipped</td>";
         }
 
-        if (!result.Found)
+        if (result.State == ServiceOperationState.MissingTarget)
         {
-            return $"<td class=\"na\">Not found<br><small>{Html(result.Error)}</small></td>";
+            return $"<td class=\"fail\">Missing target<br><small>{Html(result.Error)}</small></td>";
         }
 
-        return result.Success
+        return result.State == ServiceOperationState.Succeeded
             ? $"<td class=\"ok\">{Html(result.Action ?? "Success")}</td>"
             : $"<td class=\"fail\">Failed<br><small>{Html(result.Error)}</small></td>";
-    }
-
-    private static string Csv(string? value)
-    {
-        var text = value ?? string.Empty;
-        return '"' + text.Replace("\"", "\"\"", StringComparison.Ordinal) + '"';
     }
 
     private static string Html(string? value)

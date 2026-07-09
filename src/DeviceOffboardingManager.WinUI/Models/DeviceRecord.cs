@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.Models;
 
@@ -59,25 +60,37 @@ public sealed class DeviceRecord : INotifyPropertyChanged
             var services = new List<string>();
             if (!string.IsNullOrWhiteSpace(EntraDeviceId))
             {
-                services.Add("Entra");
+                services.Add(AppResources.Get("ServiceEntra", "Entra"));
             }
 
             if (!string.IsNullOrWhiteSpace(IntuneDeviceId))
             {
-                services.Add("Intune");
+                services.Add(AppResources.Get("ServiceIntune", "Intune"));
             }
 
             if (!string.IsNullOrWhiteSpace(AutopilotIdentityId))
             {
-                services.Add("Autopilot");
+                services.Add(AppResources.Get("ServiceAutopilot", "Autopilot"));
             }
 
             if (!string.IsNullOrWhiteSpace(MdeDeviceId))
             {
-                services.Add("Defender");
+                services.Add(AppResources.Get("ServiceDefender", "Defender"));
             }
 
-            return services.Count == 0 ? "Not resolved" : string.Join(", ", services);
+            return services.Count == 0
+                ? AppResources.Get("ServicesNotResolved", "Not resolved")
+                : string.Join(", ", services);
+        }
+    }
+
+    public string SelectionAutomationId
+    {
+        get
+        {
+            var identifier = IntuneDeviceId ?? EntraDeviceId ?? AutopilotIdentityId ?? SerialNumber ?? DeviceName ?? "Unknown";
+            var safeIdentifier = new string(identifier.Select(character => char.IsLetterOrDigit(character) ? character : '_').ToArray());
+            return $"DeviceRowSelection_{safeIdentifier}";
         }
     }
 

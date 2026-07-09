@@ -5,33 +5,30 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
 public sealed partial class AboutViewModel : AppViewModelBase
 {
-    private static readonly HttpClient UpdateHttpClient = new();
+    private readonly HttpClient _httpClient;
     private readonly IStatusService _statusService;
 
-    public AboutViewModel(IStatusService statusService, IAuditLogService auditLogService)
+    public AboutViewModel(HttpClient httpClient, IStatusService statusService, IAuditLogService auditLogService)
         : base(statusService, auditLogService)
     {
+        _httpClient = httpClient;
         _statusService = statusService;
-        AboutVersionText = $"Version {AppInfo.Version} native Windows app track";
-
-        if (!UpdateHttpClient.DefaultRequestHeaders.UserAgent.Any())
-        {
-            UpdateHttpClient.DefaultRequestHeaders.UserAgent.ParseAdd($"DeviceOffboardingManager-WinUI/{AppInfo.Version}");
-        }
+        AboutVersionText = AppResources.Format("AboutVersionFormat", "Version {0} native Windows app track", AppInfo.Version);
     }
 
     [ObservableProperty]
-    private string aboutVersionText;
+    public partial string AboutVersionText { get; set; }
 
     [RelayCommand]
     private async Task OpenRepositoryAsync()
     {
-        await RunAsync("Opening repository", () =>
+        await RunAsync(AppResources.Get("OpeningRepository", "Opening repository"), () =>
         {
             OpenUrl("https://github.com/ugurkocde/DeviceOffboardingManager");
             return Task.CompletedTask;
@@ -40,7 +37,7 @@ public sealed partial class AboutViewModel : AppViewModelBase
 
     public async Task<string?> LoadChangelogForDialogAsync()
     {
-        return await RunAsync("Opening changelog", async () =>
+        return await RunAsync(AppResources.Get("OpeningChangelog", "Opening changelog"), async () =>
         {
             var candidates = new[]
             {
@@ -50,7 +47,10 @@ public sealed partial class AboutViewModel : AppViewModelBase
             var changelogPath = candidates.FirstOrDefault(File.Exists);
             if (changelogPath is null)
             {
-                _statusService.Report("Changelog unavailable", "Changelog.md was not found in the app output or repository root.", StatusSeverity.Warning);
+                _statusService.Report(
+                    AppResources.Get("ChangelogUnavailable", "Changelog unavailable"),
+                    AppResources.Get("ChangelogNotFound", "Changelog.md was not found in the app output or repository root."),
+                    StatusSeverity.Warning);
                 return null;
             }
 
@@ -60,14 +60,18 @@ public sealed partial class AboutViewModel : AppViewModelBase
 
     public async Task<UpdateCheckResult?> CheckForUpdatesForDialogAsync()
     {
-        return await RunAsync("Checking for updates", async () =>
+        return await RunAsync(AppResources.Get("CheckingForUpdates", "Checking for updates"), async () =>
         {
             using var request = new HttpRequestMessage(HttpMethod.Get, "https://api.github.com/repos/ugurkocde/DeviceOffboardingManager/releases/latest");
-            using var response = await UpdateHttpClient.SendAsync(request);
+            using var response = await _httpClient.SendAsync(request);
             var responseText = await response.Content.ReadAsStringAsync();
             if (!response.IsSuccessStatusCode)
             {
-                throw new InvalidOperationException($"GitHub update check failed with HTTP {(int)response.StatusCode}: {responseText}");
+                throw new InvalidOperationException(AppResources.Format(
+                    "UpdateCheckHttpFailureFormat",
+                    "GitHub update check failed with HTTP {0}: {1}",
+                    (int)response.StatusCode,
+                    responseText));
             }
 
             var latestTag = JsonNode.Parse(responseText)?["tag_name"]?.GetValue<string>();
@@ -75,17 +79,21 @@ public sealed partial class AboutViewModel : AppViewModelBase
             var currentVersion = TryParseVersion(AppInfo.Version);
             if (latestVersion is null || currentVersion is null)
             {
-                var fallbackMessage = $"Latest release tag: {latestTag ?? "(unknown)"}. Current app: {AppInfo.Version}.";
-                _statusService.Report("Update check complete", fallbackMessage, StatusSeverity.Informational);
+                var fallbackMessage = AppResources.Format(
+                    "UpdateCheckFallbackFormat",
+                    "Latest release tag: {0}. Current app: {1}.",
+                    latestTag ?? AppResources.Get("UnknownFallback", "(unknown)"),
+                    AppInfo.Version);
+                _statusService.Report(AppResources.Get("UpdateCheckComplete", "Update check complete"), fallbackMessage, StatusSeverity.Informational);
                 return new UpdateCheckResult(fallbackMessage, false);
             }
 
             var updateAvailable = latestVersion.CompareTo(currentVersion) > 0;
             var message = updateAvailable
-                ? $"A newer release is available: {latestTag}. Current app: {AppInfo.Version}."
-                : $"You are on the current or newer app track. Latest release: {latestTag}; current app: {AppInfo.Version}.";
+                ? AppResources.Format("UpdateAvailableFormat", "A newer release is available: {0}. Current app: {1}.", latestTag, AppInfo.Version)
+                : AppResources.Format("UpdateCurrentFormat", "You are on the current or newer app track. Latest release: {0}; current app: {1}.", latestTag, AppInfo.Version);
 
-            _statusService.Report("Update check complete", message, updateAvailable ? StatusSeverity.Warning : StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("UpdateCheckComplete", "Update check complete"), message, updateAvailable ? StatusSeverity.Warning : StatusSeverity.Success);
             return new UpdateCheckResult(message, updateAvailable);
         });
     }

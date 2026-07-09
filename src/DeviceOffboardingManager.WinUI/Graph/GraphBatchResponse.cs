@@ -5,4 +5,5 @@ namespace DeviceOffboardingManager.WinUI.Graph;
 public sealed record GraphBatchResponse(
     string Id,
     int Status,
-    JsonNode? Body);
+    JsonNode? Body,
+    IReadOnlyDictionary<string, string> Headers);

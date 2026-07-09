@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Input;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
@@ -45,32 +46,34 @@ public sealed partial class SettingsViewModel : AppViewModelBase
     public bool IsDisconnected => !IsConnected;
 
     [ObservableProperty]
-    private int authMethodIndex;
+    public partial int AuthMethodIndex { get; set; }
 
     [ObservableProperty]
-    private string tenantId = string.Empty;
+    public partial string TenantId { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string clientId = string.Empty;
+    public partial string ClientId { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string certificateThumbprint = string.Empty;
+    public partial string CertificateThumbprint { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string clientSecret = string.Empty;
+    public partial string ClientSecret { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string configPath = string.Empty;
+    public partial string ConfigPath { get; set; } = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsDisconnected))]
-    private bool isConnected;
+    public partial bool IsConnected { get; set; }
 
     [ObservableProperty]
-    private bool defenderIntegrationEnabled;
+    public partial bool DefenderIntegrationEnabled { get; set; }
 
     [ObservableProperty]
-    private string dashboardReadinessText = "Connect to Microsoft Graph to refresh dashboard statistics. Defender remains optional and disabled until enabled in Settings.";
+    public partial string DashboardReadinessText { get; set; } = AppResources.Get(
+        "DashboardReadinessDisconnected",
+        "Connect to Microsoft Graph to refresh dashboard statistics. Defender remains optional and disabled until enabled in Settings.");
 
     public AuthenticationRequest BuildAuthenticationRequest()
     {
@@ -88,49 +91,69 @@ public sealed partial class SettingsViewModel : AppViewModelBase
             CertificateThumbprint = EmptyToNull(CertificateThumbprint),
             ClientSecret = EmptyToNull(ClientSecret),
             ParentWindowHandle = _windowHandleProvider.MainWindowHandle,
-            StatusMessageCallback = message => _statusService.Report("Device code sign-in", message, StatusSeverity.Warning)
+            StatusMessageCallback = message => _statusService.Report(
+                AppResources.Get("DeviceCodeSignInTitle", "Device code sign-in"),
+                message,
+                StatusSeverity.Warning)
         };
     }
 
     public async Task ConnectWithCurrentSettingsAsync()
     {
-        await _authenticationService.ConnectAsync(BuildAuthenticationRequest());
-        _connectionState.SetConnected(true);
-        _statusService.Report("Connected", _authenticationService.AccountDisplayName ?? "Connected to Microsoft Graph.", StatusSeverity.Success);
+        var request = BuildAuthenticationRequest();
+        try
+        {
+            await _authenticationService.ConnectAsync(request);
+            _connectionState.SetConnected(true);
+            _statusService.Report(
+                AppResources.Get("ConnectedTitle", "Connected"),
+                _authenticationService.AccountDisplayName ?? AppResources.Get("ConnectedFallback", "Connected to Microsoft Graph."),
+                StatusSeverity.Success);
+        }
+        finally
+        {
+            ClientSecret = string.Empty;
+        }
     }
 
     [RelayCommand(CanExecute = nameof(CanConnect))]
     private async Task ConnectAsync()
     {
-        await RunAsync("Connecting", ConnectWithCurrentSettingsAsync);
+        await RunAsync(AppResources.Get("Connecting", "Connecting"), ConnectWithCurrentSettingsAsync);
     }
 
     [RelayCommand(CanExecute = nameof(CanDisconnect))]
     private async Task DisconnectAsync()
     {
-        await RunAsync("Disconnecting", async () =>
+        await RunAsync(AppResources.Get("Disconnecting", "Disconnecting"), async () =>
         {
             await _authenticationService.DisconnectAsync();
             _connectionState.SetConnected(false);
-            _statusService.Report("Disconnected", "The Graph session has been cleared.", StatusSeverity.Informational);
+            _statusService.Report(
+                AppResources.Get("DisconnectedTitle", "Disconnected"),
+                AppResources.Get("DisconnectedMessage", "The Graph session has been cleared."),
+                StatusSeverity.Informational);
         });
     }
 
     [RelayCommand]
     private async Task ImportConfigAsync()
     {
-        await RunAsync("Importing config", async () =>
+        await RunAsync(AppResources.Get("ImportingConfig", "Importing config"), async () =>
         {
             var settings = await _settingsService.ImportAppRegistrationConfigAsync(ConfigPath);
             ApplySettings(settings);
-            _statusService.Report("Config imported", "The app registration settings were imported.", StatusSeverity.Success);
+            _statusService.Report(
+                AppResources.Get("ConfigImportedTitle", "Config imported"),
+                AppResources.Get("ConfigImportedMessage", "The app registration settings were imported."),
+                StatusSeverity.Success);
         });
     }
 
     [RelayCommand]
     private async Task SaveSettingsAsync()
     {
-        await RunAsync("Saving settings", async () =>
+        await RunAsync(AppResources.Get("SavingSettings", "Saving settings"), async () =>
         {
             await _settingsService.SaveAsync(new DeviceOffboardingSettings
             {
@@ -140,16 +163,23 @@ public sealed partial class SettingsViewModel : AppViewModelBase
                 DefenderIntegrationEnabled = DefenderIntegrationEnabled
             });
             DashboardReadinessText = DefenderIntegrationEnabled
-                ? "Defender for Endpoint integration is enabled. Defender tokens are requested only when Defender actions are used."
-                : "Defender for Endpoint integration is disabled. Defender controls remain gated for tenants without Defender.";
-            _statusService.Report("Settings saved", "Defender visibility and app registration settings were saved.", StatusSeverity.Success);
+                ? AppResources.Get(
+                    "DefenderEnabledReadiness",
+                    "Defender for Endpoint integration is enabled. Defender tokens are requested only when Defender actions are used.")
+                : AppResources.Get(
+                    "DefenderDisabledReadiness",
+                    "Defender for Endpoint integration is disabled. Defender controls remain gated for tenants without Defender.");
+            _statusService.Report(
+                AppResources.Get("SettingsSavedTitle", "Settings saved"),
+                AppResources.Get("SettingsSavedMessage", "Defender visibility and app registration settings were saved."),
+                StatusSeverity.Success);
         });
     }
 
     [RelayCommand]
     private async Task OpenAuditLogAsync()
     {
-        await RunAsync("Opening audit log", async () =>
+        await RunAsync(AppResources.Get("OpeningAuditLog", "Opening audit log"), async () =>
         {
             var directory = Path.GetDirectoryName(_auditLogService.LogFilePath);
             if (!string.IsNullOrWhiteSpace(directory))
@@ -172,11 +202,14 @@ public sealed partial class SettingsViewModel : AppViewModelBase
         {
             var settings = await _settingsService.LoadAsync();
             ApplySettings(settings);
-            _statusService.Report("Settings loaded", $"Audit log: {_auditLogService.LogFilePath}", StatusSeverity.Informational);
+            _statusService.Report(
+                AppResources.Get("SettingsLoadedTitle", "Settings loaded"),
+                AppResources.Format("AuditLogPathFormat", "Audit log: {0}", _auditLogService.LogFilePath),
+                StatusSeverity.Informational);
         }
         catch (Exception ex)
         {
-            await ReportExceptionAsync("Could not load settings", ex);
+            await ReportExceptionAsync(AppResources.Get("CouldNotLoadSettings", "Could not load settings"), ex);
         }
     }
 
@@ -187,8 +220,12 @@ public sealed partial class SettingsViewModel : AppViewModelBase
         CertificateThumbprint = settings.CertificateThumbprint ?? string.Empty;
         DefenderIntegrationEnabled = settings.DefenderIntegrationEnabled;
         DashboardReadinessText = settings.DefenderIntegrationEnabled
-            ? "Defender for Endpoint integration is enabled. Defender tokens are still requested only when Defender actions are used."
-            : "Defender for Endpoint integration is disabled. Tenants without Defender can use Graph-only workflows.";
+            ? AppResources.Get(
+                "DefenderEnabledReadinessLoaded",
+                "Defender for Endpoint integration is enabled. Defender tokens are still requested only when Defender actions are used.")
+            : AppResources.Get(
+                "DefenderDisabledReadinessLoaded",
+                "Defender for Endpoint integration is disabled. Tenants without Defender can use Graph-only workflows.");
     }
 
     private void RefreshConnectionState()
@@ -221,15 +258,15 @@ public sealed partial class SettingsViewModel : AppViewModelBase
     private static IReadOnlyList<PermissionRequirement> RequiredPermissions { get; } =
         new[]
         {
-            new PermissionRequirement("User.Read.All", "Required to read user profile information and group memberships."),
-            new PermissionRequirement("Group.Read.All", "Needed to read group information and memberships."),
-            new PermissionRequirement("DeviceManagementConfiguration.Read.All", "Allows reading Intune device configuration policies and assignments."),
-            new PermissionRequirement("DeviceManagementApps.Read.All", "Necessary to read mobile app management policies and app configurations."),
-            new PermissionRequirement("DeviceManagementManagedDevices.ReadWrite.All", "Required to read and modify managed device information."),
-            new PermissionRequirement("Device.ReadWrite.All", "Needed to read, disable, and delete Entra ID device objects."),
-            new PermissionRequirement("DeviceManagementServiceConfig.ReadWrite.All", "Required for Autopilot configuration and management."),
-            new PermissionRequirement("BitlockerKey.Read.All", "Required to read BitLocker recovery key metadata during offboarding."),
-            new PermissionRequirement("DeviceLocalCredential.Read.All", "Required to read LAPS passwords during offboarding."),
-            new PermissionRequirement("WindowsDefenderATP Machine.ReadWrite.All / Machine.Offboard", "Optional Defender for Endpoint offboarding permissions.")
+            new PermissionRequirement("User.Read.All", AppResources.Get("PermissionUserRead", "Required to read user profile information and group memberships.")),
+            new PermissionRequirement("Group.Read.All", AppResources.Get("PermissionGroupRead", "Needed to read group information and memberships.")),
+            new PermissionRequirement("DeviceManagementConfiguration.Read.All", AppResources.Get("PermissionConfigurationRead", "Allows reading Intune device configuration policies and assignments.")),
+            new PermissionRequirement("DeviceManagementApps.Read.All", AppResources.Get("PermissionAppsRead", "Necessary to read mobile app management policies and app configurations.")),
+            new PermissionRequirement("DeviceManagementManagedDevices.ReadWrite.All", AppResources.Get("PermissionManagedDevices", "Required to read and modify managed device information.")),
+            new PermissionRequirement("Device.ReadWrite.All", AppResources.Get("PermissionDeviceReadWrite", "Needed to read, disable, and delete Entra ID device objects.")),
+            new PermissionRequirement("DeviceManagementServiceConfig.ReadWrite.All", AppResources.Get("PermissionServiceConfig", "Required for Autopilot configuration and management.")),
+            new PermissionRequirement("BitlockerKey.Read.All", AppResources.Get("PermissionBitLocker", "Required to read BitLocker recovery key metadata during offboarding.")),
+            new PermissionRequirement("DeviceLocalCredential.Read.All", AppResources.Get("PermissionLaps", "Required to read LAPS passwords during offboarding.")),
+            new PermissionRequirement("WindowsDefenderATP Machine.ReadWrite.All / Machine.Offboard", AppResources.Get("PermissionDefender", "Optional Defender for Endpoint offboarding permissions."))
         };
 }

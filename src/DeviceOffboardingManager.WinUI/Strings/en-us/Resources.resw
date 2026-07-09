@@ -1,0 +1,1113 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <data name="AboutPage_BtnCheckUpdates.Content" xml:space="preserve">
+    <value>Check updates</value>
+  </data>
+  <data name="AboutPage_BtnOpenChangelog.Content" xml:space="preserve">
+    <value>Open changelog</value>
+  </data>
+  <data name="AboutPage_BtnOpenRepository.Content" xml:space="preserve">
+    <value>Open repository</value>
+  </data>
+  <data name="AboutPage_TextBlockBuildOnWindowsWithVisual.Text" xml:space="preserve">
+    <value>Build on Windows with Visual Studio 2022, WinUI application development, Desktop development with C++, .NET 10 SDK, Developer Mode, and Windows App Runtime installed or available through the Windows App SDK deployment manager.</value>
+  </data>
+  <data name="AboutPage_TextBlockDeviceOffboardingManager.Text" xml:space="preserve">
+    <value>Device Offboarding Manager</value>
+  </data>
+  <data name="AboutPage_TextBlockDeviceOffboardingManagerCorrelatesDevices.Text" xml:space="preserve">
+    <value>Device Offboarding Manager correlates devices across Intune, Autopilot, Entra ID, and optional Defender for Endpoint, then provides auditable offboarding workflows and recovery-key handling.</value>
+  </data>
+  <data name="AboutPage_TextBlockThisNativeAppReplacesThe.Text" xml:space="preserve">
+    <value>This native app replaces the PowerShell module as of 0.4.0 and is the sole supported surface going forward.</value>
+  </data>
+  <data name="AboutPage_TextBlockValidation.Text" xml:space="preserve">
+    <value>Validation</value>
+  </data>
+  <data name="AboutPage_TextBlockWhatThisAppDoes.Text" xml:space="preserve">
+    <value>What this app does</value>
+  </data>
+  <data name="AboutVersionFormat" xml:space="preserve">
+    <value>Version {0} native Windows app track</value>
+  </data>
+  <data name="AccountFormat" xml:space="preserve">
+    <value>Account: {0}</value>
+  </data>
+  <data name="ActionCanceledTitle" xml:space="preserve">
+    <value>Action canceled</value>
+  </data>
+  <data name="AllPlatforms" xml:space="preserve">
+    <value>all</value>
+  </data>
+  <data name="AuditLogPathFormat" xml:space="preserve">
+    <value>Audit log: {0}</value>
+  </data>
+  <data name="BulkImportCountFormat" xml:space="preserve">
+    <value>{0} contains {1:N0} unique device identifier(s).</value>
+  </data>
+  <data name="BulkImportEmpty" xml:space="preserve">
+    <value>The selected file did not contain device identifiers.</value>
+  </data>
+  <data name="BulkImportImportedFormat" xml:space="preserve">
+    <value>Imported {0:N0} search term(s). Connect before searching.</value>
+  </data>
+  <data name="BulkImportPreviewFormat" xml:space="preserve">
+    <value>Showing first {0:N0} identifiers. Import will use all {1:N0}.</value>
+  </data>
+  <data name="BulkTermsImportedTitle" xml:space="preserve">
+    <value>Bulk terms imported</value>
+  </data>
+  <data name="CancelButton" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="CategoryAutopilotDevices" xml:space="preserve">
+    <value>Autopilot devices</value>
+  </data>
+  <data name="CategoryCorporateDevices" xml:space="preserve">
+    <value>Corporate devices</value>
+  </data>
+  <data name="CategoryEntraDevices" xml:space="preserve">
+    <value>Entra ID devices</value>
+  </data>
+  <data name="CategoryIntuneDevices" xml:space="preserve">
+    <value>Intune devices</value>
+  </data>
+  <data name="CategoryPersonalDevices" xml:space="preserve">
+    <value>Personal devices</value>
+  </data>
+  <data name="CategoryStale180" xml:space="preserve">
+    <value>Stale devices - 180 days</value>
+  </data>
+  <data name="CategoryStale30" xml:space="preserve">
+    <value>Stale devices - 30 days</value>
+  </data>
+  <data name="CategoryStale90" xml:space="preserve">
+    <value>Stale devices - 90 days</value>
+  </data>
+  <data name="ChangelogNotFound" xml:space="preserve">
+    <value>Changelog.md was not found in the app output or repository root.</value>
+  </data>
+  <data name="ChangelogTitle" xml:space="preserve">
+    <value>Changelog</value>
+  </data>
+  <data name="ChangelogUnavailable" xml:space="preserve">
+    <value>Changelog unavailable</value>
+  </data>
+  <data name="CheckingForUpdates" xml:space="preserve">
+    <value>Checking for updates</value>
+  </data>
+  <data name="CloseButton" xml:space="preserve">
+    <value>Close</value>
+  </data>
+  <data name="ConfigImportedMessage" xml:space="preserve">
+    <value>The app registration settings were imported.</value>
+  </data>
+  <data name="ConfigImportedTitle" xml:space="preserve">
+    <value>Config imported</value>
+  </data>
+  <data name="ConfigSelectedTitle" xml:space="preserve">
+    <value>Config selected</value>
+  </data>
+  <data name="ConfirmOffboardingBodyFormat" xml:space="preserve">
+    <value>Run selected actions for {0:N0} device(s)? Review Graph IDs before continuing. Offboarding operations may be permanent.</value>
+  </data>
+  <data name="ConfirmOffboardingTitle" xml:space="preserve">
+    <value>Confirm offboarding</value>
+  </data>
+  <data name="ConnectedFallback" xml:space="preserve">
+    <value>Connected to Microsoft Graph.</value>
+  </data>
+  <data name="ConnectedTitle" xml:space="preserve">
+    <value>Connected</value>
+  </data>
+  <data name="ConnectFirst" xml:space="preserve">
+    <value>Connect to Microsoft Graph first.</value>
+  </data>
+  <data name="Connecting" xml:space="preserve">
+    <value>Connecting</value>
+  </data>
+  <data name="CopyAllButton" xml:space="preserve">
+    <value>Copy all</value>
+  </data>
+  <data name="CouldNotLoadSettings" xml:space="preserve">
+    <value>Could not load settings</value>
+  </data>
+  <data name="CsvExportedTitle" xml:space="preserve">
+    <value>CSV exported</value>
+  </data>
+  <data name="DashboardCsvExportedTitle" xml:space="preserve">
+    <value>Dashboard CSV exported</value>
+  </data>
+  <data name="DashboardDeviceRowFormat" xml:space="preserve">
+    <value>{0} | Serial: {1} | OS: {2} | User: {3}</value>
+  </data>
+  <data name="DashboardDrilldown" xml:space="preserve">
+    <value>Dashboard drilldown</value>
+  </data>
+  <data name="DashboardMatchesFormat" xml:space="preserve">
+    <value>{0:N0} device(s) matched. Showing up to 100 rows here; export the CSV for the full result.</value>
+  </data>
+  <data name="DashboardNoMatches" xml:space="preserve">
+    <value>No devices matched this dashboard card.</value>
+  </data>
+  <data name="DashboardNoResultsMessage" xml:space="preserve">
+    <value>Select a dashboard card before opening results in Devices.</value>
+  </data>
+  <data name="DashboardNoResultsTitle" xml:space="preserve">
+    <value>No dashboard results</value>
+  </data>
+  <data name="DashboardOwnershipFormat" xml:space="preserve">
+    <value>Corporate: {0:N0} ({1:N0}%); Personal: {2:N0} ({3:N0}%).</value>
+  </data>
+  <data name="DashboardOwnershipInitial" xml:space="preserve">
+    <value>Ownership distribution is not loaded.</value>
+  </data>
+  <data name="DashboardPage_BtnDashboardDevices.Content" xml:space="preserve">
+    <value>Go to devices</value>
+  </data>
+  <data name="DashboardPage_BtnDashboardSettings.Content" xml:space="preserve">
+    <value>Open settings</value>
+  </data>
+  <data name="DashboardPage_BtnExportDashboardResults.Content" xml:space="preserve">
+    <value>Export</value>
+  </data>
+  <data name="DashboardPage_BtnOpenDashboardResultsInDevices.Content" xml:space="preserve">
+    <value>Open in devices</value>
+  </data>
+  <data name="DashboardPage_BtnViewAutopilot.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_BtnViewCorporate.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_BtnViewEntra.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_BtnViewIntune.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_BtnViewPersonal.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_BtnViewStale180.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_BtnViewStale30.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_BtnViewStale90.Content" xml:space="preserve">
+    <value>View</value>
+  </data>
+  <data name="DashboardPage_ComboBoxItemAllPlatforms.Content" xml:space="preserve">
+    <value>All platforms</value>
+  </data>
+  <data name="DashboardPage_ComboBoxItemAndroid.Content" xml:space="preserve">
+    <value>Android</value>
+  </data>
+  <data name="DashboardPage_ComboBoxItemIOS.Content" xml:space="preserve">
+    <value>iOS</value>
+  </data>
+  <data name="DashboardPage_ComboBoxItemLinux.Content" xml:space="preserve">
+    <value>Linux</value>
+  </data>
+  <data name="DashboardPage_ComboBoxItemMacOS.Content" xml:space="preserve">
+    <value>macOS</value>
+  </data>
+  <data name="DashboardPage_ComboBoxItemWindows.Content" xml:space="preserve">
+    <value>Windows</value>
+  </data>
+  <data name="DashboardPage_CorporateDevicesProgress.AutomationProperties.Name" xml:space="preserve">
+    <value>Corporate device percentage</value>
+  </data>
+  <data name="DashboardPage_DashboardBusyIndicator.AutomationProperties.Name" xml:space="preserve">
+    <value>Dashboard operation in progress</value>
+  </data>
+  <data name="DashboardPage_DashboardPlatformFilter.Header" xml:space="preserve">
+    <value>Platform</value>
+  </data>
+  <data name="DashboardPage_DashboardRefreshButton.Content" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="DashboardPage_PersonalDevicesProgress.AutomationProperties.Name" xml:space="preserve">
+    <value>Personal device percentage</value>
+  </data>
+  <data name="DashboardPage_StaleDevices180Progress.AutomationProperties.Name" xml:space="preserve">
+    <value>Devices stale for 180 days percentage</value>
+  </data>
+  <data name="DashboardPage_StaleDevices30Progress.AutomationProperties.Name" xml:space="preserve">
+    <value>Devices stale for 30 days percentage</value>
+  </data>
+  <data name="DashboardPage_StaleDevices90Progress.AutomationProperties.Name" xml:space="preserve">
+    <value>Devices stale for 90 days percentage</value>
+  </data>
+  <data name="DashboardPage_TextBlockAutopilot.Text" xml:space="preserve">
+    <value>Autopilot</value>
+  </data>
+  <data name="DashboardPage_TextBlockCorporate.Text" xml:space="preserve">
+    <value>Corporate</value>
+  </data>
+  <data name="DashboardPage_TextBlockDashboard.Text" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="DashboardPage_TextBlockDistribution.Text" xml:space="preserve">
+    <value>Distribution</value>
+  </data>
+  <data name="DashboardPage_TextBlockEntraID.Text" xml:space="preserve">
+    <value>Entra ID</value>
+  </data>
+  <data name="DashboardPage_TextBlockIntune.Text" xml:space="preserve">
+    <value>Intune</value>
+  </data>
+  <data name="DashboardPage_TextBlockPersonal.Text" xml:space="preserve">
+    <value>Personal</value>
+  </data>
+  <data name="DashboardPage_TextBlockReadiness.Text" xml:space="preserve">
+    <value>Readiness</value>
+  </data>
+  <data name="DashboardPage_TextBlockStale180Days.Text" xml:space="preserve">
+    <value>Stale 180 days</value>
+  </data>
+  <data name="DashboardPage_TextBlockStale30Days.Text" xml:space="preserve">
+    <value>Stale 30 days</value>
+  </data>
+  <data name="DashboardPage_TextBlockStale90Days.Text" xml:space="preserve">
+    <value>Stale 90 days</value>
+  </data>
+  <data name="DashboardPage_TextBlockTenantWideDevicePostureFor.Text" xml:space="preserve">
+    <value>Tenant-wide device posture for Intune, Autopilot, Entra ID, stale devices, and ownership.</value>
+  </data>
+  <data name="DashboardPlatformFilterFormat" xml:space="preserve">
+    <value>Platform filter: {0}.</value>
+  </data>
+  <data name="DashboardPlatformInitial" xml:space="preserve">
+    <value>Refresh the dashboard to show platform distribution.</value>
+  </data>
+  <data name="DashboardPlatformUnavailable" xml:space="preserve">
+    <value>Platform distribution unavailable.</value>
+  </data>
+  <data name="DashboardReadinessDisconnected" xml:space="preserve">
+    <value>Connect to Microsoft Graph to refresh dashboard statistics. Defender remains optional and disabled until enabled in Settings.</value>
+  </data>
+  <data name="DashboardRefreshed" xml:space="preserve">
+    <value>Dashboard refreshed</value>
+  </data>
+  <data name="DashboardResultsLoadedFormat" xml:space="preserve">
+    <value>{0:N0} device(s) loaded. Use Open in devices or Export from the drilldown panel.</value>
+  </data>
+  <data name="DashboardResultsLoadedTitle" xml:space="preserve">
+    <value>Dashboard results loaded</value>
+  </data>
+  <data name="DashboardResultsOpened" xml:space="preserve">
+    <value>Dashboard results opened</value>
+  </data>
+  <data name="DashboardResultsOpenedFormat" xml:space="preserve">
+    <value>{0:N0} device(s) are loaded in Devices.</value>
+  </data>
+  <data name="DashboardRowsTruncatedFormat" xml:space="preserve">
+    <value>Showing first {0:N0} of {1:N0} device(s).</value>
+  </data>
+  <data name="DashboardSelectCard" xml:space="preserve">
+    <value>Select a dashboard card to preview matching devices.</value>
+  </data>
+  <data name="DashboardStaleFormat" xml:space="preserve">
+    <value>Stale ratios: 30 days {0:N0}%, 90 days {1:N0}%, 180 days {2:N0}%.</value>
+  </data>
+  <data name="DashboardStaleInitial" xml:space="preserve">
+    <value>Stale device ratios are not loaded.</value>
+  </data>
+  <data name="DefenderDisabledReadiness" xml:space="preserve">
+    <value>Defender for Endpoint integration is disabled. Defender controls remain gated for tenants without Defender.</value>
+  </data>
+  <data name="DefenderDisabledReadinessLoaded" xml:space="preserve">
+    <value>Defender for Endpoint integration is disabled. Tenants without Defender can use Graph-only workflows.</value>
+  </data>
+  <data name="DefenderEnabledReadiness" xml:space="preserve">
+    <value>Defender for Endpoint integration is enabled. Defender tokens are requested only when Defender actions are used.</value>
+  </data>
+  <data name="DefenderEnabledReadinessLoaded" xml:space="preserve">
+    <value>Defender for Endpoint integration is enabled. Defender tokens are still requested only when Defender actions are used.</value>
+  </data>
+  <data name="DeviceCodeSignInTitle" xml:space="preserve">
+    <value>Device code sign-in</value>
+  </data>
+  <data name="DeviceFallback" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="DeviceListClearedMessage" xml:space="preserve">
+    <value>Search terms and results were cleared.</value>
+  </data>
+  <data name="DeviceListClearedTitle" xml:space="preserve">
+    <value>Device list cleared</value>
+  </data>
+  <data name="DevicesPage_BtnExportDevicesCsv.Content" xml:space="preserve">
+    <value>Export CSV</value>
+  </data>
+  <data name="DevicesPage_BtnResetFilters.Content" xml:space="preserve">
+    <value>Reset filters</value>
+  </data>
+  <data name="DevicesPage_BtnViewSelectedGroups.Content" xml:space="preserve">
+    <value>View groups</value>
+  </data>
+  <data name="DevicesPage_BulkTemplateButton.Content" xml:space="preserve">
+    <value>Save template</value>
+  </data>
+  <data name="DevicesPage_ClearSearchButton.Content" xml:space="preserve">
+    <value>Clear</value>
+  </data>
+  <data name="DevicesPage_ComboBoxItemContains.Content" xml:space="preserve">
+    <value>Contains</value>
+  </data>
+  <data name="DevicesPage_ComboBoxItemDeviceID.Content" xml:space="preserve">
+    <value>Device ID</value>
+  </data>
+  <data name="DevicesPage_ComboBoxItemDeviceName.Content" xml:space="preserve">
+    <value>Device Name</value>
+  </data>
+  <data name="DevicesPage_ComboBoxItemSerialNumber.Content" xml:space="preserve">
+    <value>Serial Number</value>
+  </data>
+  <data name="DevicesPage_DevicesBusyIndicator.AutomationProperties.Name" xml:space="preserve">
+    <value>Device operation in progress</value>
+  </data>
+  <data name="DevicesPage_FilterComplianceBox.Header" xml:space="preserve">
+    <value>Compliance</value>
+  </data>
+  <data name="DevicesPage_FilterDeviceNameBox.Header" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="DevicesPage_FilterOsBox.Header" xml:space="preserve">
+    <value>OS</value>
+  </data>
+  <data name="DevicesPage_FilterSerialBox.Header" xml:space="preserve">
+    <value>Serial</value>
+  </data>
+  <data name="DevicesPage_FilterUserBox.Header" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="DevicesPage_ImportBulkButton.Content" xml:space="preserve">
+    <value>Import file</value>
+  </data>
+  <data name="DevicesPage_SearchButton.Content" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="DevicesPage_SearchModeBox.Header" xml:space="preserve">
+    <value>Search mode</value>
+  </data>
+  <data name="DevicesPage_SearchTextBox.Header" xml:space="preserve">
+    <value>Search terms</value>
+  </data>
+  <data name="DevicesPage_SearchTextBox.PlaceholderText" xml:space="preserve">
+    <value>Comma or line separated device names, serials, or IDs</value>
+  </data>
+  <data name="DevicesPage_SelectAllDevicesBox.Content" xml:space="preserve">
+    <value>All</value>
+  </data>
+  <data name="DevicesPage_TextBlockCompliance.Text" xml:space="preserve">
+    <value>Compliance</value>
+  </data>
+  <data name="DevicesPage_TextBlockDevice.Text" xml:space="preserve">
+    <value>Device</value>
+  </data>
+  <data name="DevicesPage_TextBlockDevices.Text" xml:space="preserve">
+    <value>Devices</value>
+  </data>
+  <data name="DevicesPage_TextBlockIDs.Text" xml:space="preserve">
+    <value>IDs</value>
+  </data>
+  <data name="DevicesPage_TextBlockOS.Text" xml:space="preserve">
+    <value>OS</value>
+  </data>
+  <data name="DevicesPage_TextBlockSearchCorrelateFilterSelectAnd.Text" xml:space="preserve">
+    <value>Search, correlate, filter, select, and export device records before offboarding.</value>
+  </data>
+  <data name="DevicesPage_TextBlockSerial.Text" xml:space="preserve">
+    <value>Serial</value>
+  </data>
+  <data name="DevicesPage_TextBlockServices.Text" xml:space="preserve">
+    <value>Services</value>
+  </data>
+  <data name="DevicesPage_TextBlockUser.Text" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="DisconnectedMessage" xml:space="preserve">
+    <value>The Graph session has been cleared.</value>
+  </data>
+  <data name="DisconnectedTitle" xml:space="preserve">
+    <value>Disconnected</value>
+  </data>
+  <data name="Disconnecting" xml:space="preserve">
+    <value>Disconnecting</value>
+  </data>
+  <data name="ExportHtmlButton" xml:space="preserve">
+    <value>Export HTML report</value>
+  </data>
+  <data name="ExportingCsv" xml:space="preserve">
+    <value>Exporting CSV</value>
+  </data>
+  <data name="ExportingDashboardResults" xml:space="preserve">
+    <value>Exporting dashboard results</value>
+  </data>
+  <data name="ExportingPlaybook" xml:space="preserve">
+    <value>Exporting playbook</value>
+  </data>
+  <data name="ExportingReport" xml:space="preserve">
+    <value>Exporting report</value>
+  </data>
+  <data name="FetchingRecoveryKeys" xml:space="preserve">
+    <value>Fetching recovery keys</value>
+  </data>
+  <data name="GroupMembershipRowFormat" xml:space="preserve">
+    <value>{0} | {1} | Mail: {2} | Security: {3}</value>
+  </data>
+  <data name="GroupMembershipsLoaded" xml:space="preserve">
+    <value>Group memberships loaded</value>
+  </data>
+  <data name="GroupMembershipsLoadedFormat" xml:space="preserve">
+    <value>{0:N0} group(s) found for {1}.</value>
+  </data>
+  <data name="GroupMembershipsTitleFormat" xml:space="preserve">
+    <value>Group memberships - {0}</value>
+  </data>
+  <data name="GroupTagComplete" xml:space="preserve">
+    <value>Group tag update complete</value>
+  </data>
+  <data name="GroupTagCompleteFormat" xml:space="preserve">
+    <value>Updated: {0:N0}; Failed: {1:N0}.</value>
+  </data>
+  <data name="HomePage_BtnHomeDevices.Content" xml:space="preserve">
+    <value>Search devices</value>
+  </data>
+  <data name="HomePage_HomeBusyIndicator.AutomationProperties.Name" xml:space="preserve">
+    <value>Connection in progress</value>
+  </data>
+  <data name="HomePage_HomeConnectButton.Content" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="HomePage_TextBlockAutopilot.Text" xml:space="preserve">
+    <value>Autopilot</value>
+  </data>
+  <data name="HomePage_TextBlockCorrelateIdentitiesDeleteAutopilotRecords.Text" xml:space="preserve">
+    <value>Correlate identities, delete Autopilot records, and set or clear group tags for selected devices.</value>
+  </data>
+  <data name="HomePage_TextBlockDefender.Text" xml:space="preserve">
+    <value>Defender</value>
+  </data>
+  <data name="HomePage_TextBlockDeviceOffboardingManager.Text" xml:space="preserve">
+    <value>Device Offboarding Manager</value>
+  </data>
+  <data name="HomePage_TextBlockEntraID.Text" xml:space="preserve">
+    <value>Entra ID</value>
+  </data>
+  <data name="HomePage_TextBlockIntune.Text" xml:space="preserve">
+    <value>Intune</value>
+  </data>
+  <data name="HomePage_TextBlockNativeWindowsAppForIntune.Text" xml:space="preserve">
+    <value>Native Windows app for Intune, Autopilot, Entra ID, and optional Defender for Endpoint offboarding.</value>
+  </data>
+  <data name="HomePage_TextBlockOptionalSettingsGatedDefenderFor.Text" xml:space="preserve">
+    <value>Optional, settings-gated Defender for Endpoint offboarding that requests Defender tokens only when used.</value>
+  </data>
+  <data name="HomePage_TextBlockReleasePosture.Text" xml:space="preserve">
+    <value>Release posture</value>
+  </data>
+  <data name="HomePage_TextBlockResolveExactDeviceIDsDisable.Text" xml:space="preserve">
+    <value>Resolve exact device IDs, disable or delete device objects, and preserve IDs in exports and confirmation flows.</value>
+  </data>
+  <data name="HomePage_TextBlockSearchManagedDevicesRetireOr.Text" xml:space="preserve">
+    <value>Search managed devices, retire or wipe, delete records, report stale devices, and read compliance/agent state.</value>
+  </data>
+  <data name="HomePage_TextBlockTheWinUIAppReplacesThe.Text" xml:space="preserve">
+    <value>The WinUI app replaces the PowerShell module as of 0.4.0. v0.3 is the final module release. Distribution continues toward MSIX, Intune, WinGet, and Microsoft Store.</value>
+  </data>
+  <data name="HomePage_TextBlockVersion04IsThe.Text" xml:space="preserve">
+    <value>Version 0.4 is the native signed-app track. Test with non-production devices first; offboarding, wipe, delete, and Defender actions can be permanent.</value>
+  </data>
+  <data name="ImportButton" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="ImportCanceledNoChanges" xml:space="preserve">
+    <value>No search terms were changed.</value>
+  </data>
+  <data name="ImportCanceledNoFile" xml:space="preserve">
+    <value>No file was selected.</value>
+  </data>
+  <data name="ImportCanceledTitle" xml:space="preserve">
+    <value>Import canceled</value>
+  </data>
+  <data name="ImportDevicesTitle" xml:space="preserve">
+    <value>Import devices</value>
+  </data>
+  <data name="ImportingConfig" xml:space="preserve">
+    <value>Importing config</value>
+  </data>
+  <data name="ImportingSearchTerms" xml:space="preserve">
+    <value>Importing search terms</value>
+  </data>
+  <data name="KeyFallback" xml:space="preserve">
+    <value>Key</value>
+  </data>
+  <data name="LoadingDashboardResults" xml:space="preserve">
+    <value>Loading dashboard results</value>
+  </data>
+  <data name="LoadingGroupMemberships" xml:space="preserve">
+    <value>Loading group memberships</value>
+  </data>
+  <data name="MainWindow_NavAbout.Content" xml:space="preserve">
+    <value>About</value>
+  </data>
+  <data name="MainWindow_NavDashboard.Content" xml:space="preserve">
+    <value>Dashboard</value>
+  </data>
+  <data name="MainWindow_NavDevices.Content" xml:space="preserve">
+    <value>Devices</value>
+  </data>
+  <data name="MainWindow_NavHome.Content" xml:space="preserve">
+    <value>Home</value>
+  </data>
+  <data name="MainWindow_NavOffboarding.Content" xml:space="preserve">
+    <value>Offboarding</value>
+  </data>
+  <data name="MainWindow_NavPlaybooks.Content" xml:space="preserve">
+    <value>Playbooks</value>
+  </data>
+  <data name="MainWindow_StatusInfoBar.Message" xml:space="preserve">
+    <value>Configure authentication, connect to Microsoft Graph, then search devices.</value>
+  </data>
+  <data name="MainWindow_StatusInfoBar.Title" xml:space="preserve">
+    <value>Not connected</value>
+  </data>
+  <data name="MainWindow_WindowDeviceOffboardingManager.Title" xml:space="preserve">
+    <value>Device Offboarding Manager</value>
+  </data>
+  <data name="NoDevicesAvailable" xml:space="preserve">
+    <value>No devices are available to export.</value>
+  </data>
+  <data name="NoDevicesSearched" xml:space="preserve">
+    <value>No devices searched yet.</value>
+  </data>
+  <data name="NoDevicesSelectedMessage" xml:space="preserve">
+    <value>Select at least one device before reviewing IDs.</value>
+  </data>
+  <data name="NoDevicesSelectedShort" xml:space="preserve">
+    <value>No devices selected.</value>
+  </data>
+  <data name="NoDevicesSelectedTitle" xml:space="preserve">
+    <value>No devices selected</value>
+  </data>
+  <data name="NoGroupMemberships" xml:space="preserve">
+    <value>No group memberships found.</value>
+  </data>
+  <data name="NoLowercase" xml:space="preserve">
+    <value>no</value>
+  </data>
+  <data name="NoneFallback" xml:space="preserve">
+    <value>(none)</value>
+  </data>
+  <data name="NoPlaybooks" xml:space="preserve">
+    <value>No playbooks are available.</value>
+  </data>
+  <data name="NoRowsReturned" xml:space="preserve">
+    <value>No rows returned.</value>
+  </data>
+  <data name="NotFound" xml:space="preserve">
+    <value>Not found</value>
+  </data>
+  <data name="OffboardingCanceledMessage" xml:space="preserve">
+    <value>No changes were made.</value>
+  </data>
+  <data name="OffboardingCanceledTitle" xml:space="preserve">
+    <value>Offboarding canceled</value>
+  </data>
+  <data name="OffboardingComplete" xml:space="preserve">
+    <value>Offboarding complete</value>
+  </data>
+  <data name="OffboardingCompleteFormat" xml:space="preserve">
+    <value>Offboarding complete. Devices: {0:N0}; successful: {1:N0}; failed/partial: {2:N0}.</value>
+  </data>
+  <data name="OffboardingPage_BtnExportHtmlReport.Content" xml:space="preserve">
+    <value>Export HTML report</value>
+  </data>
+  <data name="OffboardingPage_BtnExportSelected.Content" xml:space="preserve">
+    <value>Export selected</value>
+  </data>
+  <data name="OffboardingPage_BtnFetchRecoveryKeys.Content" xml:space="preserve">
+    <value>Fetch recovery keys</value>
+  </data>
+  <data name="OffboardingPage_BtnReviewSelectedIds.Content" xml:space="preserve">
+    <value>Review IDs</value>
+  </data>
+  <data name="OffboardingPage_BtnRunOffboarding.Content" xml:space="preserve">
+    <value>Run offboarding</value>
+  </data>
+  <data name="OffboardingPage_BtnSetGroupTag.Content" xml:space="preserve">
+    <value>Set group tag</value>
+  </data>
+  <data name="OffboardingPage_ComboBoxItemNone.Content" xml:space="preserve">
+    <value>None</value>
+  </data>
+  <data name="OffboardingPage_ComboBoxItemRetireIntuneDevice.Content" xml:space="preserve">
+    <value>Retire Intune device</value>
+  </data>
+  <data name="OffboardingPage_ComboBoxItemWipeIntuneDevice.Content" xml:space="preserve">
+    <value>Wipe Intune device</value>
+  </data>
+  <data name="OffboardingPage_DeleteAutopilotBox.Content" xml:space="preserve">
+    <value>Remove from Autopilot</value>
+  </data>
+  <data name="OffboardingPage_DeleteEntraBox.Content" xml:space="preserve">
+    <value>Remove from Entra ID</value>
+  </data>
+  <data name="OffboardingPage_DeleteIntuneBox.Content" xml:space="preserve">
+    <value>Remove from Intune</value>
+  </data>
+  <data name="OffboardingPage_DisableEntraBox.Content" xml:space="preserve">
+    <value>Disable in Entra ID instead of removal</value>
+  </data>
+  <data name="OffboardingPage_GroupTagBox.Header" xml:space="preserve">
+    <value>Autopilot group tag</value>
+  </data>
+  <data name="OffboardingPage_GroupTagBox.PlaceholderText" xml:space="preserve">
+    <value>New tag or empty to clear</value>
+  </data>
+  <data name="OffboardingPage_OffboardDefenderBox.Content" xml:space="preserve">
+    <value>Offboard Defender for Endpoint</value>
+  </data>
+  <data name="OffboardingPage_OffboardingBusyIndicator.AutomationProperties.Name" xml:space="preserve">
+    <value>Offboarding operation in progress</value>
+  </data>
+  <data name="OffboardingPage_PreActionBox.Header" xml:space="preserve">
+    <value>Intune pre-action</value>
+  </data>
+  <data name="OffboardingPage_TextBlockOffboarding.Text" xml:space="preserve">
+    <value>Offboarding</value>
+  </data>
+  <data name="OffboardingPage_TextBlockPreActionsAndRecovery.Text" xml:space="preserve">
+    <value>Pre-actions and recovery</value>
+  </data>
+  <data name="OffboardingPage_TextBlockRunSelectedPreActionsAnd.Text" xml:space="preserve">
+    <value>Run selected pre-actions and service removals only after reviewing resolved IDs.</value>
+  </data>
+  <data name="OffboardingPage_TextBlockSelectedDevices.Text" xml:space="preserve">
+    <value>Selected devices</value>
+  </data>
+  <data name="OffboardingPage_TextBlockServiceActions.Text" xml:space="preserve">
+    <value>Service actions</value>
+  </data>
+  <data name="OffboardingSummaryCountFormat" xml:space="preserve">
+    <value>Devices: {0:N0}; successful: {1:N0}; failed/partial: {2:N0}.</value>
+  </data>
+  <data name="OffboardingSummaryRowFormat" xml:space="preserve">
+    <value>{0} | Serial: {1} | Pre: {2} | Entra: {3} | Intune: {4} | Autopilot: {5} | Defender: {6}</value>
+  </data>
+  <data name="OffboardingSummaryTitle" xml:space="preserve">
+    <value>Offboarding summary</value>
+  </data>
+  <data name="OpeningAuditLog" xml:space="preserve">
+    <value>Opening audit log</value>
+  </data>
+  <data name="OpeningChangelog" xml:space="preserve">
+    <value>Opening changelog</value>
+  </data>
+  <data name="OpeningRepository" xml:space="preserve">
+    <value>Opening repository</value>
+  </data>
+  <data name="OpenReleasesButton" xml:space="preserve">
+    <value>Open releases</value>
+  </data>
+  <data name="OperationFailedFormat" xml:space="preserve">
+    <value>Failed: {0}</value>
+  </data>
+  <data name="OperationMissingTargetFormat" xml:space="preserve">
+    <value>Missing target: {0}</value>
+  </data>
+  <data name="OperationSkipped" xml:space="preserve">
+    <value>Skipped</value>
+  </data>
+  <data name="OperationSuccess" xml:space="preserve">
+    <value>Success</value>
+  </data>
+  <data name="PermissionAppsRead" xml:space="preserve">
+    <value>Necessary to read mobile app management policies and app configurations.</value>
+  </data>
+  <data name="PermissionBitLocker" xml:space="preserve">
+    <value>Required to read BitLocker recovery key metadata during offboarding.</value>
+  </data>
+  <data name="PermissionConfigurationRead" xml:space="preserve">
+    <value>Allows reading Intune device configuration policies and assignments.</value>
+  </data>
+  <data name="PermissionDefender" xml:space="preserve">
+    <value>Optional Defender for Endpoint offboarding permissions.</value>
+  </data>
+  <data name="PermissionDeviceReadWrite" xml:space="preserve">
+    <value>Needed to read, disable, and delete Entra ID device objects.</value>
+  </data>
+  <data name="PermissionGroupRead" xml:space="preserve">
+    <value>Needed to read group information and memberships.</value>
+  </data>
+  <data name="PermissionLaps" xml:space="preserve">
+    <value>Required to read LAPS passwords during offboarding.</value>
+  </data>
+  <data name="PermissionManagedDevices" xml:space="preserve">
+    <value>Required to read and modify managed device information.</value>
+  </data>
+  <data name="PermissionServiceConfig" xml:space="preserve">
+    <value>Required for Autopilot configuration and management.</value>
+  </data>
+  <data name="PermissionUserRead" xml:space="preserve">
+    <value>Required to read user profile information and group memberships.</value>
+  </data>
+  <data name="PlaybookAutopilotNotIntune" xml:space="preserve">
+    <value>Autopilot not in Intune</value>
+  </data>
+  <data name="PlaybookAutopilotNotIntuneDescription" xml:space="preserve">
+    <value>List Autopilot identities whose serial number is not present in Intune.</value>
+  </data>
+  <data name="PlaybookBitLocker" xml:space="preserve">
+    <value>BitLocker key report</value>
+  </data>
+  <data name="PlaybookBitLockerDescription" xml:space="preserve">
+    <value>List BitLocker recovery key metadata.</value>
+  </data>
+  <data name="PlaybookComplete" xml:space="preserve">
+    <value>Playbook complete</value>
+  </data>
+  <data name="PlaybookCompleteFormat" xml:space="preserve">
+    <value>{0} completed with {1:N0} row(s).</value>
+  </data>
+  <data name="PlaybookCorporateDevices" xml:space="preserve">
+    <value>Corporate devices</value>
+  </data>
+  <data name="PlaybookCorporateDevicesDescription" xml:space="preserve">
+    <value>List Intune devices marked as corporate.</value>
+  </data>
+  <data name="PlaybookCorporateIdentifiers" xml:space="preserve">
+    <value>Corporate identifier stale report</value>
+  </data>
+  <data name="PlaybookCorporateIdentifiersDescription" xml:space="preserve">
+    <value>List imported corporate identifiers and enrollment state.</value>
+  </data>
+  <data name="PlaybookEolOs" xml:space="preserve">
+    <value>End-of-life OS devices</value>
+  </data>
+  <data name="PlaybookEolOsDescription" xml:space="preserve">
+    <value>List devices that appear to run end-of-life operating systems.</value>
+  </data>
+  <data name="PlaybookExportedTitle" xml:space="preserve">
+    <value>Playbook exported</value>
+  </data>
+  <data name="PlaybookFileVault" xml:space="preserve">
+    <value>FileVault key availability</value>
+  </data>
+  <data name="PlaybookFileVaultDescription" xml:space="preserve">
+    <value>Check FileVault key availability for macOS Intune devices.</value>
+  </data>
+  <data name="PlaybookInitialStatus" xml:space="preserve">
+    <value>Run a playbook to export a CSV report to the desktop.</value>
+  </data>
+  <data name="PlaybookIntuneNotAutopilot" xml:space="preserve">
+    <value>Intune not in Autopilot</value>
+  </data>
+  <data name="PlaybookIntuneNotAutopilotDescription" xml:space="preserve">
+    <value>List Intune devices whose serial number is not present in Autopilot.</value>
+  </data>
+  <data name="PlaybookOutdatedOs" xml:space="preserve">
+    <value>Outdated OS devices</value>
+  </data>
+  <data name="PlaybookOutdatedOsDescription" xml:space="preserve">
+    <value>List devices that appear to be below the latest known OS baseline.</value>
+  </data>
+  <data name="PlaybookPersonalDevices" xml:space="preserve">
+    <value>Personal devices</value>
+  </data>
+  <data name="PlaybookPersonalDevicesDescription" xml:space="preserve">
+    <value>List Intune devices marked as personal.</value>
+  </data>
+  <data name="PlaybookRowsTruncatedFormat" xml:space="preserve">
+    <value>Showing first {0:N0} of {1:N0} row(s). Export the CSV for the full result.</value>
+  </data>
+  <data name="PlaybooksPage_BtnExportLastPlaybook.Content" xml:space="preserve">
+    <value>Export last result</value>
+  </data>
+  <data name="PlaybooksPage_BtnRunPlaybook.Content" xml:space="preserve">
+    <value>Run playbook</value>
+  </data>
+  <data name="PlaybooksPage_PlaybookBox.Header" xml:space="preserve">
+    <value>Playbook</value>
+  </data>
+  <data name="PlaybooksPage_PlaybookParameterBox.Header" xml:space="preserve">
+    <value>Parameter</value>
+  </data>
+  <data name="PlaybooksPage_PlaybookParameterBox.PlaceholderText" xml:space="preserve">
+    <value>Used by OS-specific playbook</value>
+  </data>
+  <data name="PlaybooksPage_PlaybooksBusyIndicator.AutomationProperties.Name" xml:space="preserve">
+    <value>Playbook operation in progress</value>
+  </data>
+  <data name="PlaybooksPage_TextBlockPlaybooks.Text" xml:space="preserve">
+    <value>Playbooks</value>
+  </data>
+  <data name="PlaybooksPage_TextBlockRunNativeReportsForAutopilot.Text" xml:space="preserve">
+    <value>Run native reports for Autopilot gaps, stale devices, OS posture, recovery-key metadata, and corporate identifiers.</value>
+  </data>
+  <data name="PlaybookSpecificOs" xml:space="preserve">
+    <value>Specific OS devices</value>
+  </data>
+  <data name="PlaybookSpecificOsDescription" xml:space="preserve">
+    <value>List Intune devices by operating system.</value>
+  </data>
+  <data name="PlaybookSpecificOsParameter" xml:space="preserve">
+    <value>Windows, macOS, iOS, Android, or Linux</value>
+  </data>
+  <data name="PlaybookStaleDevices" xml:space="preserve">
+    <value>Stale devices</value>
+  </data>
+  <data name="PlaybookStaleDevicesDescription" xml:space="preserve">
+    <value>List Intune devices stale for 90 days.</value>
+  </data>
+  <data name="RecoveryClipboardRowFormat" xml:space="preserve">
+    <value>{0} | {1} | {2}</value>
+  </data>
+  <data name="RecoveryKeysTitle" xml:space="preserve">
+    <value>Recovery keys</value>
+  </data>
+  <data name="RecoveryLookupComplete" xml:space="preserve">
+    <value>Recovery key lookup complete</value>
+  </data>
+  <data name="RecoveryLookupCompleteFormat" xml:space="preserve">
+    <value>Recovery key lookup complete. Records: {0:N0}; values found: {1:N0}. Values are shown once and are not written to logs.</value>
+  </data>
+  <data name="RecoveryRecordsFormat" xml:space="preserve">
+    <value>Records: {0:N0}; values found: {1:N0}.</value>
+  </data>
+  <data name="RefreshingDashboard" xml:space="preserve">
+    <value>Refreshing dashboard</value>
+  </data>
+  <data name="ReportExportedTitle" xml:space="preserve">
+    <value>Report exported</value>
+  </data>
+  <data name="ResolvedDeviceIdsFormat" xml:space="preserve">
+    <value>{0}{6}Serial: {1}{6}Entra object: {2}{6}Entra deviceId: {3}{6}Intune: {4}{6}Autopilot: {5}</value>
+  </data>
+  <data name="ResolvedDeviceIdsTitle" xml:space="preserve">
+    <value>Resolved device IDs</value>
+  </data>
+  <data name="ReviewingSelectedIds" xml:space="preserve">
+    <value>Reviewing selected IDs</value>
+  </data>
+  <data name="RunButton" xml:space="preserve">
+    <value>Run</value>
+  </data>
+  <data name="RunningOffboarding" xml:space="preserve">
+    <value>Running offboarding</value>
+  </data>
+  <data name="RunningPlaybook" xml:space="preserve">
+    <value>Running playbook</value>
+  </data>
+  <data name="RunOffboardingBeforeExport" xml:space="preserve">
+    <value>Run an offboarding operation before exporting the HTML report.</value>
+  </data>
+  <data name="RunPlaybookBeforeExport" xml:space="preserve">
+    <value>Run a playbook before exporting.</value>
+  </data>
+  <data name="SavingImportTemplate" xml:space="preserve">
+    <value>Saving import template</value>
+  </data>
+  <data name="SavingSettings" xml:space="preserve">
+    <value>Saving settings</value>
+  </data>
+  <data name="SearchComplete" xml:space="preserve">
+    <value>Search complete</value>
+  </data>
+  <data name="SearchCompleteFormat" xml:space="preserve">
+    <value>{0:N0} device(s) found. Intune: {1:N0}; Autopilot: {2:N0}; Entra ID: {3:N0}.</value>
+  </data>
+  <data name="SearchingDevices" xml:space="preserve">
+    <value>Searching devices</value>
+  </data>
+  <data name="SearchTermsRequired" xml:space="preserve">
+    <value>Enter at least one search term.</value>
+  </data>
+  <data name="SelectDashboardBeforeExport" xml:space="preserve">
+    <value>Select a dashboard card before exporting drilldown results.</value>
+  </data>
+  <data name="SelectDevicesBeforeActions" xml:space="preserve">
+    <value>Select devices before running actions.</value>
+  </data>
+  <data name="SelectedDeviceFallback" xml:space="preserve">
+    <value>the selected device</value>
+  </data>
+  <data name="SelectedDevicesFormat" xml:space="preserve">
+    <value>{0:N0} selected device(s). Visible: {1:N0}; loaded: {2:N0}.</value>
+  </data>
+  <data name="SelectedReadyFormat" xml:space="preserve">
+    <value>{0:N0} selected device(s) ready for offboarding review.</value>
+  </data>
+  <data name="SelectExactlyOneDevice" xml:space="preserve">
+    <value>Select exactly one device with a resolved Entra object ID.</value>
+  </data>
+  <data name="SelectingConfig" xml:space="preserve">
+    <value>Selecting config</value>
+  </data>
+  <data name="SelectOneDevice" xml:space="preserve">
+    <value>Select at least one device.</value>
+  </data>
+  <data name="ServiceAutopilot" xml:space="preserve">
+    <value>Autopilot</value>
+  </data>
+  <data name="ServiceDefender" xml:space="preserve">
+    <value>Defender</value>
+  </data>
+  <data name="ServiceEntra" xml:space="preserve">
+    <value>Entra</value>
+  </data>
+  <data name="ServiceIntune" xml:space="preserve">
+    <value>Intune</value>
+  </data>
+  <data name="ServicesNotResolved" xml:space="preserve">
+    <value>Not resolved</value>
+  </data>
+  <data name="SettingGroupTag" xml:space="preserve">
+    <value>Setting group tag</value>
+  </data>
+  <data name="SettingsLoadedTitle" xml:space="preserve">
+    <value>Settings loaded</value>
+  </data>
+  <data name="SettingsNavigationName" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsPage_AuthMethodBox.Header" xml:space="preserve">
+    <value>Authentication method</value>
+  </data>
+  <data name="SettingsPage_BtnBrowseConfig.Content" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="SettingsPage_BtnImportConfig.Content" xml:space="preserve">
+    <value>Import</value>
+  </data>
+  <data name="SettingsPage_BtnOpenAuditLog.Content" xml:space="preserve">
+    <value>Open audit log</value>
+  </data>
+  <data name="SettingsPage_BtnSaveSettings.Content" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="SettingsPage_CertificateThumbprintBox.Header" xml:space="preserve">
+    <value>Certificate thumbprint</value>
+  </data>
+  <data name="SettingsPage_ClientIdBox.Header" xml:space="preserve">
+    <value>Client ID</value>
+  </data>
+  <data name="SettingsPage_ClientIdBox.PlaceholderText" xml:space="preserve">
+    <value>App registration client ID</value>
+  </data>
+  <data name="SettingsPage_ClientSecretBox.Header" xml:space="preserve">
+    <value>Client secret (session only)</value>
+  </data>
+  <data name="SettingsPage_ComboBoxItemCertificate.Content" xml:space="preserve">
+    <value>Certificate</value>
+  </data>
+  <data name="SettingsPage_ComboBoxItemClientSecret.Content" xml:space="preserve">
+    <value>Client secret</value>
+  </data>
+  <data name="SettingsPage_ComboBoxItemDeviceCode.Content" xml:space="preserve">
+    <value>Device code</value>
+  </data>
+  <data name="SettingsPage_ComboBoxItemInteractive.Content" xml:space="preserve">
+    <value>Interactive</value>
+  </data>
+  <data name="SettingsPage_ConfigPathBox.Header" xml:space="preserve">
+    <value>Config JSON path</value>
+  </data>
+  <data name="SettingsPage_ConfigPathBox.PlaceholderText" xml:space="preserve">
+    <value>Select or paste an app registration config JSON path for import</value>
+  </data>
+  <data name="SettingsPage_ConnectButton.Content" xml:space="preserve">
+    <value>Connect</value>
+  </data>
+  <data name="SettingsPage_DefenderToggle.Header" xml:space="preserve">
+    <value>Defender for Endpoint integration</value>
+  </data>
+  <data name="SettingsPage_DisconnectButton.Content" xml:space="preserve">
+    <value>Disconnect</value>
+  </data>
+  <data name="SettingsPage_SettingsBusyIndicator.AutomationProperties.Name" xml:space="preserve">
+    <value>Settings operation in progress</value>
+  </data>
+  <data name="SettingsPage_TenantIdBox.Header" xml:space="preserve">
+    <value>Tenant ID</value>
+  </data>
+  <data name="SettingsPage_TenantIdBox.PlaceholderText" xml:space="preserve">
+    <value>Tenant ID or organizations</value>
+  </data>
+  <data name="SettingsPage_TextBlockAuthenticationAppRegistrationImportDefender.Text" xml:space="preserve">
+    <value>Authentication, app registration import, Defender gating, and required permissions.</value>
+  </data>
+  <data name="SettingsPage_TextBlockDistributionReadiness.Text" xml:space="preserve">
+    <value>Distribution readiness</value>
+  </data>
+  <data name="SettingsPage_TextBlockRequiredPermissions.Text" xml:space="preserve">
+    <value>Required permissions</value>
+  </data>
+  <data name="SettingsPage_TextBlockSettings.Text" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="SettingsPage_TextBlockV04TargetsSignedMSIX.Text" xml:space="preserve">
+    <value>v0.4 targets signed MSIX or EXE releases first, then Intune packaging, WinGet, and Microsoft Store submission after functional and privacy review.</value>
+  </data>
+  <data name="SettingsSavedMessage" xml:space="preserve">
+    <value>Defender visibility and app registration settings were saved.</value>
+  </data>
+  <data name="SettingsSavedTitle" xml:space="preserve">
+    <value>Settings saved</value>
+  </data>
+  <data name="TemplateSavedTitle" xml:space="preserve">
+    <value>Template saved</value>
+  </data>
+  <data name="UnknownFallback" xml:space="preserve">
+    <value>(unknown)</value>
+  </data>
+  <data name="UnnamedFallback" xml:space="preserve">
+    <value>(unnamed)</value>
+  </data>
+  <data name="UpdateAvailableFormat" xml:space="preserve">
+    <value>A newer release is available: {0}. Current app: {1}.</value>
+  </data>
+  <data name="UpdateCheckComplete" xml:space="preserve">
+    <value>Update check complete</value>
+  </data>
+  <data name="UpdateCheckFallbackFormat" xml:space="preserve">
+    <value>Latest release tag: {0}. Current app: {1}.</value>
+  </data>
+  <data name="UpdateCheckHttpFailureFormat" xml:space="preserve">
+    <value>GitHub update check failed with HTTP {0}: {1}</value>
+  </data>
+  <data name="UpdateCheckTitle" xml:space="preserve">
+    <value>Update check</value>
+  </data>
+  <data name="UpdateCurrentFormat" xml:space="preserve">
+    <value>You are on the current or newer app track. Latest release: {0}; current app: {1}.</value>
+  </data>
+  <data name="VisibleDevicesFormat" xml:space="preserve">
+    <value>{0:N0} visible of {1:N0} loaded device(s).</value>
+  </data>
+  <data name="WindowTitleFormat" xml:space="preserve">
+    <value>Device Offboarding Manager {0}</value>
+  </data>
+  <data name="WorkingMessage" xml:space="preserve">
+    <value>Working...</value>
+  </data>
+  <data name="YesLowercase" xml:space="preserve">
+    <value>yes</value>
+  </data>
+</root>

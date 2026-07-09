@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
@@ -44,69 +45,71 @@ public sealed partial class DashboardViewModel : AppViewModelBase
     public ObservableCollection<TextRow> DashboardRows { get; } = new();
 
     [ObservableProperty]
-    private int platformFilterIndex;
+    public partial int PlatformFilterIndex { get; set; }
 
     [ObservableProperty]
-    private string intuneCountText = "--";
+    public partial string IntuneCountText { get; set; } = "--";
 
     [ObservableProperty]
-    private string autopilotCountText = "--";
+    public partial string AutopilotCountText { get; set; } = "--";
 
     [ObservableProperty]
-    private string entraCountText = "--";
+    public partial string EntraCountText { get; set; } = "--";
 
     [ObservableProperty]
-    private string stale30Text = "--";
+    public partial string Stale30Text { get; set; } = "--";
 
     [ObservableProperty]
-    private string stale90Text = "--";
+    public partial string Stale90Text { get; set; } = "--";
 
     [ObservableProperty]
-    private string stale180Text = "--";
+    public partial string Stale180Text { get; set; } = "--";
 
     [ObservableProperty]
-    private string corporateCountText = "--";
+    public partial string CorporateCountText { get; set; } = "--";
 
     [ObservableProperty]
-    private string personalCountText = "--";
+    public partial string PersonalCountText { get; set; } = "--";
 
     [ObservableProperty]
-    private string dashboardPlatformText = "Refresh the dashboard to show platform distribution.";
+    public partial string DashboardPlatformText { get; set; } = AppResources.Get("DashboardPlatformInitial", "Refresh the dashboard to show platform distribution.");
 
     [ObservableProperty]
-    private string dashboardOwnershipText = "Ownership distribution is not loaded.";
+    public partial string DashboardOwnershipText { get; set; } = AppResources.Get("DashboardOwnershipInitial", "Ownership distribution is not loaded.");
 
     [ObservableProperty]
-    private string dashboardStaleText = "Stale device ratios are not loaded.";
+    public partial string DashboardStaleText { get; set; } = AppResources.Get("DashboardStaleInitial", "Stale device ratios are not loaded.");
 
     [ObservableProperty]
-    private string dashboardResultTitleText = "Dashboard drilldown";
+    public partial string DashboardResultTitleText { get; set; } = AppResources.Get("DashboardDrilldown", "Dashboard drilldown");
 
     [ObservableProperty]
-    private string dashboardResultSummaryText = "Select a dashboard card to preview matching devices.";
+    public partial string DashboardResultSummaryText { get; set; } = AppResources.Get("DashboardSelectCard", "Select a dashboard card to preview matching devices.");
 
     [ObservableProperty]
-    private string dashboardReadinessText = "Connect to Microsoft Graph to refresh dashboard statistics. Defender remains optional and disabled until enabled in Settings.";
+    public partial string DashboardReadinessText { get; set; } = AppResources.Get(
+        "DashboardReadinessDisconnected",
+        "Connect to Microsoft Graph to refresh dashboard statistics. Defender remains optional and disabled until enabled in Settings.");
 
     [ObservableProperty]
-    private double corporateDevicesProgress;
+    public partial double CorporateDevicesProgress { get; set; }
 
     [ObservableProperty]
-    private double personalDevicesProgress;
+    public partial double PersonalDevicesProgress { get; set; }
 
     [ObservableProperty]
-    private double staleDevices30Progress;
+    public partial double StaleDevices30Progress { get; set; }
 
     [ObservableProperty]
-    private double staleDevices90Progress;
+    public partial double StaleDevices90Progress { get; set; }
 
     [ObservableProperty]
-    private double staleDevices180Progress;
+    public partial double StaleDevices180Progress { get; set; }
 
     [RelayCommand]
     private async Task RefreshAsync()
     {
-        await RunAsync("Refreshing dashboard", async () =>
+        await RunAsync(AppResources.Get("RefreshingDashboard", "Refreshing dashboard"), async () =>
         {
             EnsureConnected();
             var dashboard = await _deviceInventoryService.GetDashboardSummaryAsync();
@@ -119,14 +122,20 @@ public sealed partial class DashboardViewModel : AppViewModelBase
             CorporateCountText = dashboard.CorporateDevices.ToString("n0");
             PersonalCountText = dashboard.PersonalDevices.ToString("n0");
             UpdateDashboardVisuals(dashboard);
-            _statusService.Report("Dashboard refreshed", $"Platform filter: {GetDashboardPlatformFilter() ?? "all"}.", StatusSeverity.Success);
+            _statusService.Report(
+                AppResources.Get("DashboardRefreshed", "Dashboard refreshed"),
+                AppResources.Format(
+                    "DashboardPlatformFilterFormat",
+                    "Platform filter: {0}.",
+                    GetDashboardPlatformFilter() ?? AppResources.Get("AllPlatforms", "all")),
+                StatusSeverity.Success);
         });
     }
 
     [RelayCommand]
     private async Task LoadDashboardResultsAsync(string tag)
     {
-        await RunAsync("Loading dashboard results", async () =>
+        await RunAsync(AppResources.Get("LoadingDashboardResults", "Loading dashboard results"), async () =>
         {
             EnsureConnected();
             var devices = await _deviceInventoryService.GetDashboardDevicesAsync(GetDashboardCategory(tag), GetDashboardPlatformFilter());
@@ -134,7 +143,10 @@ public sealed partial class DashboardViewModel : AppViewModelBase
             _deviceListState.SetDashboardResults(title, devices);
             PopulateDashboardRows(title, devices);
             _deviceListState.ReplaceDeviceList(devices);
-            _statusService.Report("Dashboard results loaded", $"{devices.Count:n0} device(s) loaded. Use Open in devices or Export from the drilldown panel.", StatusSeverity.Success);
+            _statusService.Report(
+                AppResources.Get("DashboardResultsLoadedTitle", "Dashboard results loaded"),
+                AppResources.Format("DashboardResultsLoadedFormat", "{0:N0} device(s) loaded. Use Open in devices or Export from the drilldown panel.", devices.Count),
+                StatusSeverity.Success);
         });
     }
 
@@ -143,27 +155,36 @@ public sealed partial class DashboardViewModel : AppViewModelBase
     {
         if (_deviceListState.LastDashboardDevices.Count == 0)
         {
-            _statusService.Report("No dashboard results", "Select a dashboard card before opening results in Devices.", StatusSeverity.Warning);
+            _statusService.Report(
+                AppResources.Get("DashboardNoResultsTitle", "No dashboard results"),
+                AppResources.Get("DashboardNoResultsMessage", "Select a dashboard card before opening results in Devices."),
+                StatusSeverity.Warning);
             return;
         }
 
         _deviceListState.ReplaceDeviceList(_deviceListState.LastDashboardDevices);
         _navigationService.Navigate("devices");
-        _statusService.Report("Dashboard results opened", $"{_deviceListState.LastDashboardDevices.Count:n0} device(s) are loaded in Devices.", StatusSeverity.Success);
+        _statusService.Report(
+            AppResources.Get("DashboardResultsOpened", "Dashboard results opened"),
+            AppResources.Format(
+                "DashboardResultsOpenedFormat",
+                "{0:N0} device(s) are loaded in Devices.",
+                _deviceListState.LastDashboardDevices.Count),
+            StatusSeverity.Success);
     }
 
     [RelayCommand]
     private async Task ExportDashboardResultsAsync()
     {
-        await RunAsync("Exporting dashboard results", async () =>
+        await RunAsync(AppResources.Get("ExportingDashboardResults", "Exporting dashboard results"), async () =>
         {
             if (_deviceListState.LastDashboardDevices.Count == 0)
             {
-                throw new InvalidOperationException("Select a dashboard card before exporting drilldown results.");
+                throw new InvalidOperationException(AppResources.Get("SelectDashboardBeforeExport", "Select a dashboard card before exporting drilldown results."));
             }
 
             var path = await _reportExportService.ExportDeviceCsvAsync(_deviceListState.LastDashboardDevices);
-            _statusService.Report("Dashboard CSV exported", path, StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("DashboardCsvExportedTitle", "Dashboard CSV exported"), path, StatusSeverity.Success);
         });
     }
 
@@ -194,12 +215,21 @@ public sealed partial class DashboardViewModel : AppViewModelBase
         StaleDevices90Progress = stale90Percent;
         StaleDevices180Progress = stale180Percent;
 
-        DashboardOwnershipText =
-            $"Corporate: {dashboard.CorporateDevices:n0} ({corporatePercent:n0}%); Personal: {dashboard.PersonalDevices:n0} ({personalPercent:n0}%).";
-        DashboardStaleText =
-            $"Stale ratios: 30 days {stale30Percent:n0}%, 90 days {stale90Percent:n0}%, 180 days {stale180Percent:n0}%.";
+        DashboardOwnershipText = AppResources.Format(
+            "DashboardOwnershipFormat",
+            "Corporate: {0:N0} ({1:N0}%); Personal: {2:N0} ({3:N0}%).",
+            dashboard.CorporateDevices,
+            corporatePercent,
+            dashboard.PersonalDevices,
+            personalPercent);
+        DashboardStaleText = AppResources.Format(
+            "DashboardStaleFormat",
+            "Stale ratios: 30 days {0:N0}%, 90 days {1:N0}%, 180 days {2:N0}%.",
+            stale30Percent,
+            stale90Percent,
+            stale180Percent);
         DashboardPlatformText = dashboard.PlatformCounts.Count == 0
-            ? "Platform distribution unavailable."
+            ? AppResources.Get("DashboardPlatformUnavailable", "Platform distribution unavailable.")
             : string.Join(" | ", dashboard.PlatformCounts.Select(item => $"{item.Key}: {item.Value:n0} ({Percent(item.Value, total):n0}%)"));
     }
 
@@ -207,19 +237,32 @@ public sealed partial class DashboardViewModel : AppViewModelBase
     {
         DashboardResultTitleText = title;
         DashboardResultSummaryText = devices.Count == 0
-            ? "No devices matched this dashboard card."
-            : $"{devices.Count:n0} device(s) matched. Showing up to 100 rows here; export the CSV for the full result.";
+            ? AppResources.Get("DashboardNoMatches", "No devices matched this dashboard card.")
+            : AppResources.Format(
+                "DashboardMatchesFormat",
+                "{0:N0} device(s) matched. Showing up to 100 rows here; export the CSV for the full result.",
+                devices.Count);
 
         DashboardRows.Clear();
         foreach (var device in devices.Take(100))
         {
             DashboardRows.Add(new TextRow(
-                $"{device.DeviceName ?? "(unnamed)"} | Serial: {device.SerialNumber ?? "(none)"} | OS: {device.OperatingSystem ?? "(unknown)"} | User: {device.PrimaryUser ?? "(none)"}"));
+                AppResources.Format(
+                    "DashboardDeviceRowFormat",
+                    "{0} | Serial: {1} | OS: {2} | User: {3}",
+                    device.DeviceName ?? AppResources.Get("UnnamedFallback", "(unnamed)"),
+                    device.SerialNumber ?? AppResources.Get("NoneFallback", "(none)"),
+                    device.OperatingSystem ?? AppResources.Get("UnknownFallback", "(unknown)"),
+                    device.PrimaryUser ?? AppResources.Get("NoneFallback", "(none)"))));
         }
 
         if (devices.Count > DashboardRows.Count)
         {
-            DashboardRows.Add(new TextRow($"Showing first {DashboardRows.Count:n0} of {devices.Count:n0} device(s)."));
+            DashboardRows.Add(new TextRow(AppResources.Format(
+                "DashboardRowsTruncatedFormat",
+                "Showing first {0:N0} of {1:N0} device(s).",
+                DashboardRows.Count,
+                devices.Count)));
         }
     }
 
@@ -264,15 +307,15 @@ public sealed partial class DashboardViewModel : AppViewModelBase
     {
         return tag switch
         {
-            "intune" => "Intune devices",
-            "autopilot" => "Autopilot devices",
-            "entra" => "Entra ID devices",
-            "stale30" => "Stale devices - 30 days",
-            "stale90" => "Stale devices - 90 days",
-            "stale180" => "Stale devices - 180 days",
-            "corporate" => "Corporate devices",
-            "personal" => "Personal devices",
-            _ => "Dashboard drilldown"
+            "intune" => AppResources.Get("CategoryIntuneDevices", "Intune devices"),
+            "autopilot" => AppResources.Get("CategoryAutopilotDevices", "Autopilot devices"),
+            "entra" => AppResources.Get("CategoryEntraDevices", "Entra ID devices"),
+            "stale30" => AppResources.Get("CategoryStale30", "Stale devices - 30 days"),
+            "stale90" => AppResources.Get("CategoryStale90", "Stale devices - 90 days"),
+            "stale180" => AppResources.Get("CategoryStale180", "Stale devices - 180 days"),
+            "corporate" => AppResources.Get("CategoryCorporateDevices", "Corporate devices"),
+            "personal" => AppResources.Get("CategoryPersonalDevices", "Personal devices"),
+            _ => AppResources.Get("DashboardDrilldown", "Dashboard drilldown")
         };
     }
 
@@ -280,7 +323,7 @@ public sealed partial class DashboardViewModel : AppViewModelBase
     {
         if (!_authenticationService.IsConnected)
         {
-            throw new InvalidOperationException("Connect to Microsoft Graph first.");
+            throw new InvalidOperationException(AppResources.Get("ConnectFirst", "Connect to Microsoft Graph first."));
         }
     }
 

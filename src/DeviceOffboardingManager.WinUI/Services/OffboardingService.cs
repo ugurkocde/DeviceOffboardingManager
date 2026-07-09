@@ -39,7 +39,7 @@ public sealed class OffboardingService : IOffboardingService
             var preAction = await RunPreActionAsync(device, options.PreAction, cancellationToken);
             var defender = offboardDefender
                 ? await RunDefenderOffboardingAsync(device, cancellationToken)
-                : new ServiceOperationResult();
+                : ServiceOperationResult.Skipped();
 
             var (entra, intune, autopilot) = await RunGraphOffboardingAsync(device, options, cancellationToken);
             results.Add(new DeviceOffboardingResult
@@ -61,12 +61,12 @@ public sealed class OffboardingService : IOffboardingService
     {
         if (preAction == DevicePreAction.None)
         {
-            return new ServiceOperationResult();
+            return ServiceOperationResult.Skipped();
         }
 
         if (string.IsNullOrWhiteSpace(device.IntuneDeviceId))
         {
-            return new ServiceOperationResult { Found = false, Action = preAction.ToString(), Error = "No Intune device ID resolved." };
+            return ServiceOperationResult.MissingTarget(preAction.ToString(), "No Intune device ID resolved.");
         }
 
         try
@@ -79,12 +79,12 @@ public sealed class OffboardingService : IOffboardingService
                 body,
                 cancellationToken: cancellationToken);
             await _auditLog.WriteAsync($"Executed {action} for {device.DeviceName}.", "AUDIT", cancellationToken);
-            return new ServiceOperationResult { Found = true, Success = true, Action = action };
+            return ServiceOperationResult.Succeeded(action);
         }
         catch (Exception ex)
         {
             await _auditLog.WriteAsync($"Pre-action failed for {device.DeviceName}: {ex.Message}", "ERROR", cancellationToken);
-            return new ServiceOperationResult { Found = true, Success = false, Action = preAction.ToString(), Error = ex.Message };
+            return ServiceOperationResult.Failed(preAction.ToString(), ex.Message);
         }
     }
 
@@ -101,17 +101,17 @@ public sealed class OffboardingService : IOffboardingService
 
             if (string.IsNullOrWhiteSpace(machineId))
             {
-                return new ServiceOperationResult { Found = false, Action = "Offboard", Error = "No Defender machine ID resolved." };
+                return ServiceOperationResult.MissingTarget("Offboard", "No Defender machine ID resolved.");
             }
 
             await _defender.OffboardMachineAsync(machineId, "Offboarded via DeviceOffboardingManager WinUI", cancellationToken);
             await _auditLog.WriteAsync($"Offboarded {device.DeviceName} from Defender for Endpoint.", "AUDIT", cancellationToken);
-            return new ServiceOperationResult { Found = true, Success = true, Action = "Offboard" };
+            return ServiceOperationResult.Succeeded("Offboard");
         }
         catch (Exception ex)
         {
             await _auditLog.WriteAsync($"Defender offboarding failed for {device.DeviceName}: {ex.Message}", "ERROR", cancellationToken);
-            return new ServiceOperationResult { Found = true, Success = false, Action = "Offboard", Error = ex.Message };
+            return ServiceOperationResult.Failed("Offboard", ex.Message);
         }
     }
 
@@ -160,12 +160,12 @@ public sealed class OffboardingService : IOffboardingService
     {
         if (!requested)
         {
-            return new ServiceOperationResult();
+            return ServiceOperationResult.Skipped();
         }
 
         return string.IsNullOrWhiteSpace(id)
-            ? new ServiceOperationResult { Found = false, Action = action, Error = "No service ID resolved." }
-            : new ServiceOperationResult();
+            ? ServiceOperationResult.MissingTarget(action, "No service ID resolved.")
+            : ServiceOperationResult.Skipped();
     }
 
     private static ServiceOperationResult BuildGraphResult(
@@ -177,27 +177,23 @@ public sealed class OffboardingService : IOffboardingService
     {
         if (!requested)
         {
-            return new ServiceOperationResult();
+            return ServiceOperationResult.Skipped();
         }
 
         if (string.IsNullOrWhiteSpace(serviceId))
         {
-            return new ServiceOperationResult { Found = false, Action = action, Error = "No service ID resolved." };
+            return ServiceOperationResult.MissingTarget(action, "No service ID resolved.");
         }
 
         var response = responses.FirstOrDefault(item => item.Id == id);
         if (response is null)
         {
-            return new ServiceOperationResult { Found = true, Success = false, Action = action, Error = "No batch response returned." };
+            return ServiceOperationResult.Failed(action, "No batch response returned.");
         }
 
         var success = response.Status is >= 200 and < 300;
-        return new ServiceOperationResult
-        {
-            Found = true,
-            Success = success,
-            Action = action,
-            Error = success ? null : $"HTTP {response.Status}: {response.Body?.ToJsonString()}"
-        };
+        return success
+            ? ServiceOperationResult.Succeeded(action)
+            : ServiceOperationResult.Failed(action, $"HTTP {response.Status}: {response.Body?.ToJsonString()}");
     }
 }

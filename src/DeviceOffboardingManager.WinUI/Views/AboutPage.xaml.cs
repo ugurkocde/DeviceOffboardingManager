@@ -1,4 +1,5 @@
 using DeviceOffboardingManager.WinUI.ViewModels;
+using DeviceOffboardingManager.WinUI.Utilities;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -28,16 +29,16 @@ public sealed partial class AboutPage : Page
 
             var dialog = new ContentDialog
             {
-                Title = "Changelog",
+                Title = AppResources.Get("ChangelogTitle", "Changelog"),
                 Content = new ScrollViewer { Content = CreateChangelogContent(text), MaxHeight = 560 },
-                CloseButtonText = "Close",
+                CloseButtonText = AppResources.Get("CloseButton", "Close"),
                 XamlRoot = XamlRoot
             };
             await dialog.ShowAsync();
         }
         catch (Exception ex)
         {
-            await ViewModel.ReportExceptionAsync("Opening changelog", ex);
+            await ViewModel.ReportExceptionAsync(AppResources.Get("OpeningChangelog", "Opening changelog"), ex);
         }
     }
 
@@ -54,17 +55,17 @@ public sealed partial class AboutPage : Page
             var dialog = result.UpdateAvailable
                 ? new ContentDialog
                 {
-                    Title = "Update check",
+                    Title = AppResources.Get("UpdateCheckTitle", "Update check"),
                     Content = new TextBlock { Text = result.Message, TextWrapping = TextWrapping.Wrap },
-                    PrimaryButtonText = "Open releases",
-                    CloseButtonText = "Close",
+                    PrimaryButtonText = AppResources.Get("OpenReleasesButton", "Open releases"),
+                    CloseButtonText = AppResources.Get("CloseButton", "Close"),
                     XamlRoot = XamlRoot
                 }
                 : new ContentDialog
                 {
-                    Title = "Update check",
+                    Title = AppResources.Get("UpdateCheckTitle", "Update check"),
                     Content = new TextBlock { Text = result.Message, TextWrapping = TextWrapping.Wrap },
-                    CloseButtonText = "Close",
+                    CloseButtonText = AppResources.Get("CloseButton", "Close"),
                     XamlRoot = XamlRoot
                 };
 
@@ -75,7 +76,7 @@ public sealed partial class AboutPage : Page
         }
         catch (Exception ex)
         {
-            await ViewModel.ReportExceptionAsync("Checking for updates", ex);
+            await ViewModel.ReportExceptionAsync(AppResources.Get("CheckingForUpdates", "Checking for updates"), ex);
         }
     }
 

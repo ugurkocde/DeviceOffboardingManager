@@ -14,12 +14,16 @@ public sealed class DefenderApiClient
 
     private readonly IAuthenticationService _authenticationService;
     private readonly IAuditLogService _auditLog;
-    private readonly HttpClient _httpClient = new();
+    private readonly HttpClient _httpClient;
 
-    public DefenderApiClient(IAuthenticationService authenticationService, IAuditLogService auditLog)
+    public DefenderApiClient(
+        IAuthenticationService authenticationService,
+        IAuditLogService auditLog,
+        HttpClient httpClient)
     {
         _authenticationService = authenticationService;
         _auditLog = auditLog;
+        _httpClient = httpClient;
     }
 
     public async Task<string?> ResolveMachineIdByAadDeviceIdAsync(string aadDeviceId, CancellationToken cancellationToken = default)

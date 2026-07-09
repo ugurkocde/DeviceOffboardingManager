@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
@@ -17,7 +18,7 @@ public abstract partial class AppViewModelBase : ObservableObject
     protected IStatusService StatusService { get; }
 
     [ObservableProperty]
-    private bool isBusy;
+    public partial bool IsBusy { get; set; }
 
     protected async Task RunAsync(string title, Func<Task> action)
     {
@@ -38,7 +39,7 @@ public abstract partial class AppViewModelBase : ObservableObject
         try
         {
             IsBusy = true;
-            StatusService.Report(title, "Working...", StatusSeverity.Informational);
+            StatusService.Report(title, AppResources.Get("WorkingMessage", "Working..."), StatusSeverity.Informational);
             return await action();
         }
         catch (Exception ex)

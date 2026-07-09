@@ -79,6 +79,12 @@ public sealed class AuthenticationService : IAuthenticationService
             throw;
         }
 
+        _currentRequest = request with
+        {
+            ClientSecret = null,
+            StatusMessageCallback = null
+        };
+
         AccountDisplayName = request.Method is AuthenticationMethod.Certificate or AuthenticationMethod.ClientSecret
             ? $"AppId:{request.ClientId}"
             : _account?.Username ?? "Delegated session";

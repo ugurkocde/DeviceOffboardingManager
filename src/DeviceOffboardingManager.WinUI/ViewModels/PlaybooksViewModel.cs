@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using DeviceOffboardingManager.WinUI.Models;
 using DeviceOffboardingManager.WinUI.Services;
 using DeviceOffboardingManager.WinUI.Services.Contracts;
+using DeviceOffboardingManager.WinUI.Utilities;
 
 namespace DeviceOffboardingManager.WinUI.ViewModels;
 
@@ -35,23 +36,23 @@ public sealed partial class PlaybooksViewModel : AppViewModelBase
     public ObservableCollection<TextRow> PlaybookRows { get; } = new();
 
     [ObservableProperty]
-    private int selectedPlaybookIndex;
+    public partial int SelectedPlaybookIndex { get; set; }
 
     [ObservableProperty]
-    private string playbookParameter = string.Empty;
+    public partial string PlaybookParameter { get; set; } = string.Empty;
 
     [ObservableProperty]
-    private string playbookStatusText = "Run a playbook to export a CSV report to the desktop.";
+    public partial string PlaybookStatusText { get; set; } = AppResources.Get("PlaybookInitialStatus", "Run a playbook to export a CSV report to the desktop.");
 
     [RelayCommand]
     private async Task RunPlaybookAsync()
     {
-        await RunAsync("Running playbook", async () =>
+        await RunAsync(AppResources.Get("RunningPlaybook", "Running playbook"), async () =>
         {
             EnsureConnected();
             if (_playbookService.Definitions.Count == 0)
             {
-                throw new InvalidOperationException("No playbooks are available.");
+                throw new InvalidOperationException(AppResources.Get("NoPlaybooks", "No playbooks are available."));
             }
 
             var selectedIndex = SelectedPlaybookIndex < 0 || SelectedPlaybookIndex >= _playbookService.Definitions.Count
@@ -61,23 +62,27 @@ public sealed partial class PlaybooksViewModel : AppViewModelBase
             var result = await _playbookService.RunAsync(definition.Id, PlaybookParameter);
             _deviceListState.LastPlaybookResult = result;
             PopulatePlaybookRows(result);
-            PlaybookStatusText = $"{result.Definition.Name} completed with {result.Rows.Count:n0} row(s).";
-            _statusService.Report("Playbook complete", PlaybookStatusText, StatusSeverity.Success);
+            PlaybookStatusText = AppResources.Format(
+                "PlaybookCompleteFormat",
+                "{0} completed with {1:N0} row(s).",
+                result.Definition.Name,
+                result.Rows.Count);
+            _statusService.Report(AppResources.Get("PlaybookComplete", "Playbook complete"), PlaybookStatusText, StatusSeverity.Success);
         });
     }
 
     [RelayCommand]
     private async Task ExportLastPlaybookAsync()
     {
-        await RunAsync("Exporting playbook", async () =>
+        await RunAsync(AppResources.Get("ExportingPlaybook", "Exporting playbook"), async () =>
         {
             if (_deviceListState.LastPlaybookResult is null)
             {
-                throw new InvalidOperationException("Run a playbook before exporting.");
+                throw new InvalidOperationException(AppResources.Get("RunPlaybookBeforeExport", "Run a playbook before exporting."));
             }
 
             var path = await ExportPlaybookRowsAsync(_deviceListState.LastPlaybookResult);
-            _statusService.Report("Playbook exported", path, StatusSeverity.Success);
+            _statusService.Report(AppResources.Get("PlaybookExportedTitle", "Playbook exported"), path, StatusSeverity.Success);
         });
     }
 
@@ -86,7 +91,7 @@ public sealed partial class PlaybooksViewModel : AppViewModelBase
         PlaybookRows.Clear();
         if (result.Rows.Count == 0)
         {
-            PlaybookRows.Add(new TextRow("No rows returned."));
+            PlaybookRows.Add(new TextRow(AppResources.Get("NoRowsReturned", "No rows returned.")));
             return;
         }
 
@@ -97,7 +102,11 @@ public sealed partial class PlaybooksViewModel : AppViewModelBase
 
         if (result.Rows.Count > PlaybookRows.Count)
         {
-            PlaybookRows.Add(new TextRow($"Showing first {PlaybookRows.Count:n0} of {result.Rows.Count:n0} row(s). Export the CSV for the full result."));
+            PlaybookRows.Add(new TextRow(AppResources.Format(
+                "PlaybookRowsTruncatedFormat",
+                "Showing first {0:N0} of {1:N0} row(s). Export the CSV for the full result.",
+                PlaybookRows.Count,
+                result.Rows.Count)));
         }
     }
 
@@ -105,7 +114,7 @@ public sealed partial class PlaybooksViewModel : AppViewModelBase
     {
         if (!_authenticationService.IsConnected)
         {
-            throw new InvalidOperationException("Connect to Microsoft Graph first.");
+            throw new InvalidOperationException(AppResources.Get("ConnectFirst", "Connect to Microsoft Graph first."));
         }
     }
 
@@ -117,18 +126,13 @@ public sealed partial class PlaybooksViewModel : AppViewModelBase
 
         var columns = result.Rows.SelectMany(row => row.Keys).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
         var builder = new StringBuilder();
-        builder.AppendLine(string.Join(",", columns.Select(Csv)));
+        builder.AppendLine(string.Join(",", columns.Select(CsvEncoder.EscapeCell)));
         foreach (var row in result.Rows)
         {
-            builder.AppendLine(string.Join(",", columns.Select(column => Csv(row.TryGetValue(column, out var value) ? value : null))));
+            builder.AppendLine(string.Join(",", columns.Select(column => CsvEncoder.EscapeCell(row.TryGetValue(column, out var value) ? value : null))));
         }
 
         await File.WriteAllTextAsync(path, builder.ToString());
         return path;
-    }
-
-    private static string Csv(string? value)
-    {
-        return '"' + (value ?? string.Empty).Replace("\"", "\"\"", StringComparison.Ordinal) + '"';
     }
 }
