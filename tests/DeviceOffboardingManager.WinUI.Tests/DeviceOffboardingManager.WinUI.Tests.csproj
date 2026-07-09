@@ -8,6 +8,8 @@
     <PlatformTarget>x64</PlatformTarget>
     <Platforms>x64</Platforms>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <WindowsAppSdkBootstrapInitialize>false</WindowsAppSdkBootstrapInitialize>
+    <WindowsAppSdkDeploymentManagerInitialize>false</WindowsAppSdkDeploymentManagerInitialize>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,6 +26,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj" />
+    <ProjectReference Include="..\..\src\DeviceOffboardingManager.WinUI\DeviceOffboardingManager.WinUI.csproj">
+      <AdditionalProperties>WindowsAppSdkBootstrapInitialize=false;WindowsAppSdkDeploymentManagerInitialize=false</AdditionalProperties>
+    </ProjectReference>
   </ItemGroup>
 </Project>
