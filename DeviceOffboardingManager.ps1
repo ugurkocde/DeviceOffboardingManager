@@ -8113,7 +8113,8 @@ function Update-DashboardStatistics {
         # Not $platform: names are case-insensitive and would collide with the [string]$Platform parameter
         foreach ($platformGroup in $platformGroups) {
             $percentage = $platformGroup.Count / $total
-            $sweepAngle = 360 * $percentage
+            # A full 360 degree arc has identical start/end points and WPF draws nothing
+            $sweepAngle = [Math]::Min(360 * $percentage, 359.99)
 
             $startRad = $startAngle * [Math]::PI / 180
             $endRad = ($startAngle + $sweepAngle) * [Math]::PI / 180
