@@ -8110,8 +8110,9 @@ function Update-DashboardStatistics {
         $radius = 80
         $startAngle = 0
 
-        foreach ($platform in $platformGroups) {
-            $percentage = $platform.Count / $total
+        # Not $platform: names are case-insensitive and would collide with the [string]$Platform parameter
+        foreach ($platformGroup in $platformGroups) {
+            $percentage = $platformGroup.Count / $total
             $sweepAngle = 360 * $percentage
 
             $startRad = $startAngle * [Math]::PI / 180
@@ -8148,7 +8149,7 @@ function Update-DashboardStatistics {
             $pathGeometry.Figures.Add($pathFigure)
             $path.Data = $pathGeometry
 
-            $pName = if ($platform.Name) { $platform.Name } else { 'Unknown' }
+            $pName = if ($platformGroup.Name) { $platformGroup.Name } else { 'Unknown' }
             $color = if ($platformColors[$pName]) { $platformColors[$pName] } else { $platformColors['Unknown'] }
             $path.Fill = New-Object System.Windows.Media.SolidColorBrush(
                 [System.Windows.Media.ColorConverter]::ConvertFromString($color))
@@ -8166,7 +8167,7 @@ function Update-DashboardStatistics {
             $colorBox.Margin = New-Object System.Windows.Thickness(0, 0, 5, 0)
 
             $label = New-Object System.Windows.Controls.TextBlock
-            $label.Text = "$($platform.Name) ($([Math]::Round($percentage * 100))%)"
+            $label.Text = "$pName ($([Math]::Round($percentage * 100))%)"
             $label.Foreground = "White"
             $label.VerticalAlignment = "Center"
 
